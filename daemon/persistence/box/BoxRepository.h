@@ -11,22 +11,26 @@
 #include "core/domain/repositories/PackageRepositoryBase.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
-#include "coro/io_scheduler.hpp"
-#include "persistence/alpm/BoxOptions.h"
+#include "infrastructure/FactoryBase.h"
+#include "persistence/box/BoxOptions.h"
+#include "persistence/box/export/ExporterBase.h"
+#include "persistence/box/store/PackageStoreBase.h"
+#include "persistence/box/writeback/WritebackScheduler.h"
 #include "utilities/alpmdb/Database.h"
-#include "utilities/box/Database.h"
 
+#include <coro/io_scheduler.hpp>
 #include <coro/sync_wait.hpp>
 #include <functional>
 #include <memory>
 
-namespace bxt::Persistence {
+namespace bxt::Persistence::Box {
 
-class Box : public Core::Domain::PackageRepositoryBase {
+class BoxRepository : public Core::Domain::PackageRepositoryBase {
 public:
-    Box(std::shared_ptr<bxt::Utilities::LMDB::Environment> environment,
-        std::shared_ptr<coro::io_scheduler> scheduler,
-        ReadOnlyRepositoryBase<Section> &section_repository);
+    BoxRepository(BoxOptions options,
+                  PackageStoreBase &package_store,
+                  WritebackScheduler &writeback_sceduler,
+                  ExporterBase &exporter);
 
     virtual coro::task<TResult> find_by_id_async(TId id) override;
     virtual coro::task<TResult>
@@ -60,7 +64,10 @@ public:
 private:
     BoxOptions m_options;
 
-    bxt::Box::Database m_database;
+    PackageStoreBase &m_package_store;
+
+    ExporterBase &m_exporter;
+    WritebackScheduler &m_scheduler;
 
     std::filesystem::path m_root_path;
 
@@ -69,4 +76,4 @@ private:
     std::vector<Package> m_to_update;
 };
 
-} // namespace bxt::Persistence
+} // namespace bxt::Persistence::Box

@@ -82,7 +82,12 @@ void setup_di_container(kgr::container& ctr) {
     ctr.emplace<di::Persistence::PackageLogEntryRepository>(
         std::string("bxt::PackageLogs"));
 
-    ctr.service<di::Persistence::Box>();
+    ctr.emplace<di::Persistence::Box::Pool>("./box/pool/");
+    ctr.emplace<di::Persistence::Box::LMDBPackageStore>("./box/", "bxt::Box");
+
+    ctr.emplace<di::Persistence::Box::AlpmDBExporter>("./box/");
+
+    ctr.service<di::Persistence::Box::BoxRepository>();
 
     ctr.service<di::Core::Application::AuthService>();
     ctr.service<di::Core::Application::PermissionService>();

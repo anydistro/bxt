@@ -7,7 +7,8 @@
 #pragma once
 
 #include "utilities/configuration/Configuration.h"
-namespace bxt::Persistence {
+
+namespace bxt::Persistence::Box {
 
 struct BoxOptions : public bxt::Utilities::Configurable {
     std::string location = "box/";
@@ -20,4 +21,4 @@ struct BoxOptions : public bxt::Utilities::Configurable {
     }
 };
 
-} // namespace bxt::Persistence
+} // namespace bxt::Persistence::Box

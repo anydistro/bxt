@@ -21,8 +21,19 @@
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
 #include "infrastructure/ws/WSController.h"
+#include "kangaru/autowire.hpp"
+#include "kangaru/detail/single.hpp"
+#include "kangaru/operator_service.hpp"
 #include "kangaru/service.hpp"
-#include "persistence/alpm/Box.h"
+#include "persistence/box/BoxRepository.h"
+#include "persistence/box/export/AlpmDBExporter.h"
+#include "persistence/box/export/ExporterBase.h"
+#include "persistence/box/pool/Pool.h"
+#include "persistence/box/pool/PoolBase.h"
+#include "persistence/box/pool/PoolOptions.h"
+#include "persistence/box/store/LMDBPackageStore.h"
+#include "persistence/box/store/PackageStoreBase.h"
+#include "persistence/box/writeback/WritebackScheduler.h"
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/PackageLogEntryRepository.h"
 #include "persistence/lmdb/UserRepository.h"
@@ -205,24 +216,66 @@ namespace Persistence {
                                   PackageLogEntryRepository>::init_dispatcher>,
                           di::Utilities::EventBusDispatcher>> {};
 
-    struct Box
-        : kgr::single_service<
-              bxt::Infrastructure::DispatchingUnitOfWork<bxt::Persistence::Box>,
-              kgr::dependency<di::Utilities::LMDB::Environment,
-                              di::Utilities::IOScheduler,
-                              di::Core::Domain::ReadOnlySectionRepository>>,
-          kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
-          kgr::autocall<
-              kgr::invoke<method<&bxt::Infrastructure::DispatchingUnitOfWork<
-                              bxt::Persistence::Box>::init_dispatcher>,
-                          di::Utilities::EventBusDispatcher>> {};
-
     struct SectionRepository
         : kgr::single_service<
               bxt::Persistence::SectionRepository,
               kgr::dependency<di::Utilities::RepoSchema::Parser>>,
           kgr::overrides<di::Core::Domain::ReadOnlySectionRepository> {};
 
+    namespace Box {
+        struct PoolOptions
+            : kgr::single_service<bxt::Persistence::Box::PoolOptions> {};
+
+        struct PoolBase
+            : kgr::abstract_service<bxt::Persistence::Box::PoolBase> {};
+
+        struct Pool
+            : kgr::single_service<
+                  bxt::Persistence::Box::Pool,
+                  kgr::dependency<di::Persistence::Box::PoolOptions,
+                                  di::Core::Domain::ReadOnlySectionRepository>>,
+              kgr::overrides<PoolBase> {};
+
+        struct PackageStoreBase
+            : kgr::abstract_service<bxt::Persistence::Box::PackageStoreBase> {};
+
+        struct LMDBPackageStore
+            : kgr::single_service<
+                  bxt::Persistence::Box::LMDBPackageStore,
+                  kgr::dependency<di::Utilities::LMDB::Environment,
+                                  di::Persistence::Box::PoolBase>>,
+              kgr::overrides<PackageStoreBase> {};
+
+        struct WritebackScheduler
+            : kgr::single_service<bxt::Persistence::Box::WritebackScheduler,
+                                  kgr::dependency<Utilities::IOScheduler>> {};
+
+        struct ExporterBase
+            : kgr::abstract_service<bxt::Persistence::Box::ExporterBase> {};
+
+        struct AlpmDBExporter
+            : kgr::single_service<
+                  bxt::Persistence::Box::AlpmDBExporter,
+                  kgr::dependency<PackageStoreBase,
+                                  Core::Domain::ReadOnlySectionRepository>>,
+              kgr::overrides<ExporterBase> {};
+
+        struct BoxOptions
+            : kgr::single_service<bxt::Persistence::Box::BoxOptions> {};
+
+        struct BoxRepository
+            : kgr::single_service<bxt::Infrastructure::DispatchingUnitOfWork<
+                                      bxt::Persistence::Box::BoxRepository>,
+                                  kgr::dependency<BoxOptions,
+                                                  PackageStoreBase,
+                                                  WritebackScheduler,
+                                                  ExporterBase>>,
+              kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
+              kgr::autocall<kgr::invoke<
+                  method<&bxt::Infrastructure::DispatchingUnitOfWork<
+                      bxt::Persistence::Box::BoxRepository>::init_dispatcher>,
+                  di::Utilities::EventBusDispatcher>> {};
+    } // namespace Box
 } // namespace Persistence
 
 namespace Presentation {
