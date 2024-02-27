@@ -116,7 +116,7 @@ drogon::Task<drogon::HttpResponsePtr>
         section,
         "",
         false,
-        {{Box::PoolManager::PoolLocation::Automated,
+        {{Core::Domain::PoolLocation::Automated,
           {
               "",
               app().getUploadPath() + "/" + name,

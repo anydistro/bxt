@@ -9,7 +9,6 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "infrastructure/PackageService.h"
 #include "utilities/Error.h"
-#include "utilities/box/PoolManager.h"
 
 #include <filesystem>
 #include <fmt/format.h>
@@ -34,7 +33,7 @@ coro::task<DeploymentService::Result<uint64_t>>
 coro::task<DeploymentService::Result<void>>
     DeploymentService::deploy_push(PackageDTO package, uint64_t session_id) {
     if (!std::filesystem::exists(
-            package.pool_entries[Box::PoolManager::PoolLocation::Automated]
+            package.pool_entries[Core::Domain::PoolLocation::Automated]
                 .filepath)) {
         co_return bxt::make_error<Error>(Error::ErrorType::PackagePushFailed);
     }
@@ -56,10 +55,10 @@ coro::task<DeploymentService::Result<void>>
         co_return bxt::make_error<Error>(Error::ErrorType::InvalidArgument);
     }
 
-    if (package.pool_entries[Box::PoolManager::PoolLocation::Automated]
+    if (package.pool_entries[Core::Domain::PoolLocation::Automated]
             .signature_path) {
         if (!std::filesystem::exists(
-                *package.pool_entries[Box::PoolManager::PoolLocation::Automated]
+                *package.pool_entries[Core::Domain::PoolLocation::Automated]
                      .signature_path)) {
             co_return bxt::make_error<Error>(
                 Error::ErrorType::PackagePushFailed);

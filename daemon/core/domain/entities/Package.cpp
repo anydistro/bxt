@@ -11,7 +11,6 @@
 #include "fmt/core.h"
 #include "scn/tuple_return/tuple_return.h"
 #include "utilities/Error.h"
-#include "utilities/box/PoolManager.h"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -55,7 +54,7 @@ std::optional<std::string>
 }
 Package::Result<Package> Package::from_file_path(
     const Section& section,
-    const Box::PoolManager::PoolLocation location,
+    const PoolLocation location,
     const std::filesystem::path& filepath,
     const std::optional<std::filesystem::path>& signature_path) {
     auto pool_entry =

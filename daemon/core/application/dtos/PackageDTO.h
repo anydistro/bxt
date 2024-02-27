@@ -12,7 +12,6 @@
 #include "core/domain/value_objects/PackageVersion.h"
 #include "parallel_hashmap/phmap.h"
 #include "utilities/StaticDTOMapper.h"
-#include "utilities/box/PoolManager.h"
 
 #include <cereal/types/optional.hpp>
 #include <filesystem>
@@ -39,7 +38,7 @@ struct PackageDTO {
     PackageSectionDTO section;
     std::string name;
     bool is_any_architecture = false;
-    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntryDTO>
+    phmap::flat_hash_map<Domain::PoolLocation, PackagePoolEntryDTO>
         pool_entries;
 
     auto operator<=>(const PackageDTO& other) const = default;

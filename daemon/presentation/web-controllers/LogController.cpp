@@ -6,7 +6,9 @@
  */
 #include "LogController.h"
 
+#include "core/domain/enums/PoolLocation.h"
 #include "drogon/HttpTypes.h"
+#include "utilities/log/Logging.h"
 
 namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
@@ -51,13 +53,24 @@ drogon::Task<drogon::HttpResponsePtr>
         }
 
         json_value["package"]["pool_entries"] = pool_entries_json;
+        const auto preferred_location =
+            Core::Domain::select_preferred_pool_location(
+                dto.package.pool_entries);
+
+        if (!preferred_location) {
+            logd("Package {} has no pool entries, skipping preferred one "
+                 "selection",
+                 dto.package.name);
+            continue;
+        }
+
         const auto preferred_candidate =
-            Box::PoolManager::select_preferred_value(dto.package.pool_entries);
+            dto.package.pool_entries.at(*preferred_location);
 
         json_value["package"]["preferredCandidate"]["version"] =
-            preferred_candidate->version;
+            preferred_candidate.version;
         json_value["package"]["preferredCandidate"]["hasSignature"] =
-            preferred_candidate->signature_path.has_value() ? "true" : "false";
+            preferred_candidate.signature_path.has_value() ? "true" : "false";
 
         // Serialize action
         json_value["action"] = [dto] {
@@ -65,6 +78,7 @@ drogon::Task<drogon::HttpResponsePtr>
             case Core::Domain::Add: return "Add";
             case Core::Domain::Remove: return "Remove";
             case Core::Domain::Update: return "Update";
+            default: return "Unknown";
             }
         }();
 

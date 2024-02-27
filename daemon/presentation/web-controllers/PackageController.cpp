@@ -11,12 +11,13 @@
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/PackageService.h"
+#include "core/domain/enums/PoolLocation.h"
 #include "core/domain/value_objects/PackageVersion.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/HttpTypes.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "jwt-cpp/traits/nlohmann-json/defaults.h"
-#include "utilities/box/PoolManager.h"
+#include "utilities/log/Logging.h"
 
 #include "json/value.h"
 #include <drogon/MultiPart.h>
@@ -59,7 +60,7 @@ drogon::Task<drogon::HttpResponsePtr>
 
         file.save();
 
-        auto location = Box::PoolManager::PoolLocation::Overlay;
+        auto location = Core::Domain::PoolLocation::Overlay;
 
         PackagePoolEntryDTO &pool_entry =
             packages[file_number].pool_entries[location];
@@ -143,19 +144,30 @@ drogon::Task<drogon::HttpResponsePtr>
             entry_json["hasSignature"] =
                 pool_entry.signature_path.has_value() ? "true" : "false";
 
-            pool_entries_json[Box::PoolManager::location_paths.at(pool_location)
-                                  .data()] = entry_json;
+            pool_entries_json
+                [Core::Domain::pool_location_names.at(pool_location).data()] =
+                    entry_json;
         }
 
         package_json["poolEntries"] = pool_entries_json;
 
+        const auto preferred_location =
+            Core::Domain::select_preferred_pool_location(package.pool_entries);
+
+        if (!preferred_location) {
+            logd("Package {} has no pool entries, skipping preferred one "
+                 "selection",
+                 package.name);
+            continue;
+        }
+
         const auto preferred_candidate =
-            Box::PoolManager::select_preferred_value(package.pool_entries);
+            package.pool_entries.at(*preferred_location);
 
         package_json["preferredCandidate"]["version"] =
-            preferred_candidate->version;
+            preferred_candidate.version;
         package_json["preferredCandidate"]["hasSignature"] =
-            preferred_candidate->signature_path.has_value() ? "true" : "false";
+            preferred_candidate.signature_path.has_value() ? "true" : "false";
 
         result.append(package_json);
     }

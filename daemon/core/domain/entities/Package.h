@@ -8,13 +8,13 @@
 
 #include "Section.h"
 #include "core/domain/entities/AggregateRoot.h"
+#include "core/domain/enums/PoolLocation.h"
 #include "core/domain/value_objects/Name.h"
 #include "core/domain/value_objects/PackageArchitecture.h"
 #include "core/domain/value_objects/PackagePoolEntry.h"
 #include "core/domain/value_objects/PackageVersion.h"
 #include "parallel_hashmap/phmap.h"
 #include "utilities/Error.h"
-#include "utilities/box/PoolManager.h"
 
 #include <bits/ranges_algo.h>
 #include <filesystem>
@@ -39,20 +39,17 @@ public:
     const TId id() const { return {m_section, m_name}; }
     const std::string& name() const { return m_name; }
     const PackageVersion version() const {
-        return Box::PoolManager::select_preferred_value(m_pool_entries)
-            .value()
+        return m_pool_entries
+            .at(select_preferred_pool_location(m_pool_entries).value())
             .version();
     }
     const std::filesystem::path filepath() const {
-        return Box::PoolManager::select_preferred_value(m_pool_entries)
-            .value()
+        return m_pool_entries
+            .at(select_preferred_pool_location(m_pool_entries).value())
             .file_path();
     }
-    const Box::PoolManager::PoolLocation location() const {
-        return static_cast<Box::PoolManager::PoolLocation>(
-            std::ranges::min_element(m_pool_entries, {}, [](const auto& el) {
-                return static_cast<int>(el.first);
-            })->first);
+    PoolLocation location() const {
+        return select_preferred_pool_location(m_pool_entries).value();
     }
 
     Package(Section section, const std::string& name, bool is_any)
@@ -63,7 +60,7 @@ public:
 
     static Result<Package> from_file_path(
         const Section& section,
-        const Box::PoolManager::PoolLocation location,
+        const PoolLocation location,
         const std::filesystem::path& filepath,
         const std::optional<std::filesystem::path>& signature_path = {});
 
@@ -79,13 +76,11 @@ public:
 
     bool is_any_arch() const { return m_is_any_arch; }
 
-    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntry>&
-        pool_entries() {
+    phmap::flat_hash_map<PoolLocation, PackagePoolEntry>& pool_entries() {
         return m_pool_entries;
     }
 
-    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntry>
-        pool_entries() const {
+    phmap::flat_hash_map<PoolLocation, PackagePoolEntry> pool_entries() const {
         return m_pool_entries;
     }
 
@@ -94,8 +89,7 @@ private:
 
     Name m_name;
     bool m_is_any_arch;
-    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntry>
-        m_pool_entries;
+    phmap::flat_hash_map<PoolLocation, PackagePoolEntry> m_pool_entries;
 };
 
 } // namespace bxt::Core::Domain

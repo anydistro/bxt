@@ -11,6 +11,7 @@
 #include "core/application/events/IntegrationEventBase.h"
 #include "core/application/events/SyncEvent.h"
 #include "core/domain/entities/Package.h"
+#include "core/domain/enums/PoolLocation.h"
 #include "coro/sync_wait.hpp"
 #include "coro/when_all.hpp"
 #include "httplib.h"
@@ -93,7 +94,7 @@ coro::task<std::vector<Package>>
 
         auto package_result = Package::from_file_path(
             SectionDTOMapper::to_entity(package_file.section()),
-            Box::PoolManager::PoolLocation::Sync, package_file.file_path());
+            Core::Domain::PoolLocation::Sync, package_file.file_path());
 
         if (package_result.has_value()) {
             packages.emplace_back(std::move(*package_result));

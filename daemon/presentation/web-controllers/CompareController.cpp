@@ -7,9 +7,9 @@
 #include "CompareController.h"
 
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/domain/enums/PoolLocation.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/HttpTypes.h"
-#include "utilities/box/PoolManager.h"
 
 #include "json/value.h"
 #include <vector>
@@ -64,7 +64,7 @@ drogon::Task<drogon::HttpResponsePtr>
     for (const auto& [index, version] : compare_result->compare_table) {
         auto&& [name, section, location] = index;
         result["compare_table"][name][std::string(section)]
-              [Box::PoolManager::location_paths.at(location).data()] = version;
+              [bxt::to_string(location)] = version;
     }
 
     co_return drogon::HttpResponse::newHttpJsonResponse(result);
