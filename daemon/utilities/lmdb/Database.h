@@ -11,6 +11,7 @@
 #include "lmdb.h"
 #include "nonstd/expected.hpp"
 #include "utilities/Error.h"
+#include "utilities/NavigationAction.h"
 #include "utilities/errors/DatabaseError.h"
 #include "utilities/errors/Macro.h"
 #include "utilities/lmdb/CerealSerializer.h"
@@ -19,7 +20,6 @@
 #include <exception>
 #include <lmdbxx/lmdb++.h>
 namespace bxt::Utilities::LMDB {
-enum class NavigationAction { Next, Previous, Stop };
 
 template<typename TEntity, typename TSerializer = CerealSerializer<TEntity>>
 class Database {

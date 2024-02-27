@@ -72,7 +72,7 @@ public:
         co_await m_db.accept(
             [&results]([[maybe_unused]] std::string_view key, const TDTO &e) {
                 results.push_back(TMapper::to_entity(e));
-                return Utilities::LMDB::NavigationAction::Next;
+                return Utilities::NavigationAction::Next;
             });
 
         co_return results;
