@@ -63,18 +63,14 @@ constexpr static frozen::set<frozen::string, 19> desc_keys {
 
 namespace bxt::Utilities::AlpmDb {
 
-Desc::Desc(const std::string &contents, const std::string &files)
-    : m_desc(contents), m_files(files) {
-}
-
 std::optional<std::string> Desc::get(const std::string &key) const {
     auto prepared_key = fmt::format("%{}%\n", key);
 
-    auto value_begin = m_desc.find(prepared_key) + prepared_key.size();
+    auto value_begin = desc.find(prepared_key) + prepared_key.size();
 
-    auto value_end = m_desc.find("\n", value_begin);
+    auto value_end = desc.find("\n", value_begin);
 
-    return m_desc.substr(value_begin, value_end - value_begin);
+    return desc.substr(value_begin, value_end - value_begin);
 }
 
 Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
@@ -154,15 +150,7 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
             boost::join(values, " "));
     }
 
-    return Desc(desc.str(), files.str());
-}
-
-std::string Desc::string() const {
-    return m_desc;
-}
-
-std::string Desc::files() const {
-    return m_files;
+    return Desc {.desc = desc.str(), .files = files.str()};
 }
 
 } // namespace bxt::Utilities::AlpmDb

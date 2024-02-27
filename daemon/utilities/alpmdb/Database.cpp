@@ -89,10 +89,10 @@ coro::task<Result<void>>
         logd("Description for {} is being added...", name);
 
         write_buffer_to_archive(db_writer, fmt::format("{}/desc", name),
-                                description.string());
+                                description.desc);
 
         write_buffer_to_archive(files_writer, fmt::format("{}/files", name),
-                                description.files());
+                                description.files);
     }
 
     create_symlinks(path);

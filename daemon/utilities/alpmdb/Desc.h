@@ -23,8 +23,7 @@
 
 namespace bxt::Utilities::AlpmDb {
 
-class Desc {
-public:
+struct Desc {
     struct ParseError : public bxt::Error {
         enum class ErrorType {
             InvalidArchive,
@@ -50,21 +49,13 @@ public:
     };
     BXT_DECLARE_RESULT(ParseError)
 
-    friend class cereal::access;
-    template<class Archive> void serialize(Archive& ar) { ar(m_desc, m_files); }
-
-    Desc() = default;
-    explicit Desc(const std::string& contents, const std::string& files = "");
+    template<class Archive> void serialize(Archive& ar) { ar(desc, files); }
 
     static Result<Desc> parse_package(const std::filesystem::path& filepath);
 
     std::optional<std::string> get(const std::string& key) const;
 
-    std::string string() const;
-    std::string files() const;
-
-private:
-    std::string m_desc;
-    std::string m_files;
+    std::string desc;
+    std::string files;
 };
 } // namespace bxt::Utilities::AlpmDb
