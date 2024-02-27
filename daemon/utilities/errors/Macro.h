@@ -4,6 +4,9 @@
  *   SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
+#pragma once
+
+#include <nonstd/expected.hpp>
 
 #define BXT_DECLARE_RESULT(error)        \
     template<typename TBxtExpectedValue> \
