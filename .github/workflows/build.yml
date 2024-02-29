@@ -1,0 +1,28 @@
+name: Build with docker
+on: [push, pull_request]
+
+jobs:
+  build-docker:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+      - name: Build dev environment
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: bxt:dev
+          file: docker/dev.Dockerfile
+      - name: Build prod
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: bxt:0.1
+          file: docker/prod.Dockerfile
