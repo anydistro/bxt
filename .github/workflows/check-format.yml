@@ -1,0 +1,27 @@
+name: Format with clang-format and prettier
+on: [push, pull_request]
+
+jobs:
+  clang-format:
+    name: Run clang-format on daemon
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run clang-format style check
+        uses: jidicula/clang-format-action@v4.11.0
+        with:
+          clang-format-version: "16"
+          check-path: "daemon"
+
+  prettier:
+    name: Run prettier on frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run prettier style check
+        uses: creyD/prettier_action@v4.3
+        with:
+          prettier_options: --check ./frontend/
+          dry: true
