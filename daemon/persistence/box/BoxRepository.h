@@ -11,7 +11,6 @@
 #include "core/domain/repositories/PackageRepositoryBase.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
-#include "infrastructure/FactoryBase.h"
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/export/ExporterBase.h"
 #include "persistence/box/store/PackageStoreBase.h"

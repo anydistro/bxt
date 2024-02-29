@@ -16,7 +16,6 @@
 #include "coro/when_all.hpp"
 #include "httplib.h"
 #include "utilities/alpmdb/Desc.h"
-#include "utilities/box/PoolManager.h"
 #include "utilities/libarchive/Reader.h"
 #include "utilities/log/Logging.h"
 
