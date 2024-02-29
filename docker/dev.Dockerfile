@@ -2,8 +2,6 @@ FROM ubuntu:22.04
 
 RUN apt update --yes && apt install --yes ca-certificates curl gnupg
 
-RUN sed -i 's/htt[p|ps]:\/\/archive.ubuntu.com\/ubuntu\//mirror:\/\/mirrors.ubuntu.com\/mirrors.txt/g' /etc/apt/sources.list
-
 RUN echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" > /etc/apt/sources.list.d/llvm.list
 RUN curl --silent --location https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
