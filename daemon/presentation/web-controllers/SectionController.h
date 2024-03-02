@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/application/services/PermissionService.h"
 #include "core/application/services/SectionService.h"
 #include "drogon/HttpController.h"
 #include "drogon/utils/FunctionTraits.h"
@@ -17,8 +18,9 @@ namespace bxt::Presentation {
 class SectionController
     : public drogon::HttpController<SectionController, false> {
 public:
-    SectionController(Core::Application::SectionService& service)
-        : m_service(service) {}
+    SectionController(Core::Application::SectionService& service,
+                      Core::Application::PermissionService& permission_service)
+        : m_service(service), m_permission_service(permission_service) {}
 
     METHOD_LIST_BEGIN
 
@@ -33,6 +35,7 @@ public:
 
 private:
     Core::Application::SectionService& m_service;
+    Core::Application::PermissionService& m_permission_service;
 };
 
 } // namespace bxt::Presentation

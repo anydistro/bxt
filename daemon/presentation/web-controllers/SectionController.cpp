@@ -23,12 +23,19 @@ drogon::Task<drogon::HttpResponsePtr>
         co_return drogon::HttpResponse::newHttpJsonResponse(result);
     }
 
-    for (const auto& section : *sections) {
+    for (const auto& [branch, repository, architecture] : *sections) {
+        if (!co_await m_permission_service.check(
+                fmt::format("sections.{}.{}.{}", branch, repository,
+                            architecture),
+                req->getAttributes()->get<std::string>("jwt_username"))) {
+            continue;
+        }
+
         Json::Value section_json;
 
-        section_json["branch"] = section.branch;
-        section_json["repository"] = section.repository;
-        section_json["architecture"] = section.architecture;
+        section_json["branch"] = branch;
+        section_json["repository"] = repository;
+        section_json["architecture"] = architecture;
 
         result.append(section_json);
     }

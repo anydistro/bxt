@@ -6,6 +6,7 @@
  */
 #pragma once
 #include "core/application/services/PackageLogEntryService.h"
+#include "core/application/services/PermissionService.h"
 #include "utilities/drogon/Macro.h"
 
 #include <drogon/HttpController.h>
@@ -14,8 +15,9 @@ namespace bxt::Presentation {
 
 class LogController : public drogon::HttpController<LogController, false> {
 public:
-    LogController(Core::Application::PackageLogEntryService &service)
-        : m_service(service) {}
+    LogController(Core::Application::PackageLogEntryService &service,
+                  Core::Application::PermissionService &permission_service)
+        : m_service(service), m_permission_service(permission_service) {}
 
     METHOD_LIST_BEGIN
 
@@ -30,6 +32,7 @@ public:
 
 private:
     Core::Application::PackageLogEntryService &m_service;
+    Core::Application::PermissionService &m_permission_service;
 };
 
 } // namespace bxt::Presentation

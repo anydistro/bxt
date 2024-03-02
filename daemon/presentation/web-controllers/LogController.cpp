@@ -15,6 +15,8 @@ drogon::Task<drogon::HttpResponsePtr>
     LogController::get_package_logs(drogon::HttpRequestPtr req) {
     Json::Value result;
 
+    BXT_JWT_CHECK_PERMISSIONS("logs", req)
+
     auto dtos = co_await m_service.events();
 
     if (dtos.empty()) {

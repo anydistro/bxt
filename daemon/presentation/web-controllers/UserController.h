@@ -5,6 +5,7 @@
  *
  */
 #pragma once
+#include "core/application/services/PermissionService.h"
 #include "core/application/services/UserService.h"
 #include "utilities/drogon/Macro.h"
 
@@ -15,8 +16,10 @@ namespace bxt::Presentation {
 
 class UserController : public drogon::HttpController<UserController, false> {
 public:
-    explicit UserController(Core::Application::UserService& service)
-        : m_service(service) {};
+    explicit UserController(
+        Core::Application::UserService& service,
+        Core::Application::PermissionService& permission_service)
+        : m_service(service), m_permission_service(permission_service) {};
 
     METHOD_LIST_BEGIN
 
@@ -39,6 +42,7 @@ public:
 
 private:
     Core::Application::UserService& m_service;
+    Core::Application::PermissionService& m_permission_service;
 };
 
 } // namespace bxt::Presentation

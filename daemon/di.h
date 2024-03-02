@@ -284,7 +284,8 @@ namespace Presentation {
         : kgr::shared_service<
               bxt::Presentation::PackageController,
               kgr::dependency<di::Core::Application::PackageService,
-                              di::Core::Application::SyncService>> {};
+                              di::Core::Application::SyncService,
+                              di::Core::Application::PermissionService>> {};
 
     struct DeploymentController
         : kgr::shared_service<
@@ -294,7 +295,9 @@ namespace Presentation {
     struct CompareController
         : kgr::shared_service<
               bxt::Presentation::CompareController,
-              kgr::dependency<di::Core::Application::CompareService>> {};
+              kgr::dependency<di::Core::Application::CompareService,
+                              di::Core::Application::PermissionService,
+                              di::Core::Application::SectionService>> {};
 
     struct AuthController
         : kgr::shared_service<
@@ -304,7 +307,8 @@ namespace Presentation {
     struct UserController
         : kgr::shared_service<
               bxt::Presentation::UserController,
-              kgr::dependency<di::Core::Application::UserService>> {};
+              kgr::dependency<di::Core::Application::UserService,
+                              di::Core::Application::PermissionService>> {};
 
     struct PermissionController
         : kgr::shared_service<
@@ -314,13 +318,14 @@ namespace Presentation {
     struct LogController
         : kgr::shared_service<
               bxt::Presentation::LogController,
-              kgr::dependency<di::Core::Application::PackageLogEntryService>> {
-    };
+              kgr::dependency<di::Core::Application::PackageLogEntryService,
+                              di::Core::Application::PermissionService>> {};
 
     struct SectionController
         : kgr::shared_service<
               bxt::Presentation::SectionController,
-              kgr::dependency<di::Core::Application::SectionService>> {};
+              kgr::dependency<di::Core::Application::SectionService,
+                              di::Core::Application::PermissionService>> {};
 
     struct JwtFilter
         : kgr::shared_service<

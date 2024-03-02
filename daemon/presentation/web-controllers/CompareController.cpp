@@ -10,14 +10,34 @@
 #include "core/domain/enums/PoolLocation.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/HttpTypes.h"
+#include "utilities/drogon/Macro.h"
 
 #include "json/value.h"
+#include <string>
 #include <vector>
 namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
     CompareController::compare(drogon::HttpRequestPtr req) {
-    const auto sections_json = *req->getJsonObject();
     Json::Value result;
+    const auto available_sections = co_await m_section_service.get_sections();
+
+    if (!available_sections.has_value()) {
+        result["error"] = "No sections available in the Box";
+        result["status"] = "error";
+
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+
+        co_return response;
+    }
+
+    for (const auto& [branch, repository, architecture] : *available_sections) {
+        BXT_JWT_CHECK_PERMISSIONS(fmt::format("packages.compare.{}.{}.{}",
+                                              branch, repository, architecture),
+                                  req)
+    }
+
+    const auto sections_json = *req->getJsonObject();
 
     if (sections_json.empty()) {
         result["error"] = "No sections to compare provided";

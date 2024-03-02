@@ -17,6 +17,7 @@
 #include "drogon/HttpTypes.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "jwt-cpp/traits/nlohmann-json/defaults.h"
+#include "utilities/drogon/Macro.h"
 #include "utilities/log/Logging.h"
 
 #include "json/value.h"
@@ -30,6 +31,8 @@ using namespace drogon;
 
 drogon::Task<HttpResponsePtr>
     PackageController::sync(drogon::HttpRequestPtr req) {
+    BXT_JWT_CHECK_PERMISSIONS("packages.sync", req)
+
     co_await m_sync_service.sync_all();
 
     co_return HttpResponse::newHttpResponse();
@@ -99,6 +102,16 @@ drogon::Task<drogon::HttpResponsePtr>
 
     PackageService::Transaction transaction;
     for (auto &package : packages) {
+        const auto &[branch, repository, architecture] = package.second.section;
+
+        BXT_JWT_CHECK_PERMISSIONS(
+            (std::vector<std::string_view> {
+                fmt::format("packages.commit.{}.{}.{}", branch, repository,
+                            architecture),
+                fmt::format("sections.{}.{}.{}", branch, repository,
+                            architecture)}),
+            req)
+
         transaction.to_add.emplace_back(std::move(package.second));
     }
 
@@ -119,6 +132,13 @@ drogon::Task<drogon::HttpResponsePtr>
                                     const std::string &architecture) {
     PackageSectionDTO section {branch, repository, architecture};
     Json::Value result;
+
+    BXT_JWT_CHECK_PERMISSIONS((std::vector<std::string_view> {
+                                  fmt::format("packages.get.{}.{}.{}", branch,
+                                              repository, architecture),
+                                  fmt::format("sections.{}.{}.{}", branch,
+                                              repository, architecture)}),
+                              req)
 
     const auto packages = co_await m_package_service.get_packages(section);
 
@@ -196,10 +216,26 @@ drogon::Task<drogon::HttpResponsePtr>
         .repository = sections_json["source"]["repository"].asString(),
         .architecture = sections_json["source"]["architecture"].asString()};
 
+    BXT_JWT_CHECK_PERMISSIONS(
+        (std::vector<std::string_view> {
+            fmt::format("packages.snap.{}.{}.{}", source_branch.branch,
+                        source_branch.repository, source_branch.architecture),
+            fmt::format("sections.{}.{}.{}", source_branch.branch,
+                        source_branch.repository, source_branch.architecture)}),
+        req)
+
     PackageSectionDTO target_branch {
         .branch = sections_json["target"]["branch"].asString(),
         .repository = sections_json["target"]["repository"].asString(),
         .architecture = sections_json["target"]["architecture"].asString()};
+
+    BXT_JWT_CHECK_PERMISSIONS(
+        (std::vector<std::string_view> {
+            fmt::format("packages.get.{}.{}.{}", target_branch.branch,
+                        target_branch.repository, target_branch.architecture),
+            fmt::format("sections.{}.{}.{}", target_branch.branch,
+                        target_branch.repository, target_branch.architecture)}),
+        req)
 
     const auto snap_ok =
         co_await m_package_service.snap(source_branch, target_branch);
