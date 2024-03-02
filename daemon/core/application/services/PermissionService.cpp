@@ -6,6 +6,8 @@
  */
 #include "PermissionService.h"
 
+#include <algorithm>
+
 namespace bxt::Core::Application {
 
 coro::task<PermissionService::Result<void>>
@@ -84,15 +86,28 @@ coro::task<PermissionService::Result<std::vector<std::string>>>
 coro::task<bool>
     PermissionService::check(const std::string_view target_permission,
                              const std::string user_name) {
+    return check(std::vector<std::string_view> {target_permission}, user_name);
+}
+
+coro::task<bool> PermissionService::check(
+    const std::vector<std::string_view> target_permissions,
+    const std::string user_name) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
     if (!user) { co_return {}; }
 
-    for (const auto &permission : user->permissions()) {
-        m_matcher.match(std::string(target_permission), permission);
+    std::vector<bool> matched_targets(target_permissions.size(), false);
+    for (int i = 0; i < target_permissions.size(); i++) {
+        for (const auto &permission : user->permissions()) {
+            if (m_matcher.match(std::string(target_permissions[i]),
+                                permission)) {
+                matched_targets[i] = true;
+                break;
+            }
+        }
     }
 
-    co_return false;
+    co_return std::ranges::all_of(matched_targets, [](bool v) { return v; });
 }
 
 } // namespace bxt::Core::Application
