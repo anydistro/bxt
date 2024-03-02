@@ -1,7 +1,7 @@
 /* === This file is part of bxt ===
  *
  *   SPDX-FileCopyrightText: 2022 Artem Grinev <agrinev@manjaro.org>
- *   SPDX-License-Identifier: GPL-3.0-or-later
+ *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
 
@@ -20,7 +20,6 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
     phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,
                                   ArchRepoSource>
         sources;
-
 
     virtual void parse(const YAML::Node& root_node) override {
         constexpr char Tag[] = "(alpm.sync)";
