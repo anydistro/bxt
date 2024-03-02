@@ -52,7 +52,8 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
     auto claims = decoded.get_payload_claims();
 
     for (auto &claim : claims)
-        request->getAttributes()->insert("jwt_" + claim.first, claim.second);
+        request->getAttributes()->insert("jwt_" + claim.first,
+                                         claim.second.as_string());
 
     // If everything is right, just move to other endpoint
     return fccb();

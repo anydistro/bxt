@@ -41,8 +41,11 @@ drogon::Task<drogon::HttpResponsePtr>
         error_resp->setStatusCode(drogon::k401Unauthorized);
         co_return error_resp;
     }
-    const auto token = jwt::create().set_issuer("auth0").set_type("JWS").sign(
-        jwt::algorithm::hs256 {"secret"});
+    const auto token = jwt::create()
+                           .set_payload_claim("username", name)
+                           .set_issuer("auth0")
+                           .set_type("JWS")
+                           .sign(jwt::algorithm::hs256 {"secret"});
 
     auto response = drogon::HttpResponse::newHttpResponse();
     drogon::Cookie jwt_cookie("token", token);
