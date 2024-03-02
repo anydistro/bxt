@@ -11,6 +11,7 @@
 #include "core/application/services/SectionService.h"
 #include "core/domain/entities/User.h"
 #include "core/domain/value_objects/Name.h"
+#include "core/domain/value_objects/Permission.h"
 #include "coro/io_scheduler.hpp"
 #include "coro/sync_wait.hpp"
 #include "di.h"
@@ -139,9 +140,10 @@ void setup_defaults(kgr::container& ctr) {
     }
 
     if (users->empty()) {
-        User defaultUser(Name("default"), "ILoveMacarons");
+        User default_user(Name("default"), "ILoveMacarons");
+        default_user.set_permissions({Permission("*")});
 
-        coro::sync_wait(repository.add_async(defaultUser));
+        coro::sync_wait(repository.add_async(default_user));
         coro::sync_wait(repository.commit_async());
     }
 }
