@@ -1,3 +1,9 @@
+/* === This file is part of bxt ===
+ *
+ *   SPDX-FileCopyrightText: 2024 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ */
 import { forwardRef, useEffect, useState } from "react";
 import { Button, Form, Input, Modal, ModalProps } from "react-daisyui";
 import { createPortal } from "react-dom";

@@ -1,3 +1,9 @@
+/* === This file is part of bxt ===
+ *
+ *   SPDX-FileCopyrightText: 2023 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ */
 import { Drawer, Menu, Button, Progress } from "react-daisyui";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import ConfirmSyncModal from "./ConfirmSyncModal";
