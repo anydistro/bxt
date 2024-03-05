@@ -13,6 +13,7 @@ namespace bxt::Presentation {
 
 drogon::Task<drogon::HttpResponsePtr>
     UserController::add_user(drogon::HttpRequestPtr req) {
+    BXT_JWT_CHECK_PERMISSIONS("users.add", req)
     auto json = *req->getJsonObject();
 
     const auto name = json["name"].asString();
@@ -37,6 +38,8 @@ drogon::Task<drogon::HttpResponsePtr>
 
 drogon::Task<drogon::HttpResponsePtr>
     UserController::remove_user(drogon::HttpRequestPtr req) {
+    BXT_JWT_CHECK_PERMISSIONS("users.remove", req)
+
     auto json = *req->getJsonObject();
 
     const auto id = json["id"].asString();
@@ -58,6 +61,8 @@ drogon::Task<drogon::HttpResponsePtr>
 
 drogon::Task<drogon::HttpResponsePtr>
     UserController::get_users(drogon::HttpRequestPtr req) {
+    BXT_JWT_CHECK_PERMISSIONS("users.get", req)
+
     const auto users = co_await m_service.get_users();
     Json::Value result;
 
