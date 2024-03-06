@@ -21,14 +21,6 @@ namespace bxt::Core::Application {
 class PermissionService {
 public:
     BXT_DECLARE_RESULT(CrudError)
-
-    coro::task<Result<void>> add(const std::string user_name,
-                                 const std::string permission);
-    coro::task<Result<void>> remove(const std::string user_name,
-                                    const std::string permission);
-
-    coro::task<Result<std::vector<std::string>>>
-        get(const std::string user_name);
     PermissionService(Core::Domain::UserRepository& repository)
         : m_repository(repository) {}
 

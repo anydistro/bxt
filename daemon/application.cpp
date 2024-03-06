@@ -112,7 +112,6 @@ void setup_controllers(drogon::HttpAppFramework& app, kgr::container& ctr) {
         .registerController(ctr.service<CompareController>())
         .registerController(ctr.service<AuthController>())
         .registerController(ctr.service<UserController>())
-        .registerController(ctr.service<PermissionController>())
         .registerController(ctr.service<LogController>())
         .registerController(ctr.service<SectionController>())
         .registerController(

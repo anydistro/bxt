@@ -21,6 +21,7 @@ public:
 
     virtual coro::task<Result<void>> add_user(const UserDTO user);
     virtual coro::task<Result<void>> remove_user(const std::string name);
+    virtual coro::task<Result<void>> update_user(const UserDTO user);
     virtual coro::task<Result<std::vector<UserDTO>>> get_users() const;
 
 private:

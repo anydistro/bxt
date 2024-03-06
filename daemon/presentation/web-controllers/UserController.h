@@ -27,6 +27,10 @@ public:
                           "/api/users/add",
                           drogon::Post);
 
+    BXT_JWT_ADD_METHOD_TO(UserController::update_user,
+                          "/api/users/update",
+                          drogon::Post);
+
     BXT_JWT_ADD_METHOD_TO(UserController::remove_user,
                           "/api/users/remove",
                           drogon::Post);
@@ -36,6 +40,10 @@ public:
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> add_user(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr>
+        update_user(drogon::HttpRequestPtr req);
+
     drogon::Task<drogon::HttpResponsePtr>
         remove_user(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> get_users(drogon::HttpRequestPtr req);

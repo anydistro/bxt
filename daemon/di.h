@@ -42,7 +42,6 @@
 #include "presentation/web-controllers/CompareController.h"
 #include "presentation/web-controllers/LogController.h"
 #include "presentation/web-controllers/PackageController.h"
-#include "presentation/web-controllers/PermissionController.h"
 #include "presentation/web-controllers/SectionController.h"
 #include "presentation/web-controllers/UserController.h"
 #include "presentation/web-filters/JwtFilter.h"
@@ -305,11 +304,6 @@ namespace Presentation {
               bxt::Presentation::UserController,
               kgr::dependency<di::Core::Application::UserService,
                               di::Core::Application::PermissionService>> {};
-
-    struct PermissionController
-        : kgr::shared_service<
-              bxt::Presentation::PermissionController,
-              kgr::dependency<di::Core::Application::PermissionService>> {};
 
     struct LogController
         : kgr::shared_service<

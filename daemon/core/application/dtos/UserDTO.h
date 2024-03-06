@@ -10,13 +10,14 @@
 #include "utilities/StaticDTOMapper.h"
 
 #include <cereal/types/set.hpp>
+#include <optional>
 #include <ranges>
 
 namespace bxt::Core::Application {
 struct UserDTO {
     std::string name;
-    std::string password;
-    std::set<std::string> permissions;
+    std::optional<std::string> password;
+    std::optional<std::set<std::string>> permissions;
 
     template<class Archive> void serialize(Archive& ar) {
         ar(name, password, permissions);
@@ -37,13 +38,11 @@ namespace {
 
 template<> struct StaticDTOMapper<User, UserDTO> {
     static User to_entity(const UserDTO& from) {
-        User to;
-        to.set_name(from.name);
-        to.set_password(from.password);
+        User to(from.name, *from.password);
 
         std::set<Permission> mapped_permissions;
         std::ranges::transform(
-            from.permissions,
+            *from.permissions,
             std::inserter(mapped_permissions, mapped_permissions.end()),
             [](const std::string& permission) {
                 return Permission(permission);
