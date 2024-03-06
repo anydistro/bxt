@@ -90,8 +90,7 @@ drogon::Task<drogon::HttpResponsePtr>
                 dto.permissions->emplace(permission.asString());
             } else {
                 logw("User Controller: trying to add a permission with wrong "
-                     "type {}",
-                     Json::valueToString(permission.type()));
+                     "type");
             }
         }
     }
