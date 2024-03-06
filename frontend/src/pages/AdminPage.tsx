@@ -45,11 +45,25 @@ export default () => {
         [reloadUsers]
     );
 
+    const updateUser = useCallback(
+        async (user: IUser) => {
+            await axios.post("/api/users/update", user);
+            reloadUsers();
+        },
+        [reloadUsers]
+    );
+
     return (
         <div className="px-2 w-full h-full">
             <UserModal
-                onSaveClicked={(user) => {
-                    if (user) addUser(user);
+                onSaveClicked={(user, isNew) => {
+                    if (user) {
+                        if (isNew) {
+                            addUser(user);
+                        } else {
+                            updateUser(user);
+                        }
+                    }
                     userModalRef.current?.close();
                 }}
                 {...userModalProps}

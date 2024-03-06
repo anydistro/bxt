@@ -5,23 +5,27 @@
  *
  */
 import { forwardRef, useEffect, useState } from "react";
-import { Button, Form, Input, Modal, ModalProps } from "react-daisyui";
+import {
+    Button,
+    Form,
+    Input,
+    Modal,
+    ModalProps,
+    Textarea
+} from "react-daisyui";
 import { createPortal } from "react-dom";
 
 export type UserModalProps = ModalProps & {
     user?: IUser;
-    onSaveClicked?: (user: IUser | undefined) => void;
+    onSaveClicked?: (user: IUser | undefined, isNew: boolean) => void;
 };
 
 export default forwardRef<HTMLDialogElement, UserModalProps>((props, ref) => {
     const [user, setUser] = useState<IUser>();
 
-    const [userIsNew, setUserIsNew] = useState<boolean>(true);
-
     useEffect(() => {
-        setUserIsNew(props.user == undefined);
         setUser(props.user ?? { name: "", password: "", permissions: [] });
-    }, [props]);
+    }, [props.user]);
 
     return createPortal(
         <Modal ref={ref} {...props}>
@@ -30,7 +34,7 @@ export default forwardRef<HTMLDialogElement, UserModalProps>((props, ref) => {
                 <Form autoComplete="nope">
                     <Form.Label title="User name" />
                     <Input
-                        disabled={!userIsNew}
+                        disabled={props.user != undefined}
                         autoComplete="nope"
                         size="sm"
                         value={user?.name}
@@ -54,15 +58,27 @@ export default forwardRef<HTMLDialogElement, UserModalProps>((props, ref) => {
                         type="password"
                         className="input-bordered"
                     />
+                    <Form.Label title="Permissions" />
+                    <Textarea
+                        value={user?.permissions?.join("\n")}
+                        onChange={(e) => {
+                            setUser({
+                                ...user!,
+                                permissions: e.target.value.split("\n")
+                            });
+                        }}
+                    />
                 </Form>
             </Modal.Body>
             <Modal.Actions>
                 <Button
                     size="sm"
-                    onClick={() => props.onSaveClicked?.(user)}
+                    onClick={() =>
+                        props.onSaveClicked?.(user, props.user == undefined)
+                    }
                     color="primary"
                 >
-                    Save
+                    {props.user == undefined ? "Add" : "Save"}
                 </Button>
             </Modal.Actions>
         </Modal>,
