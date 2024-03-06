@@ -107,6 +107,10 @@ public:
 
         co_await coro::when_all(std::move(tasks));
 
+        m_to_add.clear();
+        m_to_remove.clear();
+        m_to_update.clear();
+
         co_return {};
     }
     virtual coro::task<UnitOfWorkBase::Result<void>> rollback_async() override {
