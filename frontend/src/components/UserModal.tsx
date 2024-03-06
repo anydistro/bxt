@@ -24,7 +24,15 @@ export default forwardRef<HTMLDialogElement, UserModalProps>((props, ref) => {
     const [user, setUser] = useState<IUser>();
 
     useEffect(() => {
-        setUser(props.user ?? { name: "", password: "", permissions: [] });
+        setUser(
+            props.user
+                ? { password: "", permissions: [], ...props.user }
+                : {
+                      name: "",
+                      password: "",
+                      permissions: []
+                  }
+        );
     }, [props.user]);
 
     return createPortal(
