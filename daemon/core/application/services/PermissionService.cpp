@@ -23,12 +23,11 @@ coro::task<bool> PermissionService::check(
 
     if (!user) { co_return {}; }
 
-    std::vector<bool> matched_targets(target_permissions.size(), false);
-    for (int i = 0; i < target_permissions.size(); i++) {
-        matched_targets[i] = user->has_permission(target_permissions[i]);
+    for (const auto& target_permission : target_permissions) {
+        if (!user->has_permission(target_permission)) { co_return false; }
     }
 
-    co_return std::ranges::all_of(matched_targets, [](bool v) { return v; });
+    co_return true;
 }
 
 } // namespace bxt::Core::Application
