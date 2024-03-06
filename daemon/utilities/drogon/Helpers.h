@@ -13,7 +13,7 @@
 #include <drogon/HttpTypes.h>
 
 namespace bxt::drogon_helpers {
-::drogon::HttpResponsePtr make_error_response(
+inline ::drogon::HttpResponsePtr make_error_response(
     const std::string& message,
     ::drogon::HttpStatusCode code = ::drogon::k400BadRequest) {
     Json::Value result_json;
@@ -27,7 +27,8 @@ namespace bxt::drogon_helpers {
     return result;
 }
 
-::drogon::HttpResponsePtr make_ok_response(const std::string& message = "") {
+inline ::drogon::HttpResponsePtr
+    make_ok_response(const std::string& message = "") {
     Json::Value result_json;
 
     result_json["status"] = "ok";
