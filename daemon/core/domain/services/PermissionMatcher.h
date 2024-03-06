@@ -9,11 +9,6 @@
 #include <core/domain/value_objects/Permission.h>
 #include <string>
 
-namespace bxt::Core::Domain {
-
-class PermissionMatcher {
-public:
-    bool match(const Permission &lh, const Permission &rh) const;
-};
-
-} // namespace bxt::Core::Domain
+namespace bxt::Core::Domain::PermissionMatcher {
+bool match(const Permission &lh, const Permission &rh);
+} // namespace bxt::Core::Domain::PermissionMatcher

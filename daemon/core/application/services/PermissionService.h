@@ -21,9 +21,6 @@ namespace bxt::Core::Application {
 class PermissionService {
 public:
     BXT_DECLARE_RESULT(CrudError)
-    PermissionService(Core::Domain::UserRepository& repository,
-                      Core::Domain::PermissionMatcher& matcher)
-        : m_repository(repository), m_matcher(matcher) {}
 
     coro::task<Result<void>> add(const std::string user_name,
                                  const std::string permission);
@@ -32,6 +29,8 @@ public:
 
     coro::task<Result<std::vector<std::string>>>
         get(const std::string user_name);
+    PermissionService(Core::Domain::UserRepository& repository)
+        : m_repository(repository) {}
 
     coro::task<bool> check(const std::string_view target_permission,
                            const std::string user_name);
@@ -41,7 +40,6 @@ public:
 
 private:
     Core::Domain::UserRepository& m_repository;
-    Core::Domain::PermissionMatcher& m_matcher;
 };
 
 } // namespace bxt::Core::Application

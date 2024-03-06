@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/domain/services/PermissionMatcher.h"
 #include "core/domain/value_objects/Name.h"
 #include "core/domain/value_objects/Permission.h"
 
@@ -36,6 +37,16 @@ public:
 
     void set_permissions(const std::set<Permission> &new_permissions) {
         m_permissions = new_permissions;
+    }
+
+    bool has_permission(std::string_view target_permission) {
+        for (const auto &permission : permissions()) {
+            if (Core::Domain::PermissionMatcher::match(
+                    std::string(target_permission), permission)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 private:

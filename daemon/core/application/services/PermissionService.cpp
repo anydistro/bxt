@@ -98,13 +98,7 @@ coro::task<bool> PermissionService::check(
 
     std::vector<bool> matched_targets(target_permissions.size(), false);
     for (int i = 0; i < target_permissions.size(); i++) {
-        for (const auto &permission : user->permissions()) {
-            if (m_matcher.match(std::string(target_permissions[i]),
-                                permission)) {
-                matched_targets[i] = true;
-                break;
-            }
-        }
+        matched_targets[i] = user->has_permission(target_permissions[i]);
     }
 
     co_return std::ranges::all_of(matched_targets, [](bool v) { return v; });

@@ -6,14 +6,13 @@
  */
 #include "PermissionMatcher.h"
 
-namespace bxt::Core::Domain {
+namespace bxt::Core::Domain::PermissionMatcher {
 
-bool PermissionMatcher::match(const Permission &lh,
-                              const Permission &rh) const {
-    auto ltags = lh.tags();
-    auto rtags = rh.tags();
+bool match(const Permission &lh, const Permission &rh) {
+    const auto ltags = lh.tags();
+    const auto rtags = rh.tags();
 
-    auto min = std::min(ltags.size(), rtags.size());
+    const auto min = std::min(ltags.size(), rtags.size());
 
     for (std::size_t i = 0; i < min; i++) {
         if (ltags[i] == "*" || rtags[i] == "*") { continue; }
@@ -23,4 +22,4 @@ bool PermissionMatcher::match(const Permission &lh,
     return true;
 }
 
-} // namespace bxt::Core::Domain
+} // namespace bxt::Core::Domain::PermissionMatcher

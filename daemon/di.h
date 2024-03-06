@@ -106,9 +106,6 @@ namespace Core {
                   bxt::Core::Domain::ReadWriteRepositoryBase<PackageLogEntry>> {
         };
 
-        struct PermissionMatcher
-            : kgr::single_service<bxt::Core::Domain::PermissionMatcher> {};
-
     } // namespace Domain
 
     namespace Application {
@@ -136,8 +133,7 @@ namespace Core {
         struct PermissionService
             : kgr::single_service<
                   bxt::Core::Application::PermissionService,
-                  kgr::dependency<di::Core::Domain::UserRepository,
-                                  di::Core::Domain::PermissionMatcher>> {};
+                  kgr::dependency<di::Core::Domain::UserRepository>> {};
 
         struct PackageLogEntryService
             : kgr::single_service<
