@@ -23,7 +23,7 @@
         },
         {
           "name": "LD_LIBRARY_PATH",
-          "value": "./"
+          "value": "./libs/"
         }
       ],
       "externalConsole": false,

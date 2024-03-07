@@ -31,4 +31,4 @@ boost:shared=True
 c-ares:shared=True
 
 [imports]
-lib, *.so* -> ./bin
+lib, *.so* -> ./bin/libs/
