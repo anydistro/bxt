@@ -10,6 +10,7 @@
 #include "PoolOptions.h"
 #include "core/domain/enums/PoolLocation.h"
 #include "core/domain/repositories/RepositoryBase.h"
+#include "persistence/box/BoxOptions.h"
 #include "persistence/box/pool/PoolBase.h"
 
 #include <filesystem>
@@ -20,9 +21,9 @@ class PackageRecord;
 
 class Pool : public PoolBase {
 public:
-    Pool(PoolOptions& options,
-         ReadOnlyRepositoryBase<Section>& section_repository,
-         const std::filesystem::path pool_path);
+    Pool(BoxOptions& box_options,
+         PoolOptions& options,
+         ReadOnlyRepositoryBase<Section>& section_repository);
 
     PoolBase::Result<PackageRecord>
         move_to(const PackageRecord& package) override;

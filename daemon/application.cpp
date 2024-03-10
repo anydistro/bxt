@@ -21,6 +21,7 @@
 #include "events.h"
 #include "presentation/web-controllers/SectionController.h"
 #include "utilities/Error.h"
+#include "utilities/configuration/Configuration.h"
 #include "utilities/errors/DatabaseError.h"
 
 #include <boost/log/trivial.hpp>
@@ -29,8 +30,13 @@
 #include <drogon/HttpAppFramework.h>
 #include <filesystem>
 #include <kangaru/debug.hpp>
+#include <lmdbxx/lmdb++.h>
 #include <memory>
+#include <system_error>
 #include <vector>
+
+#define TOML_EXCEPTIONS 0
+#include <toml++/toml.h>
 
 void setup_logger() {
     using namespace boost::log;
@@ -46,6 +52,18 @@ void setup_logger() {
                  boost::log::keywords::auto_flush = true);
 }
 
+toml::table setup_toml_configuration(const std::filesystem::path& config_path) {
+    if (!std::filesystem::exists(config_path)) {
+        std::ofstream stream {config_path};
+    }
+
+    auto result = toml::parse_file(config_path.string());
+
+    if (!result) { return toml::table {}; }
+
+    return result.table();
+}
+
 void setup_di_container(kgr::container& ctr) {
     using namespace bxt;
 
@@ -59,6 +77,18 @@ void setup_di_container(kgr::container& ctr) {
 
     ctr.service<di::Utilities::EventBusDispatcher>();
 
+    ctr.emplace<di::Utilities::Configuration>(
+        setup_toml_configuration("config.toml"));
+
+    ctr.invoke<di::Utilities::Configuration, di::Utilities::LMDB::LMDBOptions,
+               di::Persistence::Box::BoxOptions>(
+        [](bxt::Utilities::Configuration& configuration,
+           bxt::Utilities::LMDB::LMDBOptions& lmdb_options,
+           bxt::Persistence::Box::BoxOptions& box_options) {
+            lmdb_options.deserialize(configuration);
+            box_options.deserialize(configuration);
+        });
+
     ctr.invoke<di::Utilities::RepoSchema::Parser,
                di::Infrastructure::ArchRepoOptions,
                di::Persistence::Box::PoolOptions>(
@@ -71,14 +101,28 @@ void setup_di_container(kgr::container& ctr) {
             parser.parse("./box.yml");
         });
 
-    ctr.invoke<di::Utilities::LMDB::Environment>(
-        [](std::shared_ptr<bxt::Utilities::LMDB::Environment> lmdbenv) {
+    ctr.invoke<di::Utilities::LMDB::Environment,
+               di::Utilities::LMDB::LMDBOptions>(
+        [](std::shared_ptr<bxt::Utilities::LMDB::Environment> lmdbenv,
+           Utilities::LMDB::LMDBOptions& options) {
             lmdbenv->env().set_mapsize(1UL * 1024UL * 1024UL * 1024UL);
             lmdbenv->env().set_max_dbs(10);
 
-            std::filesystem::create_directories("./bxtd.mdb/");
+            std::error_code ec;
+            if (std::filesystem::create_directories(options.lmdb_path, ec);
+                ec.value()) {
+                logf("Cannot create LMDB folder. The error is \"{}\". Exiting.",
+                     ec.message());
+                exit(1);
+            }
 
-            lmdbenv->env().open("./bxtd.mdb/", 0, 0664);
+            try {
+                lmdbenv->env().open(options.lmdb_path.c_str(), 0, 0664);
+            } catch (const lmdb::error& er) {
+                logf("Cannot open LMDB database. The error is \"{}\". Exiting.",
+                     er.what());
+                exit(1);
+            }
         });
 
     ctr.service<di::Persistence::SectionRepository>();
@@ -86,10 +130,10 @@ void setup_di_container(kgr::container& ctr) {
     ctr.emplace<di::Persistence::PackageLogEntryRepository>(
         std::string("bxt::PackageLogs"));
 
-    ctr.emplace<di::Persistence::Box::Pool>("./box/pool/");
-    ctr.emplace<di::Persistence::Box::LMDBPackageStore>("./box/", "bxt::Box");
+    ctr.emplace<di::Persistence::Box::Pool>();
+    ctr.emplace<di::Persistence::Box::LMDBPackageStore>("bxt::Box");
 
-    ctr.emplace<di::Persistence::Box::AlpmDBExporter>("./box/");
+    ctr.emplace<di::Persistence::Box::AlpmDBExporter>();
 
     ctr.service<di::Persistence::Box::BoxRepository>();
 

@@ -8,16 +8,18 @@
 
 #include "utilities/configuration/Configuration.h"
 
+#include <filesystem>
+
 namespace bxt::Persistence::Box {
 
 struct BoxOptions : public bxt::Utilities::Configurable {
-    std::string location = "box/";
+    std::filesystem::path box_path = "box";
 
     virtual void serialize(Utilities::Configuration &config) override {
-        config.set("location", location);
+        config.set("box-path", box_path.string());
     }
     virtual void deserialize(const Utilities::Configuration &config) override {
-        location = config.get<std::string>("location").value_or(location);
+        box_path = config.get<std::string>("box-path").value_or(box_path);
     }
 };
 

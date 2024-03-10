@@ -45,7 +45,9 @@
 #include "presentation/web-controllers/SectionController.h"
 #include "presentation/web-controllers/UserController.h"
 #include "presentation/web-filters/JwtFilter.h"
+#include "utilities/configuration/Configuration.h"
 #include "utilities/lmdb/Environment.h"
+#include "utilities/lmdb/LMDBOptions.h"
 #include "utilities/repo-schema/Parser.h"
 
 #include <infrastructure/EventLogger.h>
@@ -67,6 +69,8 @@ namespace Utilities {
     struct IOScheduler : kgr::shared_service<coro::io_scheduler> {};
 
     namespace LMDB {
+        struct LMDBOptions
+            : kgr::single_service<bxt::Utilities::LMDB::LMDBOptions> {};
 
         struct Environment
             : kgr::shared_service<bxt::Utilities::LMDB::Environment,
@@ -81,6 +85,9 @@ namespace Utilities {
         };
 
     } // namespace RepoSchema
+
+    struct Configuration
+        : kgr::autowire_single_service<bxt::Utilities::Configuration> {};
 
 } // namespace Utilities
 
@@ -221,13 +228,17 @@ namespace Persistence {
         struct PoolOptions
             : kgr::single_service<bxt::Persistence::Box::PoolOptions> {};
 
+        struct BoxOptions
+            : kgr::single_service<bxt::Persistence::Box::BoxOptions> {};
+
         struct PoolBase
             : kgr::abstract_service<bxt::Persistence::Box::PoolBase> {};
 
         struct Pool
             : kgr::single_service<
                   bxt::Persistence::Box::Pool,
-                  kgr::dependency<di::Persistence::Box::PoolOptions,
+                  kgr::dependency<di::Persistence::Box::BoxOptions,
+                                  di::Persistence::Box::PoolOptions,
                                   di::Core::Domain::ReadOnlySectionRepository>>,
               kgr::overrides<PoolBase> {};
 
@@ -237,7 +248,8 @@ namespace Persistence {
         struct LMDBPackageStore
             : kgr::single_service<
                   bxt::Persistence::Box::LMDBPackageStore,
-                  kgr::dependency<di::Utilities::LMDB::Environment,
+                  kgr::dependency<di::Persistence::Box::BoxOptions,
+                                  di::Utilities::LMDB::Environment,
                                   di::Persistence::Box::PoolBase>>,
               kgr::overrides<PackageStoreBase> {};
 
@@ -251,12 +263,10 @@ namespace Persistence {
         struct AlpmDBExporter
             : kgr::single_service<
                   bxt::Persistence::Box::AlpmDBExporter,
-                  kgr::dependency<PackageStoreBase,
+                  kgr::dependency<di::Persistence::Box::BoxOptions,
+                                  di::Persistence::Box::PackageStoreBase,
                                   Core::Domain::ReadOnlySectionRepository>>,
               kgr::overrides<ExporterBase> {};
-
-        struct BoxOptions
-            : kgr::single_service<bxt::Persistence::Box::BoxOptions> {};
 
         struct BoxRepository
             : kgr::single_service<bxt::Infrastructure::DispatchingUnitOfWork<

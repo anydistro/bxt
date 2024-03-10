@@ -15,11 +15,11 @@
 namespace bxt::Persistence::Box {
 
 LMDBPackageStore::LMDBPackageStore(
+    BoxOptions& box_options,
     std::shared_ptr<Utilities::LMDB::Environment> env,
     PoolBase& pool,
-    const std::filesystem::path& path,
     const std::string_view name)
-    : m_root_path(std::move(path)), m_pool(pool), m_db(env, name) {
+    : m_root_path(box_options.box_path), m_pool(pool), m_db(env, name) {
 }
 
 coro::task<nonstd::expected<void, DatabaseError>>

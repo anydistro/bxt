@@ -6,8 +6,6 @@
  */
 #pragma once
 
-#include <any>
-#include <filesystem>
 #include <optional>
 #include <string>
 #include <toml++/toml.h>
@@ -16,8 +14,8 @@ namespace bxt::Utilities {
 
 class Configuration {
 public:
-    Configuration(const toml::table& table) : m_table(table) {}
-    ~Configuration() = default;
+    Configuration() = default;
+    Configuration(const toml::table table) : m_table(std::move(table)) {}
 
     template<typename T> std::optional<T> get(const std::string& key) const {
         if (!m_table.contains(key)) { return {}; }
@@ -35,7 +33,6 @@ public:
 
 private:
     toml::table m_table;
-    Configuration() = default;
 };
 
 struct Configurable {

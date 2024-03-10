@@ -10,6 +10,7 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "parallel_hashmap/phmap.h"
+#include "persistence/box/BoxOptions.h"
 #include "persistence/box/export/ExporterBase.h"
 #include "persistence/box/store/PackageStoreBase.h"
 #include "utilities/locked.h"
@@ -24,9 +25,9 @@ namespace bxt::Persistence::Box {
 
 class AlpmDBExporter : public ExporterBase {
 public:
-    AlpmDBExporter(PackageStoreBase& package_store,
-                   ReadOnlyRepositoryBase<Section>& section_repository,
-                   std::filesystem::path box_path);
+    AlpmDBExporter(BoxOptions& box_options,
+                   PackageStoreBase& package_store,
+                   ReadOnlyRepositoryBase<Section>& section_repository);
 
     coro::task<void> export_to_disk() override;
     void add_dirty_sections(
