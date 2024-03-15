@@ -33,10 +33,8 @@
 #include <lmdbxx/lmdb++.h>
 #include <memory>
 #include <system_error>
-#include <vector>
-
-#define TOML_EXCEPTIONS 0
 #include <toml++/toml.h>
+#include <vector>
 
 void setup_logger() {
     using namespace boost::log;
