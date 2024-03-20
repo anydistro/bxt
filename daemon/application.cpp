@@ -19,6 +19,8 @@
 #include "drogon/drogon_callbacks.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "events.h"
+#include "presentation/JwtOptions.h"
+#include "presentation/cli-controllers/DeploymentOptions.h"
 #include "presentation/web-controllers/SectionController.h"
 #include "utilities/Error.h"
 #include "utilities/configuration/Configuration.h"
@@ -79,12 +81,17 @@ void setup_di_container(kgr::container& ctr) {
         setup_toml_configuration("config.toml"));
 
     ctr.invoke<di::Utilities::Configuration, di::Utilities::LMDB::LMDBOptions,
-               di::Persistence::Box::BoxOptions>(
+               di::Persistence::Box::BoxOptions, di::Presentation::JwtOptions,
+               di::Presentation::DeploymentOptions>(
         [](bxt::Utilities::Configuration& configuration,
            bxt::Utilities::LMDB::LMDBOptions& lmdb_options,
-           bxt::Persistence::Box::BoxOptions& box_options) {
+           bxt::Persistence::Box::BoxOptions& box_options,
+           bxt::Presentation::JwtOptions& jwt_options,
+           bxt::Presentation::DeploymentOptions& deployment_options) {
             lmdb_options.deserialize(configuration);
             box_options.deserialize(configuration);
+            jwt_options.deserialize(configuration);
+            deployment_options.deserialize(configuration);
         });
 
     ctr.invoke<di::Utilities::RepoSchema::Parser,

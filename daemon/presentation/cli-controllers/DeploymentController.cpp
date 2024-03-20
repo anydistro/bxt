@@ -27,7 +27,7 @@ drogon::Task<drogon::HttpResponsePtr>
     }
     const auto key = key_it->second;
 
-    if (key != m_key) {
+    if (key != m_options.key) {
         result->setBody("Invalid API key");
         result->setStatusCode(drogon::k401Unauthorized);
         co_return result;
@@ -65,7 +65,7 @@ drogon::Task<drogon::HttpResponsePtr>
     const auto session_id = std::stoull(headers.at("session"));
     const auto key = headers.find("key");
 
-    if (key == headers.end() || key->second != m_key) {
+    if (key == headers.end() || key->second != m_options.key) {
         result->setBody("Invalid API key");
         result->setStatusCode(drogon::k401Unauthorized);
         co_return result;
@@ -154,7 +154,7 @@ drogon::Task<drogon::HttpResponsePtr>
     const auto session_id = std::stoull(headers.at("session"));
     const auto key = headers.find("key");
 
-    if (key == headers.end() || key->second != m_key) {
+    if (key == headers.end() || key->second != m_options.key) {
         result->setBody("Invalid API key");
         result->setStatusCode(drogon::k401Unauthorized);
         co_return result;

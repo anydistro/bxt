@@ -10,6 +10,7 @@
 #include "core/application/services/PackageService.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "drogon/utils/coroutine.h"
+#include "presentation/cli-controllers/DeploymentOptions.h"
 #include "utilities/drogon/Macro.h"
 
 #include <drogon/drogon.h>
@@ -21,8 +22,9 @@ namespace bxt::Presentation {
 class DeploymentController
     : public drogon::HttpController<DeploymentController, false> {
 public:
-    DeploymentController(Core::Application::DeploymentService &service)
-        : m_service(service) {};
+    DeploymentController(DeploymentOptions& options,
+                         Core::Application::DeploymentService& service)
+        : m_options(options), m_service(service) {};
 
     METHOD_LIST_BEGIN
 
@@ -46,8 +48,8 @@ public:
         deploy_end(drogon::HttpRequestPtr req);
 
 private:
-    std::string m_key = "KEY0";
-    Core::Application::DeploymentService &m_service;
+    DeploymentOptions& m_options;
+    Core::Application::DeploymentService& m_service;
 };
 
 } // namespace bxt::Presentation

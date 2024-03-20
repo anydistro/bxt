@@ -37,7 +37,9 @@
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/PackageLogEntryRepository.h"
 #include "persistence/lmdb/UserRepository.h"
+#include "presentation/JwtOptions.h"
 #include "presentation/cli-controllers/DeploymentController.h"
+#include "presentation/cli-controllers/DeploymentOptions.h"
 #include "presentation/web-controllers/AuthController.h"
 #include "presentation/web-controllers/CompareController.h"
 #include "presentation/web-controllers/LogController.h"
@@ -285,6 +287,8 @@ namespace Persistence {
 
 namespace Presentation {
 
+    struct JwtOptions : kgr::single_service<bxt::Presentation::JwtOptions> {};
+
     struct PackageController
         : kgr::shared_service<
               bxt::Presentation::PackageController,
@@ -292,10 +296,14 @@ namespace Presentation {
                               di::Core::Application::SyncService,
                               di::Core::Application::PermissionService>> {};
 
+    struct DeploymentOptions
+        : kgr::single_service<bxt::Presentation::DeploymentOptions> {};
+
     struct DeploymentController
         : kgr::shared_service<
               bxt::Presentation::DeploymentController,
-              kgr::dependency<di::Core::Application::DeploymentService>> {};
+              kgr::dependency<di::Presentation::DeploymentOptions,
+                              di::Core::Application::DeploymentService>> {};
 
     struct CompareController
         : kgr::shared_service<
@@ -307,7 +315,8 @@ namespace Presentation {
     struct AuthController
         : kgr::shared_service<
               bxt::Presentation::AuthController,
-              kgr::dependency<di::Core::Application::AuthService>> {};
+              kgr::dependency<di::Presentation::JwtOptions,
+                              di::Core::Application::AuthService>> {};
 
     struct UserController
         : kgr::shared_service<
@@ -330,7 +339,8 @@ namespace Presentation {
     struct JwtFilter
         : kgr::shared_service<
               bxt::Presentation::JwtFilter,
-              kgr::dependency<di::Core::Application::AuthService>> {};
+              kgr::dependency<di::Presentation::JwtOptions,
+                              di::Core::Application::AuthService>> {};
 
 } // namespace Presentation
 
