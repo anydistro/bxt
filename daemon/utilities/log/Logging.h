@@ -5,22 +5,87 @@
  *
  */
 #pragma once
-
-#include <boost/log/common.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup.hpp>
+#include <fmt/core.h>
+#include <string>
 
-namespace fmt {
-inline std::string format(const std::string& format_string) {
-    return format_string;
+namespace bxt {
+
+inline boost::log::sources::severity_logger<boost::log::trivial::severity_level>
+    logger;
+
+inline void log(boost::log::trivial::severity_level level,
+                const std::string& str) {
+    BOOST_LOG_SEV(logger, level) << str;
 }
-} // namespace fmt
 
-#define bxtlog(level, _fmt, ...) \
-    BOOST_LOG_TRIVIAL(level) << fmt::format(_fmt, ##__VA_ARGS__);
+template<typename... T>
+inline void log(boost::log::trivial::severity_level level,
+                fmt::format_string<T...> format,
+                T&&... args) {
+    BOOST_LOG_SEV(logger, level)
+        << fmt::format(format, std::forward<T>(args)...);
+}
 
-#define logt(_fmt, ...) bxtlog(trace, _fmt, ##__VA_ARGS__)
-#define logd(_fmt, ...) bxtlog(debug, _fmt, ##__VA_ARGS__)
-#define logi(_fmt, ...) bxtlog(info, _fmt, ##__VA_ARGS__)
-#define logw(_fmt, ...) bxtlog(warning, _fmt, ##__VA_ARGS__)
-#define loge(_fmt, ...) bxtlog(error, _fmt, ##__VA_ARGS__)
-#define logf(_fmt, ...) bxtlog(fatal, _fmt, ##__VA_ARGS__)
+// Trace
+inline void logt(const std::string& string) {
+    log(boost::log::trivial::trace, string);
+}
+
+template<typename... T>
+inline void logt(fmt::format_string<T...> format, T&&... args) {
+    log(boost::log::trivial::trace, format, std::forward<T>(args)...);
+}
+
+// Debug
+inline void logd(const std::string& string) {
+    log(boost::log::trivial::debug, string);
+}
+
+template<typename... T>
+inline void logd(fmt::format_string<T...> format, T&&... args) {
+    log(boost::log::trivial::debug, format, std::forward<T>(args)...);
+}
+
+// Info
+inline void logi(const std::string& string) {
+    log(boost::log::trivial::info, string);
+}
+
+template<typename... T>
+inline void logi(fmt::format_string<T...> format, T&&... args) {
+    log(boost::log::trivial::info, format, std::forward<T>(args)...);
+}
+
+// Warning
+inline void logw(const std::string& string) {
+    log(boost::log::trivial::warning, string);
+}
+
+template<typename... T>
+inline void logw(fmt::format_string<T...> format, T&&... args) {
+    log(boost::log::trivial::warning, format, std::forward<T>(args)...);
+}
+
+// Error
+inline void loge(const std::string& string) {
+    log(boost::log::trivial::error, string);
+}
+
+template<typename... T>
+inline void loge(fmt::format_string<T...> format, T&&... args) {
+    log(boost::log::trivial::error, format, std::forward<T>(args)...);
+}
+
+// Fatal
+inline void logf(const std::string& string) {
+    log(boost::log::trivial::fatal, string);
+}
+
+template<typename... T>
+inline void logf(fmt::format_string<T...> format, T&&... args) {
+    log(boost::log::trivial::fatal, format, std::forward<T>(args)...);
+}
+
+} // namespace bxt

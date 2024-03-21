@@ -73,10 +73,10 @@ std::string
     }
 }
 
-Pool::Pool(PoolOptions& options,
-           ReadOnlyRepositoryBase<Section>& section_repository,
-           const std::filesystem::path pool_path)
-    : m_pool_path(std::move(pool_path)), m_options(options) {
+Pool::Pool(BoxOptions& box_options,
+           PoolOptions& options,
+           ReadOnlyRepositoryBase<Section>& section_repository)
+    : m_pool_path(box_options.box_path / "pool"), m_options(options) {
     const auto& sections = coro::sync_wait(section_repository.all_async());
 
     if (!sections.has_value()) {

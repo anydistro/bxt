@@ -31,9 +31,10 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
     }
 
     auto decoded = jwt::decode(token);
-    auto verifier = jwt::verify()
-                        .allow_algorithm(jwt::algorithm::hs256 {"secret"})
-                        .with_issuer("auth0");
+    auto verifier =
+        jwt::verify()
+            .allow_algorithm(jwt::algorithm::hs256 {m_options.secret})
+            .with_issuer("auth0");
 
     std::error_code ec;
 

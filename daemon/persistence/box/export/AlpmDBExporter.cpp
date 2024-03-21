@@ -31,10 +31,10 @@
 namespace bxt::Persistence::Box {
 
 AlpmDBExporter::AlpmDBExporter(
+    BoxOptions& box_options,
     PackageStoreBase& package_store,
-    ReadOnlyRepositoryBase<Section>& section_repository,
-    std::filesystem::path box_path)
-    : m_box_path(std::move(box_path)), m_package_store(package_store) {
+    ReadOnlyRepositoryBase<Section>& section_repository)
+    : m_box_path(box_options.box_path), m_package_store(package_store) {
     auto sections_result = coro::sync_wait(section_repository.all_async());
 
     if (!sections_result.has_value()) {

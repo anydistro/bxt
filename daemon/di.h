@@ -37,7 +37,9 @@
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/PackageLogEntryRepository.h"
 #include "persistence/lmdb/UserRepository.h"
+#include "presentation/JwtOptions.h"
 #include "presentation/cli-controllers/DeploymentController.h"
+#include "presentation/cli-controllers/DeploymentOptions.h"
 #include "presentation/web-controllers/AuthController.h"
 #include "presentation/web-controllers/CompareController.h"
 #include "presentation/web-controllers/LogController.h"
@@ -45,7 +47,9 @@
 #include "presentation/web-controllers/SectionController.h"
 #include "presentation/web-controllers/UserController.h"
 #include "presentation/web-filters/JwtFilter.h"
+#include "utilities/configuration/Configuration.h"
 #include "utilities/lmdb/Environment.h"
+#include "utilities/lmdb/LMDBOptions.h"
 #include "utilities/repo-schema/Parser.h"
 
 #include <infrastructure/EventLogger.h>
@@ -67,6 +71,8 @@ namespace Utilities {
     struct IOScheduler : kgr::shared_service<coro::io_scheduler> {};
 
     namespace LMDB {
+        struct LMDBOptions
+            : kgr::single_service<bxt::Utilities::LMDB::LMDBOptions> {};
 
         struct Environment
             : kgr::shared_service<bxt::Utilities::LMDB::Environment,
@@ -81,6 +87,9 @@ namespace Utilities {
         };
 
     } // namespace RepoSchema
+
+    struct Configuration
+        : kgr::autowire_single_service<bxt::Utilities::Configuration> {};
 
 } // namespace Utilities
 
@@ -221,13 +230,17 @@ namespace Persistence {
         struct PoolOptions
             : kgr::single_service<bxt::Persistence::Box::PoolOptions> {};
 
+        struct BoxOptions
+            : kgr::single_service<bxt::Persistence::Box::BoxOptions> {};
+
         struct PoolBase
             : kgr::abstract_service<bxt::Persistence::Box::PoolBase> {};
 
         struct Pool
             : kgr::single_service<
                   bxt::Persistence::Box::Pool,
-                  kgr::dependency<di::Persistence::Box::PoolOptions,
+                  kgr::dependency<di::Persistence::Box::BoxOptions,
+                                  di::Persistence::Box::PoolOptions,
                                   di::Core::Domain::ReadOnlySectionRepository>>,
               kgr::overrides<PoolBase> {};
 
@@ -237,7 +250,8 @@ namespace Persistence {
         struct LMDBPackageStore
             : kgr::single_service<
                   bxt::Persistence::Box::LMDBPackageStore,
-                  kgr::dependency<di::Utilities::LMDB::Environment,
+                  kgr::dependency<di::Persistence::Box::BoxOptions,
+                                  di::Utilities::LMDB::Environment,
                                   di::Persistence::Box::PoolBase>>,
               kgr::overrides<PackageStoreBase> {};
 
@@ -251,12 +265,10 @@ namespace Persistence {
         struct AlpmDBExporter
             : kgr::single_service<
                   bxt::Persistence::Box::AlpmDBExporter,
-                  kgr::dependency<PackageStoreBase,
+                  kgr::dependency<di::Persistence::Box::BoxOptions,
+                                  di::Persistence::Box::PackageStoreBase,
                                   Core::Domain::ReadOnlySectionRepository>>,
               kgr::overrides<ExporterBase> {};
-
-        struct BoxOptions
-            : kgr::single_service<bxt::Persistence::Box::BoxOptions> {};
 
         struct BoxRepository
             : kgr::single_service<bxt::Infrastructure::DispatchingUnitOfWork<
@@ -275,6 +287,8 @@ namespace Persistence {
 
 namespace Presentation {
 
+    struct JwtOptions : kgr::single_service<bxt::Presentation::JwtOptions> {};
+
     struct PackageController
         : kgr::shared_service<
               bxt::Presentation::PackageController,
@@ -282,10 +296,14 @@ namespace Presentation {
                               di::Core::Application::SyncService,
                               di::Core::Application::PermissionService>> {};
 
+    struct DeploymentOptions
+        : kgr::single_service<bxt::Presentation::DeploymentOptions> {};
+
     struct DeploymentController
         : kgr::shared_service<
               bxt::Presentation::DeploymentController,
-              kgr::dependency<di::Core::Application::DeploymentService>> {};
+              kgr::dependency<di::Presentation::DeploymentOptions,
+                              di::Core::Application::DeploymentService>> {};
 
     struct CompareController
         : kgr::shared_service<
@@ -297,7 +315,8 @@ namespace Presentation {
     struct AuthController
         : kgr::shared_service<
               bxt::Presentation::AuthController,
-              kgr::dependency<di::Core::Application::AuthService>> {};
+              kgr::dependency<di::Presentation::JwtOptions,
+                              di::Core::Application::AuthService>> {};
 
     struct UserController
         : kgr::shared_service<
@@ -320,7 +339,8 @@ namespace Presentation {
     struct JwtFilter
         : kgr::shared_service<
               bxt::Presentation::JwtFilter,
-              kgr::dependency<di::Core::Application::AuthService>> {};
+              kgr::dependency<di::Presentation::JwtOptions,
+                              di::Core::Application::AuthService>> {};
 
 } // namespace Presentation
 

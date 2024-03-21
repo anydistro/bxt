@@ -27,9 +27,9 @@ namespace bxt::Persistence::Box {
 
 class LMDBPackageStore : public PackageStoreBase {
 public:
-    LMDBPackageStore(std::shared_ptr<Utilities::LMDB::Environment> env,
+    LMDBPackageStore(BoxOptions& box_options,
+                     std::shared_ptr<Utilities::LMDB::Environment> env,
                      PoolBase& pool,
-                     const std::filesystem::path& root_path,
                      const std::string_view name);
 
     ~LMDBPackageStore() override = default;

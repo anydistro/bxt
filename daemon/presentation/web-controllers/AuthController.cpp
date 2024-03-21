@@ -45,7 +45,7 @@ drogon::Task<drogon::HttpResponsePtr>
                            .set_payload_claim("username", name)
                            .set_issuer("auth0")
                            .set_type("JWS")
-                           .sign(jwt::algorithm::hs256 {"secret"});
+                           .sign(jwt::algorithm::hs256 {m_options.secret});
 
     auto response = drogon::HttpResponse::newHttpResponse();
     drogon::Cookie jwt_cookie("token", token);
@@ -67,9 +67,10 @@ drogon::Task<drogon::HttpResponsePtr>
 
     auto token = header.substr(7);
     auto decoded = jwt::decode(token);
-    auto verifier = jwt::verify()
-                        .allow_algorithm(jwt::algorithm::hs256 {"secret"})
-                        .with_issuer("auth0");
+    auto verifier =
+        jwt::verify()
+            .allow_algorithm(jwt::algorithm::hs256 {m_options.secret})
+            .with_issuer("auth0");
 
     try {
         verifier.verify(decoded);

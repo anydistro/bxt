@@ -28,4 +28,4 @@ target_link_libraries(${PROJECT_NAME}
     Dexode::EventBus
 )
 
-
+target_compile_definitions(${PROJECT_NAME} PRIVATE TOML_EXCEPTIONS=0)
