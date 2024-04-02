@@ -12,13 +12,13 @@
 
 namespace bxt::Persistence::Box {
 
-struct BoxOptions : public bxt::Utilities::Configurable {
+struct BoxOptions {
     std::filesystem::path box_path = "box";
 
-    virtual void serialize(Utilities::Configuration &config) override {
+    void serialize(Utilities::Configuration &config) {
         config.set("box-path", box_path.string());
     }
-    virtual void deserialize(const Utilities::Configuration &config) override {
+    void deserialize(const Utilities::Configuration &config) {
         box_path = config.get<std::string>("box-path").value_or(box_path);
     }
 };

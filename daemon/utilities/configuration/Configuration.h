@@ -44,9 +44,4 @@ private:
     toml::table m_table;
 };
 
-struct Configurable {
-    virtual void serialize(Configuration& config) = 0;
-    virtual void deserialize(const Configuration& config) = 0;
-};
-
 } // namespace bxt::Utilities

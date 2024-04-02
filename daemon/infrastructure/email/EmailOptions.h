@@ -26,7 +26,7 @@ namespace {
     };
 } // namespace
 
-struct EmailOptions : public Utilities::Configurable {
+struct EmailOptions {
     const std::string _section = "email";
 
     std::string server_hostname = "localhost";
@@ -44,9 +44,7 @@ struct EmailOptions : public Utilities::Configurable {
     std::string sender_name = "bxt daemon";
     std::string sender_address = "daemon@bxt.local";
 
-    // Configurable interface
-public:
-    virtual void serialize(Utilities::Configuration &config) override {
+    void serialize(Utilities::Configuration &config) {
         config.set<std::string>("server-hostname", server_hostname);
 
         config.set<int64_t>("server-port", int64_t(server_port));
@@ -60,7 +58,7 @@ public:
         config.set<std::string>("sender-address", sender_address);
     }
 
-    virtual void deserialize(const Utilities::Configuration &config) override {
+    void deserialize(const Utilities::Configuration &config) {
         server_hostname = config.get<std::string>("server-hostname")
                               .value_or(server_hostname);
 

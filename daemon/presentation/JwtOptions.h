@@ -12,13 +12,13 @@
 #include <string>
 namespace bxt::Presentation {
 
-struct JwtOptions : public Utilities::Configurable {
+struct JwtOptions {
     std::string secret = "secret";
 
-    void serialize(Utilities::Configuration &config) override {
+    void serialize(Utilities::Configuration &config) {
         config.set("jwt-secret", secret);
     }
-    void deserialize(const Utilities::Configuration &config) override {
+    void deserialize(const Utilities::Configuration &config) {
         secret = config.get<std::string>("jwt-secret").value_or(secret);
     }
 };

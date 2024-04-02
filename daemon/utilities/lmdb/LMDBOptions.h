@@ -12,14 +12,14 @@
 #include <filesystem>
 namespace bxt::Utilities::LMDB {
 
-struct LMDBOptions : public bxt::Utilities::Configurable {
+struct LMDBOptions {
     virtual ~LMDBOptions() = default;
     std::filesystem::path lmdb_path = "bxtd.lmdb";
 
-    void serialize(Configuration& config) override {
+    void serialize(Configuration& config) {
         config.set("lmdb-path", lmdb_path.string());
     }
-    void deserialize(const Configuration& config) override {
+    void deserialize(const Configuration& config) {
         lmdb_path = config.get<std::string>("lmdb-path").value_or(lmdb_path);
     }
 };

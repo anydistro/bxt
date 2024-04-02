@@ -10,14 +10,14 @@
 
 #include <string>
 namespace bxt::Presentation {
-struct DeploymentOptions : public Utilities::Configurable {
+struct DeploymentOptions {
     std::string key = "KEY0";
 
-    void serialize(Utilities::Configuration& config) override {
+    void serialize(Utilities::Configuration& config) {
         config.set("deployment-key", key);
     }
 
-    void deserialize(const Utilities::Configuration& config) override {
+    void deserialize(const Utilities::Configuration& config) {
         key = config.get<std::string>("deployment-key").value_or(key);
     }
 };
