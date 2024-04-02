@@ -64,52 +64,47 @@ toml::table setup_toml_configuration(const std::filesystem::path& config_path) {
     return result.table();
 }
 
-void setup_di_container(kgr::container& ctr) {
+void setup_di_container(kgr::container& container) {
     using namespace bxt;
 
-    ctr.emplace<di::Utilities::IOScheduler>(coro::io_scheduler::options {
+    container.emplace<di::Utilities::IOScheduler>(coro::io_scheduler::options {
         .thread_strategy = coro::io_scheduler::thread_strategy_t::manual,
     });
 
-    ctr.service<di::Utilities::EventBus>();
+    container.service<di::Utilities::EventBus>();
 
-    ctr.service<di::Infrastructure::EventLogger>();
+    container.service<di::Infrastructure::EventLogger>();
 
-    ctr.service<di::Utilities::EventBusDispatcher>();
+    container.service<di::Utilities::EventBusDispatcher>();
 
-    ctr.emplace<di::Utilities::Configuration>(
+    container.emplace<di::Utilities::Configuration>(
         setup_toml_configuration("config.toml"));
 
-    ctr.invoke<di::Utilities::Configuration, di::Utilities::LMDB::LMDBOptions,
-               di::Persistence::Box::BoxOptions, di::Presentation::JwtOptions,
-               di::Presentation::DeploymentOptions>(
-        [](bxt::Utilities::Configuration& configuration,
-           bxt::Utilities::LMDB::LMDBOptions& lmdb_options,
-           bxt::Persistence::Box::BoxOptions& box_options,
-           bxt::Presentation::JwtOptions& jwt_options,
-           bxt::Presentation::DeploymentOptions& deployment_options) {
-            lmdb_options.deserialize(configuration);
-            box_options.deserialize(configuration);
-            jwt_options.deserialize(configuration);
-            deployment_options.deserialize(configuration);
-        });
+    container
+        .invoke<di::Utilities::Configuration, di::Utilities::LMDB::LMDBOptions,
+                di::Persistence::Box::BoxOptions, di::Presentation::JwtOptions,
+                di::Presentation::DeploymentOptions>(
+            [](auto& configuration, auto& lmdb_options, auto& box_options,
+               auto& jwt_options, auto& deployment_options) {
+                lmdb_options.deserialize(configuration);
+                box_options.deserialize(configuration);
+                jwt_options.deserialize(configuration);
+                deployment_options.deserialize(configuration);
+            });
 
-    ctr.invoke<di::Utilities::RepoSchema::Parser,
-               di::Infrastructure::ArchRepoOptions,
-               di::Persistence::Box::PoolOptions>(
-        [](bxt::Utilities::RepoSchema::Parser& parser,
-           bxt::Infrastructure::ArchRepoOptions& options,
-           bxt::Persistence::Box::PoolOptions& pool_options) {
-            parser.extend(&options);
+    container.invoke<di::Utilities::RepoSchema::Parser,
+                     di::Infrastructure::ArchRepoOptions,
+                     di::Persistence::Box::PoolOptions>(
+        [](auto& parser, auto& arch_repo_options, auto& pool_options) {
+            parser.extend(&arch_repo_options);
             parser.extend(&pool_options);
 
             parser.parse("./box.yml");
         });
 
-    ctr.invoke<di::Utilities::LMDB::Environment,
-               di::Utilities::LMDB::LMDBOptions>(
-        [](std::shared_ptr<bxt::Utilities::LMDB::Environment> lmdbenv,
-           Utilities::LMDB::LMDBOptions& options) {
+    container.invoke<di::Utilities::LMDB::Environment,
+                     di::Utilities::LMDB::LMDBOptions>(
+        [](auto lmdbenv, auto& options) {
             lmdbenv->env().set_mapsize(1UL * 1024UL * 1024UL * 1024UL);
             lmdbenv->env().set_max_dbs(10);
 
@@ -130,42 +125,44 @@ void setup_di_container(kgr::container& ctr) {
             }
         });
 
-    ctr.service<di::Persistence::SectionRepository>();
-    ctr.emplace<di::Persistence::UserRepository>(std::string("bxt::Users"));
-    ctr.emplace<di::Persistence::PackageLogEntryRepository>(
+    container.service<di::Persistence::SectionRepository>();
+    container.emplace<di::Persistence::UserRepository>(
+        std::string("bxt::Users"));
+    container.emplace<di::Persistence::PackageLogEntryRepository>(
         std::string("bxt::PackageLogs"));
 
-    ctr.emplace<di::Persistence::Box::Pool>();
-    ctr.emplace<di::Persistence::Box::LMDBPackageStore>("bxt::Box");
+    container.emplace<di::Persistence::Box::Pool>();
+    container.emplace<di::Persistence::Box::LMDBPackageStore>("bxt::Box");
 
-    ctr.emplace<di::Persistence::Box::AlpmDBExporter>();
+    container.emplace<di::Persistence::Box::AlpmDBExporter>();
 
-    ctr.service<di::Persistence::Box::BoxRepository>();
+    container.service<di::Persistence::Box::BoxRepository>();
 
-    ctr.service<di::Core::Application::AuthService>();
-    ctr.service<di::Core::Application::PermissionService>();
+    container.service<di::Core::Application::AuthService>();
+    container.service<di::Core::Application::PermissionService>();
 
-    ctr.service<di::Infrastructure::PackageService>();
-    ctr.service<di::Infrastructure::DeploymentService>();
-    ctr.service<di::Infrastructure::WSController>();
+    container.service<di::Infrastructure::PackageService>();
+    container.service<di::Infrastructure::DeploymentService>();
+    container.service<di::Infrastructure::WSController>();
 
-    ctr.service<di::Infrastructure::ArchRepoSyncService>();
-    ctr.service<di::Core::Application::CompareService>();
+    container.service<di::Infrastructure::ArchRepoSyncService>();
+    container.service<di::Core::Application::CompareService>();
 }
 
-void setup_controllers(drogon::HttpAppFramework& app, kgr::container& ctr) {
+void setup_controllers(drogon::HttpAppFramework& app,
+                       kgr::container& container) {
     using namespace bxt::di::Presentation;
 
-    app.registerController(ctr.service<DeploymentController>())
-        .registerController(ctr.service<PackageController>())
-        .registerController(ctr.service<CompareController>())
-        .registerController(ctr.service<AuthController>())
-        .registerController(ctr.service<UserController>())
-        .registerController(ctr.service<LogController>())
-        .registerController(ctr.service<SectionController>())
+    app.registerController(container.service<DeploymentController>())
+        .registerController(container.service<PackageController>())
+        .registerController(container.service<CompareController>())
+        .registerController(container.service<AuthController>())
+        .registerController(container.service<UserController>())
+        .registerController(container.service<LogController>())
+        .registerController(container.service<SectionController>())
         .registerController(
-            ctr.service<bxt::di::Infrastructure::WSController>())
-        .registerFilter(ctr.service<JwtFilter>());
+            container.service<bxt::di::Infrastructure::WSController>())
+        .registerFilter(container.service<JwtFilter>());
 }
 
 void setup_scheduler(auto& app, auto scheduler, auto eventbus) {
@@ -175,10 +172,10 @@ void setup_scheduler(auto& app, auto scheduler, auto eventbus) {
     });
 }
 
-void setup_defaults(kgr::container& ctr) {
+void setup_defaults(kgr::container& container) {
     using namespace bxt;
 
-    auto& repository = ctr.service<di::Core::Domain::UserRepository>();
+    auto& repository = container.service<di::Core::Domain::UserRepository>();
 
     const auto users = coro::sync_wait(repository.all_async());
 
@@ -199,11 +196,11 @@ void setup_defaults(kgr::container& ctr) {
 int main() {
     setup_logger();
 
-    kgr::container ctr;
+    kgr::container container;
 
-    setup_di_container(ctr);
+    setup_di_container(container);
 
-    setup_defaults(ctr);
+    setup_defaults(container);
 
     const auto serveFrontendAdvice = [](const drogon::HttpRequestPtr& req,
                                         drogon::AdviceCallback&& acb,
@@ -227,19 +224,20 @@ int main() {
         acb(drogon::HttpResponse::newFileResponse(resource));
     };
 
-    auto& app = drogon::app()
-                    .setDocumentRoot("../frontend/")
-                    .registerPreRoutingAdvice(serveFrontendAdvice)
-                    .addListener("0.0.0.0", 8080)
-                    .setUploadPath("/tmp/bxt/")
-                    .setClientMaxBodySize(256 * 1024 * 1024)
-                    .setClientMaxMemoryBodySize(1024 * 1024);
+    auto& drogon_app = drogon::app()
+                           .setDocumentRoot("../frontend/")
+                           .registerPreRoutingAdvice(serveFrontendAdvice)
+                           .addListener("0.0.0.0", 8080)
+                           .setUploadPath("/tmp/bxt/")
+                           .setClientMaxBodySize(256 * 1024 * 1024)
+                           .setClientMaxMemoryBodySize(1024 * 1024);
 
-    setup_scheduler(app, ctr.service<bxt::di::Utilities::IOScheduler>(),
-                    ctr.service<bxt::di::Utilities::EventBus>());
-    setup_controllers(app, ctr);
+    setup_scheduler(drogon_app,
+                    container.service<bxt::di::Utilities::IOScheduler>(),
+                    container.service<bxt::di::Utilities::EventBus>());
+    setup_controllers(drogon_app, container);
 
-    app.run();
+    drogon_app.run();
 
     return 0;
 }
