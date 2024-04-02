@@ -12,6 +12,7 @@
 #include <filesystem>
 namespace bxt::Utilities::LMDB {
 
+// Injectable options used by LMDB-related services
 struct LMDBOptions {
     virtual ~LMDBOptions() = default;
     std::filesystem::path lmdb_path = "bxtd.lmdb";

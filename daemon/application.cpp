@@ -64,6 +64,7 @@ toml::table setup_toml_configuration(const std::filesystem::path& config_path) {
     return result.table();
 }
 
+// Fill the dependency injection container
 void setup_di_container(kgr::container& container) {
     using namespace bxt;
 
@@ -80,6 +81,7 @@ void setup_di_container(kgr::container& container) {
     container.emplace<di::Utilities::Configuration>(
         setup_toml_configuration("config.toml"));
 
+    // Invoke all options structures to deserialize their values
     container
         .invoke<di::Utilities::Configuration, di::Utilities::LMDB::LMDBOptions,
                 di::Persistence::Box::BoxOptions, di::Presentation::JwtOptions,
@@ -92,6 +94,8 @@ void setup_di_container(kgr::container& container) {
                 deployment_options.deserialize(configuration);
             });
 
+    // Parse the repository schema from a YAML file and extend the parser with
+    // custom options
     container.invoke<di::Utilities::RepoSchema::Parser,
                      di::Infrastructure::ArchRepoOptions,
                      di::Persistence::Box::PoolOptions>(
@@ -125,6 +129,8 @@ void setup_di_container(kgr::container& container) {
             }
         });
 
+    // Register various repositories and services related to persistence and
+    // business logic.
     container.service<di::Persistence::SectionRepository>();
     container.emplace<di::Persistence::UserRepository>(
         std::string("bxt::Users"));
