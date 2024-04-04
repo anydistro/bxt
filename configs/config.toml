@@ -1,0 +1,2 @@
+box-path = "/app/persistence/box/"
+lmdb-path = "/app/persistence/bxtd.lmdb/"

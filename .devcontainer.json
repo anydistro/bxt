@@ -1,3 +1,7 @@
 {
-    "build": { "dockerfile": "docker/dev.Dockerfile", "context": "." }
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "target": "development"
+  }
 }
