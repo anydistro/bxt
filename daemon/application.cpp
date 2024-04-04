@@ -231,7 +231,7 @@ int main() {
     };
 
     auto& drogon_app = drogon::app()
-                           .setDocumentRoot("../frontend/")
+                           .setDocumentRoot("./frontend/")
                            .registerPreRoutingAdvice(serveFrontendAdvice)
                            .addListener("0.0.0.0", 8080)
                            .setUploadPath("/tmp/bxt/")
