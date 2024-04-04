@@ -1,4 +1,4 @@
-name: Build with docker
+name: Build and deploy to testing server
 on: [push, pull_request]
 
 jobs:
@@ -15,3 +15,46 @@ jobs:
       - name: Build production environment using docker-compose
         run: |
           docker-compose -f docker-compose.yml build production
+
+      - name: Save Docker image as a tarball
+        run: docker save bxt_production:latest -o bxt-production.tar
+
+      - name: Upload Docker image to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bxt-production-image
+          path: |
+            bxt-production.tar
+            docker-compose.yml
+
+  deploy-ssh:
+    name: Deploy to server using ssh
+    needs: build-docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Docker image from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bxt-production-image
+          path: distfiles
+
+      - name: Transfer Docker image to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
+          username: ${{ secrets.DEPLOYMENT_SERVER_USER }}
+          key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
+          source: distfiles/*
+          target: "/tmp/bxt/"
+
+      - name: Deploy Docker image on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
+          username: ${{ secrets.DEPLOYMENT_SERVER_USER }}
+          key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
+          script: |
+            docker compose -f /tmp/bxt/distfiles/docker-compose.yml stop || true
+            docker load -i /tmp/bxt/distfiles/bxt-production.tar
+            docker compose -f /tmp/bxt/distfiles/docker-compose.yml up -d production

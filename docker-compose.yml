@@ -1,5 +1,6 @@
 services:
   development:
+    image: bxt_development:latest
     build:
       context: .
       target: development
@@ -7,6 +8,7 @@ services:
       - "8080:8080"
 
   production:
+    image: bxt_production:latest
     build:
       context: .
       target: production
