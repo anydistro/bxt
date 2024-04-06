@@ -30,6 +30,7 @@ type ISectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
     sections: ISection[];
     selectedSection?: ISection;
     onSelected?: (section: ISection | undefined) => void;
+    disabled?: boolean | boolean[];
 };
 
 export default (props: ISectionSelectorProps) => {
@@ -100,29 +101,50 @@ export default (props: ISectionSelectorProps) => {
         []
     );
 
-    const styles: StylesConfig<IOption> = {
-        control: (base) => ({
-            ...base,
-            minHeight: 32
+    const makeStyles = useCallback(
+        (disabled?: boolean): StylesConfig<IOption> => ({
+            control: (base) => ({
+                ...base,
+                minHeight: 32,
+                pointerEvents: disabled ? "none" : undefined,
+                opacity: disabled ? "0.4" : undefined
+            }),
+            dropdownIndicator: (base) => ({
+                ...base,
+                paddingTop: 0,
+                paddingBottom: 0
+            }),
+            clearIndicator: (base) => ({
+                ...base,
+                paddingTop: 0,
+                paddingBottom: 0
+            })
         }),
-        dropdownIndicator: (base) => ({
-            ...base,
-            paddingTop: 0,
-            paddingBottom: 0
-        }),
-        clearIndicator: (base) => ({
-            ...base,
-            paddingTop: 0,
-            paddingBottom: 0
-        })
-    };
+        []
+    );
+
+    const isDisabled = useCallback(
+        (n: number) => {
+            if (props.disabled == undefined) {
+                return false;
+            }
+            if (typeof props.disabled == "boolean") {
+                return props.disabled as boolean;
+            }
+            return (
+                (props.disabled as boolean[]).length > n &&
+                (props.disabled as boolean[])[n]
+            );
+        },
+        [props.disabled]
+    );
 
     return (
         <span className="flex justify-stretch items-center w-full space-x-1">
             <Select<IOption>
                 unstyled={true}
                 components={makeComponents(faCodeBranch)}
-                styles={styles}
+                styles={makeStyles(isDisabled(0))}
                 value={makeValue(props.selectedSection?.branch)}
                 options={branches(props.sections).map(makeValue)}
                 onChange={(value) => updateSection({ branch: value?.value })}
@@ -130,7 +152,7 @@ export default (props: ISectionSelectorProps) => {
             <Select<IOption>
                 unstyled={true}
                 components={makeComponents(faCubes)}
-                styles={styles}
+                styles={makeStyles(isDisabled(1))}
                 value={makeValue(props.selectedSection?.repository)}
                 options={reposForBranch(
                     props.sections,
@@ -143,7 +165,7 @@ export default (props: ISectionSelectorProps) => {
             <Select<IOption>
                 unstyled={true}
                 components={makeComponents(faMicrochip)}
-                styles={styles}
+                styles={makeStyles(isDisabled(2))}
                 value={makeValue(props.selectedSection?.architecture)}
                 options={architecturesForBranchAndRepo(
                     props.sections,

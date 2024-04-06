@@ -225,9 +225,7 @@ export default (props: any) => {
 
     useEffect(() => {
         setSnapshotModalProps({
-            ...snapshotModalProps,
-            repository: path[1],
-            architecture: path[2]
+            ...snapshotModalProps
         });
     }, [path]);
 
@@ -254,16 +252,28 @@ export default (props: any) => {
 
     const openSnapshotModalWithBranchHandler = useCallback(
         (sourceBranch?: string, targetBranch?: string) => {
-            if (sourceBranch)
+            if (sourceBranch) {
+                const sourceSection: ISection = {
+                    ...snapshotModalProps.sourceSection,
+                    branch: sourceBranch
+                };
+
                 setSnapshotModalProps({
                     ...snapshotModalProps,
-                    sourceBranch
+                    sourceSection
                 });
-            if (targetBranch)
+            }
+            if (targetBranch) {
+                const targetSection: ISection = {
+                    ...snapshotModalProps.targetSection,
+                    branch: targetBranch
+                };
+
                 setSnapshotModalProps({
                     ...snapshotModalProps,
-                    targetBranch
+                    targetSection
                 });
+            }
 
             snapshotModalRef.current?.showModal();
         },
