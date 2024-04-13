@@ -8,12 +8,23 @@ RUN apt-get update --yes && apt-get install --yes ca-certificates curl gnupg \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
     && apt-get update --yes \
-    && apt-get install --yes build-essential git cmake libssl-dev pip ninja-build gdb clangd-17 clang-format-17 clang-17 nodejs zstd \
+    && apt-get install --yes build-essential git cmake libssl-dev pip ninja-build lldb-17 clangd-17 clang-format-17 clang-17 libc++-17-dev libc++-17-dev libc++abi-17-dev nodejs zstd \
     && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-17 100 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/clang-17 100 && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-17 100 && \
+    update-alternatives --set clang /usr/bin/clang-17 && \
+    update-alternatives --set clang++ /usr/bin/clang++-17 && \
+    update-alternatives --set cc /usr/bin/clang-17 && \
+    update-alternatives --set c++ /usr/bin/clang++-17
 
 RUN pip install conan==1.63.0 \
     && conan profile new default --detect \
-    && conan profile update settings.compiler.libcxx=libstdc++11 default
+    && conan profile update settings.compiler=clang default \
+    && conan profile update settings.compiler.version=17 default \
+    && conan profile update settings.compiler.libcxx=libc++ default
 
 RUN corepack enable \
     && corepack prepare yarn@stable --activate

@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(bxtd LANGUAGES CXX)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST -fcoroutines")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
-
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})

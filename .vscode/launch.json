@@ -2,39 +2,23 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "(lldb) Daemon",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": [],
+      "cwd": "${command:cmake.getLaunchTargetDirectory}",
+      "env": {
+        "LD_LIBRARY_PATH": "./libs/",
+        "PATH": "${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
+      }
+    },
+    {
       "name": "(yarn) Frontend",
       "command": "yarn start",
       "request": "launch",
       "type": "node-terminal",
       "cwd": "${workspaceFolder}/frontend"
-    },
-    {
-      "name": "(gdb) Daemon",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${command:cmake.launchTargetPath}",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${command:cmake.getLaunchTargetDirectory}",
-      "environment": [
-        {
-          "name": "PATH",
-          "value": "${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
-        },
-        {
-          "name": "LD_LIBRARY_PATH",
-          "value": "./libs/"
-        }
-      ],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
     }
   ]
 }

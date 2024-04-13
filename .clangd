@@ -1,7 +1,5 @@
 CompileFlags:
-    Add:
-        - "-std=c++20"
-        - "-fcoroutines-ts"
-    Remove:
-        - "-fcoroutines"
-        - "-fconcepts"
+  Add:
+    - "-std=c++23"
+  Remove:
+    - "-fconcepts"
