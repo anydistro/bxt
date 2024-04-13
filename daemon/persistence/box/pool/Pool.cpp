@@ -16,15 +16,15 @@
 #include "utilities/to_string.h"
 
 #include <algorithm>
+#include <expected>
 #include <filesystem>
 #include <fmt/core.h>
 #include <iterator>
-#include <nonstd/expected.hpp>
 #include <string>
 #include <system_error>
 #include <vector>
 
-nonstd::expected<void, std::error_code>
+std::expected<void, std::error_code>
     move_file(const std::filesystem::path& from,
               const std::filesystem::path& to) {
     std::error_code ec;
@@ -39,7 +39,7 @@ nonstd::expected<void, std::error_code>
         if (!ec) { std::filesystem::remove(from, ec); }
     }
     if (ec.value() != 0) {
-        return nonstd::make_unexpected(ec);
+        return std::unexpected(ec);
     } else {
         return {};
     }

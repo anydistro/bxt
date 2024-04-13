@@ -7,7 +7,7 @@ Writer::Result<void> Writer::open_filename(const std::filesystem::path& path) {
         archive_write_open_filename(m_archive.get(), path.c_str());
 
     if (status != ARCHIVE_OK) {
-        return nonstd::make_unexpected(LibArchiveError(m_archive.get()));
+        return std::unexpected(LibArchiveError(m_archive.get()));
     }
 
     return {};
@@ -19,7 +19,7 @@ Writer::Result<void> Writer::open_memory(std::vector<std::byte>& byte_array,
         m_archive.get(), byte_array.data(), byte_array.size(), &used_size);
 
     if (status != ARCHIVE_OK) {
-        return nonstd::make_unexpected(LibArchiveError(m_archive.get()));
+        return std::unexpected(LibArchiveError(m_archive.get()));
     }
 
     return {};
@@ -29,7 +29,7 @@ Writer::Result<Writer::Entry> Writer::start_write(Header& header) {
     const int status = archive_write_header(m_archive.get(), header.entry());
 
     if (status != ARCHIVE_OK) {
-        return nonstd::make_unexpected(LibArchiveError(m_archive.get()));
+        return std::unexpected(LibArchiveError(m_archive.get()));
     }
 
     Entry entry;
@@ -43,7 +43,7 @@ Writer::Entry::Result<void>
     const auto status = archive_write_data(m_writer, data.data(), data.size());
 
     if (static_cast<int64_t>(status) < 0) {
-        return nonstd::make_unexpected(LibArchiveError(m_writer));
+        return std::unexpected(LibArchiveError(m_writer));
     }
 
     return {};

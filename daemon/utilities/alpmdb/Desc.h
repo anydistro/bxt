@@ -7,7 +7,6 @@
 #pragma once
 
 #include "frozen/unordered_map.h"
-#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/PkgInfo.h"
 #include "utilities/errors/Macro.h"
@@ -15,6 +14,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <cereal/access.hpp>
+#include <expected>
 #include <filesystem>
 #include <memory>
 #include <optional>

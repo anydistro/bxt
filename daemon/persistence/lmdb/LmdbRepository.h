@@ -13,7 +13,6 @@
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/task.hpp"
 #include "coro/when_all.hpp"
-#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/StaticDTOMapper.h"
 #include "utilities/errors/DatabaseError.h"

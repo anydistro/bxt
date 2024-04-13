@@ -6,12 +6,12 @@
  */
 #include "Desc.h"
 
-#include "nonstd/expected.hpp"
 #include "utilities/libarchive/Error.h"
 #include "utilities/libarchive/Reader.h"
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <expected>
 #include <fmt/format.h>
 #include <frozen/set.h>
 #include <frozen/string.h>
@@ -85,9 +85,8 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
     const auto package_infos = file_reader.open_filename(filepath);
 
     if (!package_infos.has_value()) {
-        return nonstd::make_unexpected(
-            ParseError(ParseError::ErrorType::InvalidArchive,
-                       std::move(package_infos.error())));
+        return std::unexpected(ParseError(ParseError::ErrorType::InvalidArchive,
+                                          std::move(package_infos.error())));
     }
 
     PkgInfo infoObj;
@@ -109,11 +108,11 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
             if (const auto invalidentry =
                     std::get_if<Archive::InvalidEntryError>(
                         &contents.error())) {
-                return nonstd::make_unexpected(
+                return std::unexpected(
                     ParseError(ParseError::ErrorType::InvalidArchive,
                                std::move(*invalidentry)));
             } else {
-                return nonstd::make_unexpected(
+                return std::unexpected(
                     ParseError(ParseError::ErrorType::InvalidArchive,
                                std::move(*std::get_if<Archive::LibArchiveError>(
                                    &contents.error()))));
@@ -124,7 +123,7 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
     }
 
     if (!found) {
-        return nonstd::make_unexpected(
+        return std::unexpected(
             ParseError(ParseError::ErrorType::NoPackageInfo));
     }
 

@@ -7,10 +7,9 @@
 #pragma once
 
 #include "core/domain/value_objects/Name.h"
-#include "scn/scn.h"
-#include "scn/tuple_return/tuple_return.h"
 #include "utilities/Error.h"
 
+#include <expected>
 #include <fmt/format.h>
 #include <frozen/map.h>
 #include <frozen/string.h>
@@ -41,7 +40,7 @@ struct PackageVersion {
             message = error_messages.at(error_code).data();
         }
     };
-    using ParseResult = nonstd::expected<PackageVersion, ParsingError>;
+    using ParseResult = std::expected<PackageVersion, ParsingError>;
 
     static std::strong_ordering compare(const PackageVersion& lh,
                                         const PackageVersion& rh);

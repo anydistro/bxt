@@ -22,7 +22,7 @@ LMDBPackageStore::LMDBPackageStore(
     : m_root_path(box_options.box_path), m_pool(pool), m_db(env, name) {
 }
 
-coro::task<nonstd::expected<void, DatabaseError>>
+coro::task<std::expected<void, DatabaseError>>
     LMDBPackageStore::add(const PackageRecord package) {
     auto moved_package = m_pool.move_to(package);
 
@@ -53,7 +53,7 @@ coro::task<nonstd::expected<void, DatabaseError>>
     co_return {};
 }
 
-coro::task<nonstd::expected<void, DatabaseError>>
+coro::task<std::expected<void, DatabaseError>>
     LMDBPackageStore::remove(const PackageRecord::Id package_id) {
     auto result = co_await m_db.del(package_id.to_string());
 
@@ -69,7 +69,7 @@ coro::task<nonstd::expected<void, DatabaseError>>
     co_return {};
 }
 
-coro::task<nonstd::expected<std::vector<PackageRecord>, DatabaseError>>
+coro::task<std::expected<std::vector<PackageRecord>, DatabaseError>>
     LMDBPackageStore::find_by_section(PackageSectionDTO section) {
     std::vector<PackageRecord> result;
 

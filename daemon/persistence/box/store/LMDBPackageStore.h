@@ -34,13 +34,13 @@ public:
 
     ~LMDBPackageStore() override = default;
 
-    coro::task<nonstd::expected<void, DatabaseError>>
+    coro::task<std::expected<void, DatabaseError>>
         add(const PackageRecord package) override;
 
-    coro::task<nonstd::expected<void, DatabaseError>>
+    coro::task<std::expected<void, DatabaseError>>
         remove(const PackageRecord::Id package_id) override;
 
-    coro::task<nonstd::expected<std::vector<PackageRecord>, DatabaseError>>
+    coro::task<std::expected<std::vector<PackageRecord>, DatabaseError>>
         find_by_section(PackageSectionDTO section) override;
 
     coro::task<void>

@@ -9,7 +9,6 @@
 #include "UnitOfWorkBase.h"
 #include "core/domain/events/EventBase.h"
 #include "frozen/unordered_map.h"
-#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
 
@@ -17,6 +16,7 @@
 #include <coro/sync_wait.hpp>
 #include <coro/task.hpp>
 #include <coro/when_all.hpp>
+#include <expected>
 #include <functional>
 #include <span>
 #include <vector>

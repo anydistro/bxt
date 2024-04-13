@@ -6,10 +6,9 @@
  */
 #pragma once
 #include "fmt/format.h"
-#include "nonstd/expected.hpp"
 
+#include <expected>
 #include <memory>
-#include <stdexcept>
 #include <string>
 
 namespace bxt {
@@ -63,20 +62,20 @@ struct Error {
 };
 
 template<typename TError, typename TSource, typename... TArgs>
-nonstd::unexpected<TError> make_error_with_source(TSource&& source,
-                                                  TArgs... ctorargs) {
+std::unexpected<TError> make_error_with_source(TSource&& source,
+                                               TArgs... ctorargs) {
     TError result(ctorargs...);
 
     result.source = std::make_unique<TSource>(std::move(source));
 
-    return nonstd::make_unexpected(result);
+    return std::unexpected(result);
 }
 
 template<typename TError, typename... TArgs>
-nonstd::unexpected<TError> make_error(TArgs... ctorargs) {
+std::unexpected<TError> make_error(TArgs... ctorargs) {
     TError result(ctorargs...);
 
-    return nonstd::make_unexpected(result);
+    return std::unexpected(result);
 }
 
 } // namespace bxt

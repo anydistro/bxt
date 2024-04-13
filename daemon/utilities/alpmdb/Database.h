@@ -5,7 +5,6 @@
  *
  */
 #pragma once
-#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/errors/DatabaseError.h"
@@ -19,6 +18,7 @@
 #include <coro/mutex.hpp>
 #include <coro/sync_wait.hpp>
 #include <coro/task.hpp>
+#include <expected>
 #include <filesystem>
 #include <fmt/format.h>
 #include <frozen/map.h>

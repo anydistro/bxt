@@ -16,7 +16,6 @@
 #include "utilities/log/Logging.h"
 
 #include <archive.h>
-#include <bits/ranges_algo.h>
 #include <coro/sync_wait.hpp>
 #include <filesystem>
 #include <iterator>

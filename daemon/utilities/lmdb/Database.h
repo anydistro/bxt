@@ -9,7 +9,6 @@
 #include "core/application/errors/CrudError.h"
 #include "coro/sync_wait.hpp"
 #include "lmdb.h"
-#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/NavigationAction.h"
 #include "utilities/errors/DatabaseError.h"
@@ -19,6 +18,7 @@
 
 #include <exception>
 #include <lmdbxx/lmdb++.h>
+#include <string_view>
 namespace bxt::Utilities::LMDB {
 
 template<typename TEntity, typename TSerializer = CerealSerializer<TEntity>>

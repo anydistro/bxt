@@ -17,7 +17,7 @@ Reader::Result<void> Reader::open_filename(const std::filesystem::path &path) {
         archive_read_open_filename(m_archive.get(), path.c_str(), 1024);
 
     if (status != ARCHIVE_OK) {
-        return nonstd::make_unexpected(LibArchiveError(m_archive.get()));
+        return std::unexpected(LibArchiveError(m_archive.get()));
     }
 
     return {};
@@ -29,7 +29,7 @@ Reader::Result<void>
                                           byte_array.size());
 
     if (status != ARCHIVE_OK) {
-        return nonstd::make_unexpected(LibArchiveError(m_archive.get()));
+        return std::unexpected(LibArchiveError(m_archive.get()));
     }
 
     return {};
@@ -39,7 +39,7 @@ Reader::Result<void> Reader::open_memory(uint8_t *data, size_t length) {
     int status = archive_read_open_memory(m_archive.get(), data, length);
 
     if (status != ARCHIVE_OK) {
-        return nonstd::make_unexpected(LibArchiveError(m_archive.get()));
+        return std::unexpected(LibArchiveError(m_archive.get()));
     }
 
     return {};
@@ -56,7 +56,7 @@ Reader::Entry::Result<std::vector<uint8_t>> Reader::Entry::read_all() {
         const auto read_result = read_buffer(buffer, actual_size);
 
         if (!read_result.has_value()) {
-            return nonstd::make_unexpected(read_result.error());
+            return std::unexpected(read_result.error());
         }
 
         std::copy(buffer.begin(), buffer.begin() + actual_size,
@@ -68,7 +68,7 @@ Reader::Entry::Result<std::vector<uint8_t>> Reader::Entry::read_all() {
 
 Reader::Entry::Result<std::vector<uint8_t>>
     Reader::Entry::read(std::size_t amount) {
-    if (!m_reader) { return nonstd::make_unexpected(InvalidEntryError()); }
+    if (!m_reader) { return std::unexpected(InvalidEntryError()); }
 
     std::vector<uint8_t> result;
     result.resize(amount);
@@ -76,7 +76,7 @@ Reader::Entry::Result<std::vector<uint8_t>>
     const auto size = archive_read_data(m_reader, result.data(), amount);
 
     if (static_cast<int64_t>(size) < 0) {
-        return nonstd::make_unexpected(LibArchiveError(m_reader));
+        return std::unexpected(LibArchiveError(m_reader));
     }
 
     result.resize(size);

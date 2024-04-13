@@ -11,9 +11,9 @@
 #include "utilities/errors/Macro.h"
 
 #include <archive.h>
+#include <expected>
 #include <filesystem>
 #include <memory>
-#include <nonstd/expected.hpp>
 #include <ostream>
 #include <variant>
 #include <vector>
@@ -33,20 +33,17 @@ public:
 
         template<typename T>
         using Result =
-            nonstd::expected<T,
-                             std::variant<InvalidEntryError, LibArchiveError>>;
+            std::expected<T, std::variant<InvalidEntryError, LibArchiveError>>;
 
         // Use the Result template for function return type
         Result<void> write(const std::vector<uint8_t>& data);
         Result<void> operator>>(const std::vector<uint8_t>& data);
 
         Result<void> finish() {
-            if (!m_writer) {
-                return nonstd::make_unexpected(InvalidEntryError {});
-            }
+            if (!m_writer) { return std::unexpected(InvalidEntryError {}); }
 
             if (archive_write_finish_entry(m_writer) != ARCHIVE_OK) {
-                return nonstd::make_unexpected(LibArchiveError(m_writer));
+                return std::unexpected(LibArchiveError(m_writer));
             }
             return {};
         }
@@ -74,7 +71,7 @@ private:
     static Result<void> deleter(archive* a) {
         const int status = archive_write_free(a);
         if (status != ARCHIVE_OK) {
-            return nonstd::make_unexpected(LibArchiveError(a));
+            return std::unexpected(LibArchiveError(a));
         }
         return {};
     }

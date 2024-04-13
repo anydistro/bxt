@@ -146,7 +146,7 @@ coro::task<BoxRepository::TResult>
 }
 
 coro::task<UnitOfWorkBase::Result<void>> BoxRepository::commit_async() {
-    std::vector<coro::task<nonstd::expected<void, DatabaseError>>> tasks;
+    std::vector<coro::task<std::expected<void, DatabaseError>>> tasks;
 
     std::set<PackageSectionDTO> added_sections;
 

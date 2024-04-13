@@ -12,8 +12,7 @@
 
 #include <coro/sync_wait.hpp>
 #include <coro/task.hpp>
-#include <functional>
-#include <nonstd/expected.hpp>
+#include <expected>
 
 namespace bxt::Core::Domain {
 struct UnitOfWorkBase {

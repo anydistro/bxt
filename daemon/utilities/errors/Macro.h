@@ -5,9 +5,8 @@
  *
  */
 #pragma once
-
-#include <nonstd/expected.hpp>
+#include <expected>
 
 #define BXT_DECLARE_RESULT(error)        \
     template<typename TBxtExpectedValue> \
-    using Result = nonstd::expected<TBxtExpectedValue, error>;
+    using Result = std::expected<TBxtExpectedValue, error>;

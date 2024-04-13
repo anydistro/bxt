@@ -6,7 +6,6 @@
  */
 #include "Database.h"
 
-#include "nonstd/expected.hpp"
 #include "parallel_hashmap/phmap.h"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
@@ -20,6 +19,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <coro/latch.hpp>
 #include <execution>
+#include <expected>
 #include <filesystem>
 #include <fmt/format.h>
 #include <iterator>

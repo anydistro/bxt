@@ -11,7 +11,6 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/dtos/UserDTO.h"
 #include "core/domain/entities/PackageLogEntry.h"
-#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
 #include "utilities/lmdb/Error.h"
@@ -27,7 +26,7 @@ void boost::serialization::serialize(Archive &ar,
                                      std::filesystem::path &path,
                                      const unsigned int version) {
     std::string path_string = path.string();
-    ar &path_string;
+    ar & path_string;
     if (Archive::is_loading::value) {
         path = std::filesystem::path(path_string);
     }
@@ -38,27 +37,27 @@ void boost::serialization::serialize(
     Archive &ar,
     bxt::Core::Application::PackageSectionDTO &section,
     const unsigned int version) {
-    ar &section.branch;
-    ar &section.repository;
-    ar &section.architecture;
+    ar & section.branch;
+    ar & section.repository;
+    ar & section.architecture;
 }
 
 template<class Archive>
 void boost::serialization::serialize(Archive &ar,
                                      bxt::Core::Application::UserDTO &user,
                                      const unsigned int version) {
-    ar &user.name;
-    ar &user.password;
-    ar &user.permissions;
+    ar & user.name;
+    ar & user.password;
+    ar & user.permissions;
 }
 
 template<class Archive>
 void boost::serialization::serialize(Archive &ar,
                                      bxt::Core::Application::PackageDTO &pkg,
                                      const unsigned int version) {
-    ar &pkg.name;
-    ar &pkg.filepath;
-    ar &pkg.section;
+    ar & pkg.name;
+    ar & pkg.filepath;
+    ar & pkg.section;
 }
 
 template<class Archive>
@@ -66,10 +65,10 @@ void boost::serialization::serialize(
     Archive &ar,
     bxt::Core::Application::PackageLogEntryDTO &entry,
     const unsigned int version) {
-    ar &entry.id;
-    ar &entry.package;
-    ar &entry.time;
-    ar &entry.type;
+    ar & entry.id;
+    ar & entry.package;
+    ar & entry.time;
+    ar & entry.type;
 }
 
 namespace bxt::Utilities::LMDB {

@@ -19,14 +19,13 @@ namespace bxt::Persistence::Box {
 struct PackageStoreBase {
     virtual ~PackageStoreBase() = default;
 
-    virtual coro::task<nonstd::expected<void, DatabaseError>>
+    virtual coro::task<std::expected<void, DatabaseError>>
         add(const PackageRecord package) = 0;
 
-    virtual coro::task<nonstd::expected<void, DatabaseError>>
+    virtual coro::task<std::expected<void, DatabaseError>>
         remove(const PackageRecord::Id package_id) = 0;
 
-    virtual coro::task<
-        nonstd::expected<std::vector<PackageRecord>, DatabaseError>>
+    virtual coro::task<std::expected<std::vector<PackageRecord>, DatabaseError>>
         find_by_section(PackageSectionDTO section) = 0;
 
     virtual coro::task<void>
