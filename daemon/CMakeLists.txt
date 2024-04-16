@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(bxtd LANGUAGES CXX)
 
+add_subdirectory(swagger)
+
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -11,10 +13,11 @@ include_directories(
     ${lmdbxx_SOURCE_DIR}/include
 )
 
-add_compile_definitions(${PROJECT_NAME} PUBLIC
+add_compile_definitions(${PROJECT_NAME} PRIVATE
     BOOST_ASIO_HAS_CO_AWAIT=1
     BOOST_ASIO_HAS_STD_COROUTINE=1
-    BOOST_LOG_DYN_LINK=1)
+    BOOST_LOG_DYN_LINK=1
+    TOML_EXCEPTIONS=0)
 
 target_compile_options(${PROJECT_NAME} PUBLIC -fcoroutines)
 
@@ -24,4 +27,4 @@ target_link_libraries(${PROJECT_NAME}
     Dexode::EventBus
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE TOML_EXCEPTIONS=0)
+add_dependencies(${PROJECT_NAME} deploy_swagger)

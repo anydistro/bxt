@@ -1,0 +1,11 @@
+window.onload = function () {
+  // bxt specific swagger path
+  window.ui = SwaggerUIBundle({
+    url: "${BXT_BASE_URL}/swagger/openapi.yml",
+    dom_id: "#swagger-ui",
+    deepLinking: true,
+    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+    plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+    layout: "StandaloneLayout",
+  });
+};

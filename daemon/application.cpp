@@ -211,6 +211,14 @@ int main() {
     const auto serveFrontendAdvice = [](const drogon::HttpRequestPtr& req,
                                         drogon::AdviceCallback&& acb,
                                         drogon::AdviceChainCallback&& accb) {
+        if (req->path() == "/swagger") {
+            const auto indexPath = fmt::format("{}/swagger/index.html",
+                                               drogon::app().getDocumentRoot());
+
+            acb(drogon::HttpResponse::newFileResponse(indexPath));
+            return;
+        }
+
         if (req->path().starts_with("/api/")) {
             accb();
             return;
