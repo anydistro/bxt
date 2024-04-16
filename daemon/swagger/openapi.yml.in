@@ -1,0 +1,396 @@
+openapi: 3.0.0
+info:
+  title: b[x]t API
+  description: API for the b[x]t repository management service.
+  version: "0.1"
+servers:
+  - url: "/"
+paths:
+  /api/auth:
+    post:
+      summary: Authentificate user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - password
+              properties:
+                name:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Issued JWT after successful authentification.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "400":
+          description: Data is malformed.
+        "401":
+          description: Credentials are invalid.
+  /api/verify:
+    get:
+      summary: Verify issued token.
+      responses:
+        "200":
+          description: JWT is valid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+        "401":
+          description: Token is invalid or expired.
+
+  /api/users/add:
+    post:
+      summary: Add a new user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                password:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: User added successfully.
+        "400":
+          description: Data is missing or malformed.
+        "401":
+          description: User lacks permissions.
+
+  /api/users/update:
+    post:
+      summary: Update an existing user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                password:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: User successfully updated.
+        "400":
+          description: Data is missing or malformed.
+        "401":
+          description: Lacks permissions.
+
+  /api/users/remove:
+    post:
+      summary: Remove an existing user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: User successfully removed.
+        "400":
+          description: Data is missing or malformed.
+        "401":
+          description: Lacks permissions.
+
+  /api/users:
+    get:
+      summary: Retrieve a list of users.
+      responses:
+        "200":
+          description: Retrieved list of users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: User lacks permissions.
+
+  /api/sections/get:
+    get:
+      summary: Retrieve accessible sections based on user permissions.
+      responses:
+        "200":
+          description: Retrieved sections.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Section"
+        "401":
+          description: User lacks permissions.
+
+  /api/sync:
+    post:
+      summary: Synchronize package data across the system.
+      responses:
+        "200":
+          description: Synchronization started successfully.
+
+  /api/packages/commit:
+    post:
+      summary: Commit a transaction.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      file:
+                        type: string
+                        format: binary
+                        description: The binary file of the package.
+                      signature:
+                        type: string
+                        format: binary
+                        description: The binary file of the package's signature.
+                packageInfo:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: Name identifier of the package.
+                      branch:
+                        type: string
+                        description: Branch name for where the package should be committed.
+                      repository:
+                        type: string
+                        description: Repository name for where the package should be committed.
+                      architecture:
+                        type: string
+                        description: Architecture name for where the package should be committed.
+      responses:
+        "200":
+          description: Transaction committed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: "ok"
+        "400":
+          description: Data is missing or malformed.
+
+  /api/packages/get:
+    get:
+      summary: Retrieve packages based on specified branch, repository, and architecture.
+      parameters:
+        - name: branch
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: architecture
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Retrieved packages.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Package"
+
+  /api/snap:
+    post:
+      summary: Snap packages from a source section to a target section.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  $ref: "#/components/schemas/Section"
+                target:
+                  $ref: "#/components/schemas/Section"
+      responses:
+        "200":
+          description: Snap operation successful.
+
+  /api/logs/packages:
+    get:
+      summary: Retrieve logs for package-related actions.
+      responses:
+        "200":
+          description: Retrieved package logs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LogEntry"
+  /api/deploy/start:
+    post:
+      summary: Start a deployment session.
+      responses:
+        "200":
+          description: Deployment session started successfully.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Session started with ID: {session_id}"
+        "401":
+          description: No API key provided or invalid API key.
+        "400":
+          description: Error message if start failed.
+  /api/deploy/push:
+    post:
+      summary: Push a package to the deployment session.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The binary file of the package.
+                signature:
+                  type: string
+                  format: binary
+                  description: The binary signature of the package.
+                branch:
+                  type: string
+                  description: The branch where the package will be deployed.
+                repository:
+                  type: string
+                  description: The repository where the package will be deployed.
+                architecture:
+                  type: string
+                  description: The architecture of the package deployment.
+                session:
+                  type: string
+                  description: The session ID for the deployment.
+      responses:
+        "200":
+          description: Package pushed successfully.
+        "400":
+          description: Invalid request, missing file, signature, or invalid section data.
+        "401":
+          description: Invalid or missing API key.
+  /api/deploy/end:
+    post:
+      summary: End a deployment session.
+      responses:
+        "200":
+          description: Deployment session ended successfully.
+        "400":
+          description: Error message if ending the session failed.
+        "401":
+          description: Invalid or missing API key.
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    Section:
+      type: object
+      properties:
+        branch:
+          type: string
+        repository:
+          type: string
+        architecture:
+          type: string
+    Package:
+      type: object
+      properties:
+        name:
+          type: string
+        section:
+          $ref: "#/components/schemas/Section"
+        pool_entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/PoolEntry"
+    PoolEntry:
+      type: object
+      properties:
+        version:
+          type: string
+        hasSignature:
+          type: boolean
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        time:
+          type: string
+        package:
+          $ref: "#/components/schemas/Package"
+        action:
+          type: string
