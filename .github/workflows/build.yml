@@ -14,7 +14,7 @@ jobs:
           driver: docker
       - name: Build production environment using docker-compose
         run: |
-          docker-compose -f docker-compose.yml build production
+          docker-compose -f docker-compose.yml -f docker-compose.caddy.yml build production
 
       - name: Save Docker image as a tarball
         run: docker save bxt_production:latest -o bxt-production.tar
@@ -26,6 +26,7 @@ jobs:
           path: |
             bxt-production.tar
             docker-compose.yml
+            docker-compose.caddy.yml
 
   deploy-ssh:
     name: Deploy to server using ssh
@@ -51,11 +52,15 @@ jobs:
 
       - name: Deploy Docker image on server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          CADDY_HOST: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
         with:
           host: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
           username: ${{ secrets.DEPLOYMENT_SERVER_USER }}
           key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
+          envs: CADDY_HOST
           script: |
-            docker compose -f /tmp/bxt/distfiles/docker-compose.yml stop || true
-            docker load -i /tmp/bxt/distfiles/bxt-production.tar
-            docker compose -f /tmp/bxt/distfiles/docker-compose.yml up -d production
+            cd /tmp/bxt/distfiles/
+            docker compose -f docker-compose.yml -f docker-compose.caddy.yml down production || true
+            docker load -i bxt-production.tar
+            docker compose -f docker-compose.yml -f docker-compose.caddy.yml -p bxt up -d production
