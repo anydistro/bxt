@@ -7,8 +7,10 @@
 #include "AuthController.h"
 
 #include "drogon/HttpTypes.h"
+#include "utilities/drogon/Helpers.h"
 
 #include <boost/json.hpp>
+#include <exception>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
@@ -58,28 +60,28 @@ drogon::Task<drogon::HttpResponsePtr>
 
 drogon::Task<drogon::HttpResponsePtr>
     AuthController::verify(drogon::HttpRequestPtr req) {
-    auto header = req->getHeader("Authorization");
-    if (header.empty()) {
-        auto error_resp = drogon::HttpResponse::newHttpResponse();
-        error_resp->setStatusCode(drogon::k401Unauthorized);
-        co_return error_resp;
+    const auto token = req->getCookie("token");
+    if (token.empty()) {
+        co_return drogon_helpers::make_error_response("Token is missing",
+                                                      drogon::k401Unauthorized);
     }
 
-    auto token = header.substr(7);
-    auto decoded = jwt::decode(token);
-    auto verifier =
-        jwt::verify()
-            .allow_algorithm(jwt::algorithm::hs256 {m_options.secret})
-            .with_issuer("auth0");
-
     try {
+        const auto decoded = jwt::decode(token);
+        const auto verifier =
+            jwt::verify()
+                .allow_algorithm(jwt::algorithm::hs256 {m_options.secret})
+                .with_issuer("auth0");
+
         verifier.verify(decoded);
 
-        co_return drogon::HttpResponse::newHttpJsonResponse({{"status", "ok"}});
-    } catch (const jwt::token_verification_exception& verification_exception) {
-        auto error_resp = drogon::HttpResponse::newHttpResponse();
-        error_resp->setStatusCode(drogon::k401Unauthorized);
-        co_return error_resp;
+        co_return drogon_helpers::make_ok_response();
+
+    } catch (const std::exception& exception) {
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Token is invalid, the error is: \"{}\"",
+                        exception.what()),
+            drogon::k401Unauthorized);
     }
 }
 } // namespace bxt::Presentation

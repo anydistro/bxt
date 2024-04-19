@@ -23,7 +23,7 @@ public:
     METHOD_LIST_BEGIN
 
     BXT_ADD_METHOD_TO(AuthController::auth, "/api/auth", drogon::Post);
-    BXT_JWT_ADD_METHOD_TO(AuthController::verify, "/api/verify", drogon::Get);
+    BXT_ADD_METHOD_TO(AuthController::verify, "/api/verify", drogon::Get);
 
     METHOD_LIST_END
 
