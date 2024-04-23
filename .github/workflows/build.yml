@@ -14,7 +14,7 @@ jobs:
           driver: docker
       - name: Build production environment using docker-compose
         run: |
-          docker-compose -f docker-compose.yml -f docker-compose.caddy.yml build production
+          docker compose -f docker-compose.yml -f docker-compose.caddy.yml build production
 
       - name: Save Docker image as a tarball
         run: docker save bxt_production:latest -o bxt-production.tar
