@@ -23,11 +23,35 @@
 #include <mutex>
 #include <parallel_hashmap/phmap.h>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <unordered_map>
 #include <utility>
 
 namespace bxt::Persistence::Box {
+
+void create_relative_symlink(const std::filesystem::path& target,
+                             const std::filesystem::path& link) {
+    if (std::filesystem::is_symlink(link)) { return; }
+    std::error_code ec;
+    const auto relative_target =
+        std::filesystem::relative(target, link.parent_path(), ec);
+
+    if (ec) {
+        logf("Failed to get relative symlink path. The error is \"{}\". Box "
+             "will be malformed, exiting.",
+             ec.message());
+        exit(1);
+    }
+
+    std::filesystem::create_symlink(relative_target, link, ec);
+    if (ec) {
+        logf("Failed to create symlink. The error is \"{}\". Box will be "
+             "malformed, exiting.",
+             ec.message());
+        exit(1);
+    }
+}
 
 AlpmDBExporter::AlpmDBExporter(
     BoxOptions& box_options,
@@ -98,12 +122,29 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
                     "Exporter: Description for \"{}/{}-{}\" is being added... ",
                     std::string(section), name, *version);
 
+                const auto preferred_description = package.descriptions.at(
+                    *Core::Domain::select_preferred_pool_location(
+                        package.descriptions));
+
                 Utilities::AlpmDb::DatabaseUtils::write_buffer_to_archive(
                     *writer, fmt::format("{}-{}/desc", name, *version),
-                    package.descriptions
-                        .at(*Core::Domain::select_preferred_pool_location(
-                            package.descriptions))
-                        .descfile.desc);
+                    preferred_description.descfile.desc);
+
+                const auto filepath_link = std::filesystem::absolute(
+                    m_box_path / std::string(section)
+                    / preferred_description.filepath.filename());
+
+                create_relative_symlink(preferred_description.filepath,
+                                        filepath_link);
+
+                if (preferred_description.signature_path) {
+                    const auto signature_link = std::filesystem::absolute(
+                        m_box_path / std::string(section)
+                        / preferred_description.signature_path->filename());
+
+                    create_relative_symlink(
+                        *preferred_description.signature_path, signature_link);
+                }
 
                 logd("Exporter: Description for \"{}/{}-{}\" is added",
                      std::string(section), name, *version);
