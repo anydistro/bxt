@@ -11,6 +11,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - caddy_data:/data
+      - persistence_volume: /persistence
     restart: unless-stopped
   production:
     ports: !reset []
@@ -19,6 +20,9 @@ services:
     labels:
       caddy: "${CADDY_HOST}"
       caddy.reverse_proxy: "{{upstreams 8080}}"
+      caddy.1_handle_path: "/box/*"
+      caddy.1_handle_path.root: "* /persistence/box"
+      caddy.1_handle_path.file_server: "browse"
     depends_on:
       - caddy
 
