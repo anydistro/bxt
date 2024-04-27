@@ -104,10 +104,19 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
 
                 const auto& [section, name] = *deserialized;
 
+                const auto preferred_location =
+                    Core::Domain::select_preferred_pool_location(
+                        package.descriptions);
+
+                if (!preferred_location.has_value()) {
+                    loge("Can't find preferred location for {}. "
+                         "Skipping.",
+                         name);
+                    return Utilities::NavigationAction::Next;
+                }
+
                 const auto version =
-                    package.descriptions
-                        .at(*Core::Domain::select_preferred_pool_location(
-                            package.descriptions))
+                    package.descriptions.at(*preferred_location)
                         .descfile.get("VERSION");
 
                 if (!version.has_value()) {
