@@ -82,14 +82,16 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
     for (const auto& section : m_dirty_sections) {
         logd("Exporter: \"{}\" export into the package manager format started",
              std::string(section));
-        writers.emplace(section, Archive::Writer());
 
-        archive_write_add_filter_zstd(writers.at(section));
-        archive_write_set_format_pax_restricted(writers.at(section));
+        auto writer = setup_writer(section);
 
-        writers.at(section).open_filename(
-            m_box_path / std::string(section)
-            / fmt::format("{}.db.tar.zst", section.repository));
+        if (!writer.has_value()) {
+            logf("Exporter: Writer cannot be created, the error is \"{}\"",
+                 writer.error().what());
+            co_return;
+        }
+
+        writers.emplace(section, std::move(*writer));
 
         co_await m_package_store.accept(
             [this, writer = &writers.at(section)](
@@ -174,6 +176,32 @@ void AlpmDBExporter::add_dirty_sections(
     std::set<Core::Application::PackageSectionDTO>&& sections) {
     m_dirty_sections.insert(std::make_move_iterator(sections.begin()),
                             std::make_move_iterator(sections.end()));
+}
+
+std::expected<Archive::Writer, Archive::LibArchiveError>
+    AlpmDBExporter::setup_writer(const PackageSectionDTO& section) {
+    Archive::Writer writer;
+
+    if (archive_write_add_filter_zstd(writer) < ARCHIVE_WARN) {
+        return bxt::make_error<Archive::LibArchiveError>(std::move(writer));
+    }
+    if (archive_write_set_format_pax_restricted(writer) < ARCHIVE_WARN) {
+        return bxt::make_error<Archive::LibArchiveError>(std::move(writer));
+    }
+
+    const auto archive_path =
+        m_box_path / std::string(section)
+        / fmt::format("{}.db.tar.zst", section.repository);
+
+    auto open_ok = writer.open_filename(archive_path);
+    if (!open_ok.has_value()) { return std::unexpected(open_ok.error()); }
+
+    const auto archive_link = m_box_path / std::string(section)
+                              / fmt::format("{}.db", section.repository);
+
+    create_relative_symlink(archive_path, archive_link);
+
+    return writer;
 }
 
 } // namespace bxt::Persistence::Box
