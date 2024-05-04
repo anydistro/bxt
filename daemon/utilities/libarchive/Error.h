@@ -14,14 +14,17 @@
 
 namespace Archive {
 
-struct InvalidEntryError : public bxt::Error {
+struct ArchiveError : public bxt::Error {
+    ArchiveError() { message = "Unknown Archive error"; }
+};
+
+struct InvalidEntryError : public ArchiveError {
     InvalidEntryError() { message = "The entry has no linked archive!"; }
 };
 
-struct LibArchiveError : public bxt::Error {
+struct LibArchiveError : public ArchiveError {
     explicit LibArchiveError(archive* archive) {
         message = archive_error_string(archive);
     }
 };
-
 } // namespace Archive

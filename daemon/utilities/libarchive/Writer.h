@@ -31,9 +31,7 @@ public:
     public:
         Entry() = default;
 
-        template<typename T>
-        using Result =
-            std::expected<T, std::variant<InvalidEntryError, LibArchiveError>>;
+        template<typename T> using Result = std::expected<T, ArchiveError>;
 
         // Use the Result template for function return type
         Result<void> write(const std::vector<uint8_t>& data);

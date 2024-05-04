@@ -13,6 +13,7 @@
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/export/ExporterBase.h"
 #include "persistence/box/store/PackageStoreBase.h"
+#include "utilities/Error.h"
 #include "utilities/libarchive/Error.h"
 #include "utilities/libarchive/Writer.h"
 
@@ -35,7 +36,7 @@ public:
         std::set<Core::Application::PackageSectionDTO>&& override) override;
 
 private:
-    std::expected<Archive::Writer, Archive::LibArchiveError>
+    std::expected<Archive::Writer, bxt::Error>
         setup_writer(const PackageSectionDTO& section);
     std::filesystem::path m_box_path;
     std::set<Core::Application::PackageSectionDTO> m_sections;

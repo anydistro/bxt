@@ -47,9 +47,9 @@ coro::task<Result<void>>
                visitor);
 
 template<typename TBuffer>
-void write_buffer_to_archive(Archive::Writer& writer,
-                             const std::string& name,
-                             const TBuffer& buffer) {
+Result<void> write_buffer_to_archive(Archive::Writer& writer,
+                                     const std::string& name,
+                                     const TBuffer& buffer) {
     auto header = Archive::Header::default_file();
 
     archive_entry_set_pathname(header, name.c_str());
@@ -57,10 +57,26 @@ void write_buffer_to_archive(Archive::Writer& writer,
 
     auto entry = writer.start_write(header);
 
-    if (!entry.has_value()) { return; }
+    if (!entry.has_value()) {
+        return bxt::make_error_with_source<DatabaseError>(
+            std::move(entry.error()), DatabaseError::ErrorType::IOError);
+    }
 
-    entry->write({buffer.begin(), buffer.end()});
-    entry->finish();
+    auto write_ok = entry->write({buffer.begin(), buffer.end()});
+
+    if (!write_ok.has_value()) {
+        return bxt::make_error_with_source<DatabaseError>(
+            std::move(write_ok.error()), DatabaseError::ErrorType::IOError);
+    }
+
+    auto finish_ok = entry->finish();
+
+    if (!finish_ok.has_value()) {
+        return bxt::make_error_with_source<DatabaseError>(
+            std::move(finish_ok.error()), DatabaseError::ErrorType::IOError);
+    }
+
+    return {};
 }
 
 coro::task<Result<void>>

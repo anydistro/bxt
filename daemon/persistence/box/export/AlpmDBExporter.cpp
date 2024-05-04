@@ -30,27 +30,20 @@
 
 namespace bxt::Persistence::Box {
 
-void create_relative_symlink(const std::filesystem::path& target,
-                             const std::filesystem::path& link) {
-    if (std::filesystem::is_symlink(link)) { return; }
+std::expected<void, FsError>
+    create_relative_symlink(const std::filesystem::path& target,
+                            const std::filesystem::path& link) {
+    if (std::filesystem::is_symlink(link)) { return {}; }
     std::error_code ec;
+
     const auto relative_target =
         std::filesystem::relative(target, link.parent_path(), ec);
-
-    if (ec) {
-        logf("Failed to get relative symlink path. The error is \"{}\". Box "
-             "will be malformed, exiting.",
-             ec.message());
-        exit(1);
-    }
+    if (ec) { return bxt::make_error<FsError>(ec); }
 
     std::filesystem::create_symlink(relative_target, link, ec);
-    if (ec) {
-        logf("Failed to create symlink. The error is \"{}\". Box will be "
-             "malformed, exiting.",
-             ec.message());
-        exit(1);
-    }
+    if (ec) { return bxt::make_error<FsError>(ec); }
+
+    return {};
 }
 
 AlpmDBExporter::AlpmDBExporter(
@@ -80,13 +73,14 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
     phmap::parallel_flat_hash_map<PackageSectionDTO, Archive::Writer> writers;
 
     for (const auto& section : m_dirty_sections) {
-        logd("Exporter: \"{}\" export into the package manager format started",
+        logi("Exporter: \"{}\" export into the package manager format started",
              std::string(section));
 
         auto writer = setup_writer(section);
 
         if (!writer.has_value()) {
-            logf("Exporter: Writer cannot be created, the error is \"{}\"",
+            logf("Exporter: Writer cannot be created, the error is \"{}\". "
+                 "Stopping...",
                  writer.error().what());
             co_return;
         }
@@ -101,7 +95,7 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
 
                 if (!deserialized.has_value()) {
                     loge("Exporter: Key \"{}\" is not valid. Skipping...", key);
-                    return Utilities::NavigationAction::Next;
+                    return Utilities::NavigationAction::Stop;
                 }
 
                 const auto& [section, name] = *deserialized;
@@ -111,10 +105,10 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
                         package.descriptions);
 
                 if (!preferred_location.has_value()) {
-                    loge("Can't find preferred location for {}. "
-                         "Skipping.",
+                    logf("Exporter: Can't find preferred location for \"{}\". "
+                         "Stopping...",
                          name);
-                    return Utilities::NavigationAction::Next;
+                    return Utilities::NavigationAction::Stop;
                 }
 
                 const auto version =
@@ -122,14 +116,14 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
                         .descfile.get("VERSION");
 
                 if (!version.has_value()) {
-                    loge("Exporter: Version for \"{}\" is not valid. "
-                         "Skipping...",
+                    logf("Exporter: Version for \"{}\" is not valid. "
+                         "Stopping...",
                          key);
 
-                    return Utilities::NavigationAction::Next;
+                    return Utilities::NavigationAction::Stop;
                 }
 
-                logd(
+                logi(
                     "Exporter: Description for \"{}/{}-{}\" is being added... ",
                     std::string(section), name, *version);
 
@@ -137,34 +131,62 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
                     *Core::Domain::select_preferred_pool_location(
                         package.descriptions));
 
-                Utilities::AlpmDb::DatabaseUtils::write_buffer_to_archive(
-                    *writer, fmt::format("{}-{}/desc", name, *version),
-                    preferred_description.descfile.desc);
+                if (auto write_ok = Utilities::AlpmDb::DatabaseUtils::
+                        write_buffer_to_archive(
+                            *writer, fmt::format("{}-{}/desc", name, *version),
+                            preferred_description.descfile.desc);
+                    !write_ok) {
+                    logf("Exporter: Can't write \"{}/{}-{}\" description to "
+                         "the archive. The error is \"{}\"",
+                         std::string(section), name, *version,
+                         write_ok.error().what());
+
+                    return Utilities::NavigationAction::Stop;
+                }
 
                 const auto filepath_link = std::filesystem::absolute(
                     m_box_path / std::string(section)
                     / preferred_description.filepath.filename());
 
-                create_relative_symlink(preferred_description.filepath,
-                                        filepath_link);
+                if (auto link_created_ok = create_relative_symlink(
+                        preferred_description.filepath, filepath_link);
+                    !link_created_ok) {
+                    logf("Exporter: Can't link the package file for "
+                         "\"{}/{}-{}\". The error is \"{}\". Stopping the "
+                         "export...",
+                         std::string(section), name, *version,
+                         link_created_ok.error().what());
+
+                    return Utilities::NavigationAction::Stop;
+                }
 
                 if (preferred_description.signature_path) {
                     const auto signature_link = std::filesystem::absolute(
                         m_box_path / std::string(section)
                         / preferred_description.signature_path->filename());
 
-                    create_relative_symlink(
-                        *preferred_description.signature_path, signature_link);
+                    if (auto link_created_ok = create_relative_symlink(
+                            *preferred_description.signature_path,
+                            signature_link);
+                        !link_created_ok) {
+                        logf("Exporter: Can't link the signature file for "
+                             "\"{}/{}-{}\". The error is \"{}\". Stopping the "
+                             "export...",
+                             std::string(section), name, *version,
+                             link_created_ok.error().what());
+
+                        return Utilities::NavigationAction::Stop;
+                    }
                 }
 
-                logd("Exporter: Description for \"{}/{}-{}\" is added",
+                logi("Exporter: Description and link for \"{}/{}-{}\" is added",
                      std::string(section), name, *version);
 
                 return Utilities::NavigationAction::Next;
             },
             std::string(section));
 
-        logd("Exporter: \"{}\" export finished", std::string(section));
+        logi("Exporter: \"{}\" export finished", std::string(section));
     }
 
     m_dirty_sections.clear();
@@ -178,7 +200,7 @@ void AlpmDBExporter::add_dirty_sections(
                             std::make_move_iterator(sections.end()));
 }
 
-std::expected<Archive::Writer, Archive::LibArchiveError>
+std::expected<Archive::Writer, bxt::Error>
     AlpmDBExporter::setup_writer(const PackageSectionDTO& section) {
     Archive::Writer writer;
 
@@ -193,13 +215,18 @@ std::expected<Archive::Writer, Archive::LibArchiveError>
         m_box_path / std::string(section)
         / fmt::format("{}.db.tar.zst", section.repository);
 
-    auto open_ok = writer.open_filename(archive_path);
-    if (!open_ok.has_value()) { return std::unexpected(open_ok.error()); }
+    if (auto open_ok = writer.open_filename(archive_path); !open_ok) {
+        return std::unexpected(std::move(open_ok.error()));
+    }
 
     const auto archive_link = m_box_path / std::string(section)
                               / fmt::format("{}.db", section.repository);
 
-    create_relative_symlink(archive_path, archive_link);
+    if (auto link_created_ok =
+            create_relative_symlink(archive_path, archive_link);
+        !link_created_ok) {
+        return std::unexpected(link_created_ok.error());
+    }
 
     return writer;
 }
