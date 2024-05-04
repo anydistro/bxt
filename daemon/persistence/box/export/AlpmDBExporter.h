@@ -40,6 +40,9 @@ private:
     std::expected<Archive::Writer, bxt::Error>
         setup_alpmdb_writer(const PackageSectionDTO& section);
 
+    std::expected<void, FsError>
+        cleanup_section(const PackageSectionDTO& section);
+
     std::expected<void, std::string>
         export_package(Archive::Writer& writer,
                        std::string_view key,

@@ -81,6 +81,8 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
 
         /// TODO: We need to make this way more robust. At least a full backup
         /// would work but maybe we can do something more smart...
+        if (!cleanup_section(section)) { co_return; }
+
         auto writer = setup_alpmdb_writer(section);
 
         if (!writer.has_value()) {
@@ -149,6 +151,35 @@ std::expected<Archive::Writer, bxt::Error>
     }
 
     return writer;
+}
+// Cleans up section before the export by removing all it's content
+std::expected<void, FsError>
+    AlpmDBExporter::cleanup_section(const PackageSectionDTO& section) {
+    std::error_code ec;
+
+    std::filesystem::directory_iterator directory_iterator;
+
+    constexpr auto handle_error = [](const auto& ec) {
+        logf("Exporter: Can't wipe the directory before the export, the "
+             "error is "
+             "\"{}\". Stopping...",
+             ec.message());
+        return bxt::make_error<FsError>(ec);
+    };
+
+    if (directory_iterator = std::filesystem::directory_iterator(
+            m_box_path / std::string(section), ec);
+        ec) {
+        return handle_error(ec);
+    }
+
+    for (const auto& entry : directory_iterator) {
+        if (!std::filesystem::remove_all(entry.path(), ec)) {
+            return handle_error(ec);
+        }
+    }
+
+    return {};
 }
 
 struct PackageDetails {
