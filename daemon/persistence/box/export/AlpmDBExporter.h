@@ -8,13 +8,14 @@
 #pragma once
 
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/domain/entities/Section.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "parallel_hashmap/phmap.h"
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/export/ExporterBase.h"
 #include "persistence/box/store/PackageStoreBase.h"
 #include "utilities/Error.h"
-#include "utilities/libarchive/Error.h"
+#include "utilities/errors/FsError.h"
 #include "utilities/libarchive/Writer.h"
 
 #include <coro/io_scheduler.hpp>
@@ -37,7 +38,13 @@ public:
 
 private:
     std::expected<Archive::Writer, bxt::Error>
-        setup_writer(const PackageSectionDTO& section);
+        setup_alpmdb_writer(const PackageSectionDTO& section);
+
+    std::expected<void, std::string>
+        export_package(Archive::Writer& writer,
+                       std::string_view key,
+                       const PackageRecord& package);
+
     std::filesystem::path m_box_path;
     std::set<Core::Application::PackageSectionDTO> m_sections;
     PackageStoreBase& m_package_store;
