@@ -24,17 +24,20 @@
 #include <parallel_hashmap/phmap.h>
 #include <string_view>
 #include <system_error>
-#include <thread>
-#include <unordered_map>
-#include <utility>
 
 namespace bxt::Persistence::Box {
-
+// Creates the symlink relative to target
 std::expected<void, FsError>
     create_relative_symlink(const std::filesystem::path& target,
                             const std::filesystem::path& link) {
-    if (std::filesystem::is_symlink(link)) { return {}; }
     std::error_code ec;
+
+    if (std::filesystem::exists(link)) {
+        ec.assign(static_cast<int>(std::errc::file_exists),
+                  std::generic_category());
+        return bxt::make_error<FsError>(ec);
+    }
+    if (ec) { return bxt::make_error<FsError>(ec); }
 
     const auto relative_target =
         std::filesystem::relative(target, link.parent_path(), ec);
