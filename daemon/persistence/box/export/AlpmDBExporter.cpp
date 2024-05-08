@@ -37,7 +37,6 @@ std::expected<void, FsError>
                   std::generic_category());
         return bxt::make_error<FsError>(ec);
     }
-    if (ec) { return bxt::make_error<FsError>(ec); }
 
     const auto relative_target =
         std::filesystem::relative(target, link.parent_path(), ec);
