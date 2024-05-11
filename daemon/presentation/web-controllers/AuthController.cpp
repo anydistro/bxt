@@ -7,6 +7,7 @@
 #include "AuthController.h"
 
 #include "drogon/HttpTypes.h"
+#include "presentation/messages/AuthMessages.h"
 #include "utilities/drogon/Helpers.h"
 
 #include <boost/json.hpp>
@@ -18,43 +19,34 @@ namespace bxt::Presentation {
 
 drogon::Task<drogon::HttpResponsePtr>
     AuthController::auth(drogon::HttpRequestPtr req) {
-    if (!req->getJsonObject() || !req->getJsonObject()->isObject()) {
-        auto error_resp = drogon::HttpResponse::newHttpResponse();
-        error_resp->setStatusCode(drogon::k400BadRequest);
-        co_return error_resp;
+    const auto auth_request =
+        drogon_helpers::get_request_json<AuthRequest>(req);
+
+    if (!auth_request) {
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Invalid request: {}", auth_request.error()->what()));
     }
 
-    auto json = *req->getJsonObject();
+    const auto& [name, password] = *auth_request;
 
-    const auto name_json = json["name"];
-    const auto password_json = json["password"];
+    const auto check_ok = co_await m_service.auth(name, password);
 
-    if (name_json.isNull() || password_json.isNull()) {
-        auto error_resp = drogon::HttpResponse::newHttpResponse();
-        error_resp->setStatusCode(drogon::k400BadRequest);
-        co_return error_resp;
+    if (!check_ok.has_value()) {
+        co_return drogon_helpers::make_error_response(check_ok.error().what(),
+                                                      drogon::k401Unauthorized);
     }
 
-    const std::string name = name_json.asString();
-    const std::string password = password_json.asString();
-
-    if (!co_await m_service.auth(name, password)) {
-        auto error_resp = drogon::HttpResponse::newHttpResponse();
-        error_resp->setStatusCode(drogon::k401Unauthorized);
-        co_return error_resp;
-    }
     const auto token = jwt::create()
                            .set_payload_claim("username", name)
                            .set_issuer("auth0")
                            .set_type("JWS")
                            .sign(jwt::algorithm::hs256 {m_options.secret});
-
-    auto response = drogon::HttpResponse::newHttpResponse();
     drogon::Cookie jwt_cookie("token", token);
-
     jwt_cookie.setHttpOnly(true);
 
+    auto response = drogon::HttpResponse::newHttpResponse();
     response->addCookie(jwt_cookie);
+
     co_return response;
 }
 

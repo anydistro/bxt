@@ -7,29 +7,22 @@
 #include "CompareController.h"
 
 #include "core/application/dtos/PackageSectionDTO.h"
-#include "core/domain/enums/PoolLocation.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/HttpTypes.h"
+#include "presentation/messages/CompareMessages.h"
+#include "utilities/drogon/Helpers.h"
 #include "utilities/drogon/Macro.h"
+#include "utilities/to_string.h"
 
-#include "json/value.h"
+#include <rfl/as.hpp>
+#include <rfl/json/read.hpp>
 #include <string>
+#include <unordered_map>
 #include <vector>
 namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
     CompareController::compare(drogon::HttpRequestPtr req) {
-    Json::Value result;
     const auto available_sections = co_await m_section_service.get_sections();
-
-    if (!available_sections.has_value()) {
-        result["error"] = "No sections available in the Box";
-        result["status"] = "error";
-
-        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
-        response->setStatusCode(drogon::k400BadRequest);
-
-        co_return response;
-    }
 
     for (const auto& [branch, repository, architecture] : *available_sections) {
         BXT_JWT_CHECK_PERMISSIONS(fmt::format("packages.compare.{}.{}.{}",
@@ -37,56 +30,41 @@ drogon::Task<drogon::HttpResponsePtr>
                                   req)
     }
 
-    const auto sections_json = *req->getJsonObject();
-
-    if (sections_json.empty()) {
-        result["error"] = "No sections to compare provided";
-        result["status"] = "error";
-
-        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
-        response->setStatusCode(drogon::k400BadRequest);
-
-        co_return response;
+    if (!available_sections.has_value()) {
+        co_return drogon_helpers::make_error_response("No sections available");
     }
 
-    std::vector<PackageSectionDTO> sections;
+    const auto sections_request =
+        drogon_helpers::get_request_json<CompareRequest>(req);
 
-    for (const auto& section_json : sections_json) {
-        sections.emplace_back(PackageSectionDTO {
-            .branch = section_json["branch"].asString(),
-            .repository = section_json["repository"].asString(),
-            .architecture = section_json["architecture"].asString()});
+    if (!sections_request) {
+        co_return drogon_helpers::make_error_response(fmt::format(
+            "Invalid request: {}", sections_request.error()->what()));
     }
 
-    const auto compare_result = co_await m_compare_service.compare(sections);
+    if ((*sections_request).empty()) {
+        co_return drogon_helpers::make_error_response(
+            "No sections to compare were provided");
+    }
+
+    const auto compare_result =
+        co_await m_compare_service.compare(*sections_request);
 
     if (compare_result->sections.empty()
         || compare_result->compare_table.empty()) {
-        result["error"] = "No compare data found (all sections are empty)";
-        result["status"] = "error";
-
-        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
-        response->setStatusCode(drogon::k400BadRequest);
-
-        co_return response;
+        co_return drogon_helpers::make_error_response(
+            "No compare data found (all sections are empty)");
     }
 
-    for (const auto& section : compare_result->sections) {
-        Json::Value section_json;
-
-        section_json["branch"] = section.branch;
-        section_json["repository"] = section.repository;
-        section_json["architecture"] = section.architecture;
-
-        result["sections"].append(section_json);
-    }
+    CompareResponse result {compare_result->sections};
 
     for (const auto& [index, version] : compare_result->compare_table) {
         auto&& [name, section, location] = index;
-        result["compare_table"][name][std::string(section)]
-              [bxt::to_string(location)] = version;
+
+        result.compare_table[name][bxt::to_string(section)]
+                            [bxt::to_string(location)] = version;
     }
 
-    co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    co_return drogon_helpers::make_json_response(result);
 }
 } // namespace bxt::Presentation

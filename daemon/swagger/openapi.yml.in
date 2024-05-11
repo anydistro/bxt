@@ -2,176 +2,78 @@ openapi: 3.0.0
 info:
   title: b[x]t API
   description: API for the b[x]t repository management service.
-  version: "0.1"
+  version: "MVP"
 servers:
   - url: "/"
 paths:
   /api/auth:
     post:
-      summary: Authentificate user.
+      summary: Authenticate user
+      operationId: auth
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - name
-                - password
-              properties:
-                name:
-                  type: string
-                password:
-                  type: string
+              $ref: "#/components/schemas/AuthRequest"
       responses:
         "200":
-          description: Issued JWT after successful authentification.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
+          description: Authentication successful, JWT token set in cookie
         "400":
-          description: Data is malformed.
+          description: Invalid request
         "401":
-          description: Credentials are invalid.
+          description: Unauthorized
   /api/verify:
     get:
-      summary: Verify issued token.
+      summary: Verify JWT token
+      operationId: verify
       responses:
         "200":
-          description: JWT is valid.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "ok"
-        "401":
-          description: Token is invalid or expired.
-
-  /api/users/add:
-    post:
-      summary: Add a new user.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                password:
-                  type: string
-                permissions:
-                  type: array
-                  items:
-                    type: string
-      responses:
-        "200":
-          description: User added successfully.
+          description: Token is valid
         "400":
-          description: Data is missing or malformed.
+          description: Invalid request
         "401":
-          description: User lacks permissions.
-
-  /api/users/update:
-    post:
-      summary: Update an existing user.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                password:
-                  type: string
-                permissions:
-                  type: array
-                  items:
-                    type: string
-      responses:
-        "200":
-          description: User successfully updated.
-        "400":
-          description: Data is missing or malformed.
-        "401":
-          description: Lacks permissions.
-
-  /api/users/remove:
-    post:
-      summary: Remove an existing user.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - id
-              properties:
-                id:
-                  type: string
-      responses:
-        "200":
-          description: User successfully removed.
-        "400":
-          description: Data is missing or malformed.
-        "401":
-          description: Lacks permissions.
-
-  /api/users:
+          description: Unauthorized
+  /api/logs/packages:
     get:
-      summary: Retrieve a list of users.
+      summary: Get package logs
+      operationId: getPackageLogs
       responses:
         "200":
-          description: Retrieved list of users.
+          description: List of package log entries
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/LogResponse"
+        "400":
+          description: Invalid request
         "401":
-          description: User lacks permissions.
-
-  /api/sections/get:
-    get:
-      summary: Retrieve accessible sections based on user permissions.
-      responses:
-        "200":
-          description: Retrieved sections.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Section"
-        "401":
-          description: User lacks permissions.
-
-  /api/sync:
+          description: Unauthorized
+  /api/compare:
     post:
-      summary: Synchronize package data across the system.
+      summary: Compare sections
+      operationId: compare
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompareRequest"
       responses:
         "200":
-          description: Synchronization started successfully.
-
+          description: Comparison result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompareResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
   /api/packages/commit:
     post:
-      summary: Commit a transaction.
+      summary: Commit package transaction
+      operationId: commitTransaction
       requestBody:
         required: true
         content:
@@ -179,53 +81,25 @@ paths:
             schema:
               type: object
               properties:
-                files:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      file:
-                        type: string
-                        format: binary
-                        description: The binary file of the package.
-                      signature:
-                        type: string
-                        format: binary
-                        description: The binary file of the package's signature.
-                packageInfo:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                        description: Name identifier of the package.
-                      branch:
-                        type: string
-                        description: Branch name for where the package should be committed.
-                      repository:
-                        type: string
-                        description: Repository name for where the package should be committed.
-                      architecture:
-                        type: string
-                        description: Architecture name for where the package should be committed.
+                packageFile:
+                  type: string
+                  format: binary
+                packageSignature:
+                  type: string
+                  format: binary
+                packageSection:
+                  type: string
       responses:
         "200":
-          description: Transaction committed successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  result:
-                    type: string
-                    example: "ok"
+          description: Transaction committed successfully
         "400":
-          description: Data is missing or malformed.
-
-  /api/packages/get:
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/packages:
     get:
-      summary: Retrieve packages based on specified branch, repository, and architecture.
+      summary: Get packages by section
+      operationId: getPackages
       parameters:
         - name: branch
           in: query
@@ -244,119 +118,218 @@ paths:
             type: string
       responses:
         "200":
-          description: Retrieved packages.
+          description: List of packages
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Package"
-
-  /api/snap:
+                  $ref: "#/components/schemas/PackageResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/packages/sync:
     post:
-      summary: Snap packages from a source section to a target section.
+      summary: Synchronize packages
+      operationId: sync
+      responses:
+        "200":
+          description: Packages synchronized successfully
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/packages/snap:
+    post:
+      summary: Snap packages between branches
+      operationId: snap
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                source:
-                  $ref: "#/components/schemas/Section"
-                target:
-                  $ref: "#/components/schemas/Section"
+              $ref: "#/components/schemas/SnapRequest"
       responses:
         "200":
-          description: Snap operation successful.
-
-  /api/logs/packages:
+          description: Packages snapped successfully
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/sections:
     get:
-      summary: Retrieve logs for package-related actions.
+      summary: Get sections
+      operationId: getSections
       responses:
         "200":
-          description: Retrieved package logs.
+          description: List of sections
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/LogEntry"
-  /api/deploy/start:
-    post:
-      summary: Start a deployment session.
-      responses:
-        "200":
-          description: Deployment session started successfully.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "Session started with ID: {session_id}"
-        "401":
-          description: No API key provided or invalid API key.
+                  $ref: "#/components/schemas/SectionResponse"
         "400":
-          description: Error message if start failed.
-  /api/deploy/push:
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/users/add:
     post:
-      summary: Push a package to the deployment session.
+      summary: Add a new user
+      operationId: addUser
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: The binary file of the package.
-                signature:
-                  type: string
-                  format: binary
-                  description: The binary signature of the package.
-                branch:
-                  type: string
-                  description: The branch where the package will be deployed.
-                repository:
-                  type: string
-                  description: The repository where the package will be deployed.
-                architecture:
-                  type: string
-                  description: The architecture of the package deployment.
-                session:
-                  type: string
-                  description: The session ID for the deployment.
+              $ref: "#/components/schemas/AddUserRequest"
       responses:
         "200":
-          description: Package pushed successfully.
+          description: User added successfully
         "400":
-          description: Invalid request, missing file, signature, or invalid section data.
+          description: Invalid request
         "401":
-          description: Invalid or missing API key.
-  /api/deploy/end:
+          description: Unauthorized
+  /api/users/update:
     post:
-      summary: End a deployment session.
+      summary: Update an existing user
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
       responses:
         "200":
-          description: Deployment session ended successfully.
+          description: User updated successfully
         "400":
-          description: Error message if ending the session failed.
+          description: Invalid request
         "401":
-          description: Invalid or missing API key.
+          description: Unauthorized
+  /api/users/remove:
+    post:
+      summary: Remove a user
+      operationId: removeUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveUserRequest"
+      responses:
+        "200":
+          description: User removed successfully
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/users:
+    get:
+      summary: Get list of users
+      operationId: getUsers
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
 
 components:
   schemas:
-    User:
+    AuthRequest:
       type: object
       properties:
         name:
           type: string
-        permissions:
+        password:
+          type: string
+      required:
+        - name
+        - password
+
+    CompareRequest:
+      type: array
+      items:
+        $ref: "#/components/schemas/SectionRequest"
+
+    CompareResponse:
+      type: object
+      properties:
+        sections:
           type: array
           items:
-            type: string
-    Section:
+            $ref: "#/components/schemas/PackageSection"
+        compareTable:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: object
+              additionalProperties:
+                type: string
+
+    LogResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/LogEntryResponse"
+
+    LogEntryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        time:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/LogEntryType"
+        package:
+          $ref: "#/components/schemas/PackageResponse"
+      required:
+        - id
+        - time
+        - type
+        - package
+
+    LogEntryType:
+      type: string
+      enum:
+        - Add
+        - Remove
+        - Update
+
+    PackageResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        section:
+          type: string
+        poolEntries:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PoolEntryResponse"
+        preferredLocation:
+          type: string
+
+    PoolEntryResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        signaturePath:
+          type: boolean
+
+    PackageSection:
       type: object
       properties:
         branch:
@@ -365,32 +338,64 @@ components:
           type: string
         architecture:
           type: string
-    Package:
+      required:
+        - branch
+        - repository
+        - architecture
+
+    SectionRequest:
+      $ref: "#/components/schemas/PackageSection"
+
+    SectionResponse:
+      $ref: "#/components/schemas/PackageSection"
+
+    SnapRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/SectionRequest"
+        target:
+          $ref: "#/components/schemas/SectionRequest"
+      required:
+        - source
+        - target
+
+    AddUserRequest:
       type: object
       properties:
         name:
           type: string
-        section:
-          $ref: "#/components/schemas/Section"
-        pool_entries:
+        password:
+          type: string
+        permissions:
           type: array
           items:
-            $ref: "#/components/schemas/PoolEntry"
-    PoolEntry:
+            type: string
+
+    UpdateUserRequest:
       type: object
       properties:
-        version:
+        name:
           type: string
-        hasSignature:
-          type: boolean
-    LogEntry:
+        password:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    RemoveUserRequest:
       type: object
       properties:
-        id:
+        name:
           type: string
-        time:
+
+    UserResponse:
+      type: object
+      properties:
+        name:
           type: string
-        package:
-          $ref: "#/components/schemas/Package"
-        action:
-          type: string
+        permissions:
+          type: array
+          items:
+            type: string

@@ -27,7 +27,7 @@ export default (props: any) => {
     axios.interceptors.response.use(
         (response) => response,
         (error) => {
-            toast.error(`Response error: ${error.response?.data?.error}`, {
+            toast.error(`Response error: ${error.response?.data?.message}`, {
                 autoClose: false
             });
         }

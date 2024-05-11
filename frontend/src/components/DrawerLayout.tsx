@@ -22,7 +22,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const triggerSync = async () => {
-    await axios.post("/api/sync");
+    await axios.post("/api/packages/sync");
 };
 
 export default () => {

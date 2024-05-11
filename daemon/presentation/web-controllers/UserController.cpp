@@ -7,13 +7,12 @@
 #include "UserController.h"
 
 #include "core/application/dtos/UserDTO.h"
-#include "drogon/HttpTypes.h"
+#include "presentation/messages/UserMessages.h"
 #include "utilities/drogon/Helpers.h"
-#include "utilities/log/Logging.h"
 
-#include <algorithm>
-#include <iterator>
 #include <json/value.h>
+#include <rfl/as.hpp>
+#include <rfl/json/read.hpp>
 
 namespace bxt::Presentation {
 
@@ -21,35 +20,15 @@ drogon::Task<drogon::HttpResponsePtr>
     UserController::add_user(drogon::HttpRequestPtr req) {
     BXT_JWT_CHECK_PERMISSIONS("users.add", req)
 
-    if (!req->getJsonObject()) {
-        co_return drogon_helpers::make_error_response("Body is malformed");
-    }
-    auto json = *req->getJsonObject();
+    const auto user_request =
+        drogon_helpers::get_request_json<AddUserRequest>(req);
 
-    Core::Application::UserDTO dto;
-
-    if (!json["name"] || !json["name"].isString()) {
+    if (!user_request) {
         co_return drogon_helpers::make_error_response(
-            "No name for entity provided");
-    }
-    dto.name = json["name"].asString();
-
-    if (json["password"] && json["password"].isString()) {
-        dto.password = json["password"].asString();
+            fmt::format("Invalid request: {}", user_request.error()->what()));
     }
 
-    if (json["permissions"] && json["permissions"].isArray()) {
-        dto.permissions = std::set<std::string>();
-
-        for (const auto& permission : json["permissions"]) {
-            if (permission.isString()) {
-                dto.permissions->emplace(permission.asString());
-            } else {
-                logw("User Controller: trying to add a permission with wrong "
-                     "type");
-            }
-        }
-    }
+    auto dto = rfl::as<Core::Application::UserDTO>(*user_request);
 
     const auto add_ok = co_await m_service.add_user(dto);
 
@@ -64,36 +43,15 @@ drogon::Task<drogon::HttpResponsePtr>
     UserController::update_user(drogon::HttpRequestPtr req) {
     BXT_JWT_CHECK_PERMISSIONS("users.update", req)
 
-    if (!req->getJsonObject()) {
-        co_return drogon_helpers::make_error_response("Body is malformed");
-    }
+    const auto user_request =
+        drogon_helpers::get_request_json<UpdateUserRequest>(req);
 
-    auto json = *req->getJsonObject();
-
-    Core::Application::UserDTO dto;
-
-    if (!json["name"] || !json["name"].isString()) {
+    if (!user_request) {
         co_return drogon_helpers::make_error_response(
-            "No name for entity provided");
-    }
-    dto.name = json["name"].asString();
-
-    if (json["password"] && json["password"].isString()) {
-        dto.password = json["password"].asString();
+            fmt::format("Invalid request: {}", user_request.error()->what()));
     }
 
-    if (json["permissions"] && json["permissions"].isArray()) {
-        dto.permissions = std::set<std::string>();
-
-        for (const auto& permission : json["permissions"]) {
-            if (permission.isString()) {
-                dto.permissions->emplace(permission.asString());
-            } else {
-                logw("User Controller: trying to add a permission with wrong "
-                     "type");
-            }
-        }
-    }
+    auto dto = rfl::as<Core::Application::UserDTO>(*user_request);
 
     const auto update_ok = co_await m_service.update_user(dto);
 
@@ -108,12 +66,15 @@ drogon::Task<drogon::HttpResponsePtr>
     UserController::remove_user(drogon::HttpRequestPtr req) {
     BXT_JWT_CHECK_PERMISSIONS("users.remove", req)
 
-    auto json = *req->getJsonObject();
+    const auto user_request =
+        drogon_helpers::get_request_json<RemoveUserRequest>(req);
 
-    const auto id = json["id"].asString();
-    Json::Value result;
+    if (!user_request) {
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Invalid request: {}", user_request.error()->what()));
+    }
 
-    const auto remove_ok = co_await m_service.remove_user(id);
+    const auto remove_ok = co_await m_service.remove_user((*user_request).name);
 
     if (!remove_ok.has_value()) {
         co_return drogon_helpers::make_error_response(remove_ok.error().what());
@@ -127,27 +88,19 @@ drogon::Task<drogon::HttpResponsePtr>
     BXT_JWT_CHECK_PERMISSIONS("users.get", req)
 
     const auto users = co_await m_service.get_users();
-    Json::Value result;
 
     if (!users.has_value()) {
         co_return drogon_helpers::make_error_response(users.error().what());
     }
 
-    for (const auto& user : *users) {
-        Json::Value user_json;
-
-        user_json["name"] = user.name;
-
-        user_json["permissions"] = Json::Value(Json::arrayValue);
-
-        for (const auto& permission : *user.permissions) {
-            user_json["permissions"].append(permission);
-        }
-
-        result.append(user_json);
-    }
-
-    co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    co_return drogon_helpers::make_json_response(
+        *users
+        | std::views::transform([](const Core::Application::UserDTO& dto) {
+              auto&& [name, password, permissions] = dto;
+              return UserResponse {
+                  name, permissions.value_or(std::set<std::string> {})};
+          })
+        | std::ranges::to<std::vector>());
 }
 
 } // namespace bxt::Presentation

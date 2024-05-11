@@ -15,11 +15,9 @@ export const useSections = (): [ISection[], IUpdateSections] => {
     const [sections, setSections] = useState<ISection[]>([]);
 
     const updateSections: IUpdateSections = useCallback(() => {
-        axios
-            .get(`${process.env.PUBLIC_URL}/api/sections/get`)
-            .then((response) => {
-                setSections(response.data);
-            });
+        axios.get(`/api/sections`).then((response) => {
+            setSections(response.data);
+        });
     }, [setSections]);
 
     useEffect(() => {
@@ -74,8 +72,8 @@ export const useCompareResults = (): [
 
                 const compareEntries: ICompareEntry[] = [];
 
-                Object.keys(result.data["compare_table"]).forEach((value) => {
-                    const versions = { ...result.data["compare_table"] }[value];
+                Object.keys(result.data["compareTable"]).forEach((value) => {
+                    const versions = { ...result.data["compareTable"] }[value];
 
                     compareEntries.push({ name: value, ...versions });
                 });

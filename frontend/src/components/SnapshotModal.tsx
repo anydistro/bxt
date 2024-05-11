@@ -72,7 +72,7 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
                 return;
             }
             try {
-                await axios.post("/api/snap", {
+                await axios.post("/api/packages/snap", {
                     source: sourceSection,
                     target: targetSection
                 });

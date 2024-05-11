@@ -47,16 +47,28 @@ export default (props: any) => {
     const columnHelper = createColumnHelper<ILogEntry>();
 
     const columns = [
-        columnHelper.accessor("action", {
-            header: "Action"
+        columnHelper.accessor("type", {
+            header: "Type"
         }),
         columnHelper.accessor("package.name", {
             header: "Name"
         }),
 
-        columnHelper.accessor("package.preferredCandidate.version", {
-            header: "Version"
+        columnHelper.accessor("package.poolEntries", {
+            header: "Version",
+            cell: (context) => {
+                const value = context.getValue();
+                const preferredLocation =
+                    context?.row?.original?.package?.preferredLocation;
+
+                if (value && preferredLocation && value[preferredLocation]) {
+                    return value[preferredLocation].version;
+                } else {
+                    return "Unknown Version";
+                }
+            }
         }),
+
         columnHelper.accessor("package.section", {
             header: "Section",
             cell: (context) => <SectionLabel section={context.getValue()} />

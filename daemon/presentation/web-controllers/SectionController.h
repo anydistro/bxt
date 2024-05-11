@@ -25,7 +25,7 @@ public:
     METHOD_LIST_BEGIN
 
     BXT_JWT_ADD_METHOD_TO(SectionController::get_sections,
-                          "/api/sections/get",
+                          "/api/sections",
                           drogon::Get);
 
     METHOD_LIST_END

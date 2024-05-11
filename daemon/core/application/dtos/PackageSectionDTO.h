@@ -65,3 +65,8 @@ template<> struct std::hash<PackageSectionDTO> {
         return seed;
     }
 };
+
+template<> inline std::string bxt::to_string(const PackageSectionDTO& dto) {
+    return fmt::format("{}/{}/{}", dto.branch, dto.repository,
+                       dto.architecture);
+}

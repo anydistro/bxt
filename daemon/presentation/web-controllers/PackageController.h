@@ -38,12 +38,16 @@ public:
 
     BXT_JWT_ADD_METHOD_TO(
         PackageController::get_packages,
-        "/api/packages/get?branch={1}&repository={2}&architecture={3}",
+        "/api/packages?branch={1}&repository={2}&architecture={3}",
         drogon::Get);
 
-    BXT_JWT_ADD_METHOD_TO(PackageController::sync, "/api/sync", drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(PackageController::sync,
+                          "/api/packages/sync",
+                          drogon::Post);
 
-    BXT_JWT_ADD_METHOD_TO(PackageController::snap, "/api/snap", drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(PackageController::snap,
+                          "/api/packages/snap",
+                          drogon::Post);
 
     METHOD_LIST_END
 

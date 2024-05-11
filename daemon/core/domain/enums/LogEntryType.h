@@ -8,6 +8,6 @@
 
 namespace bxt::Core::Domain {
 
-enum LogEntryType { Add, Remove, Update };
+enum class LogEntryType { Add, Remove, Update };
 
 } // namespace bxt::Core::Domain

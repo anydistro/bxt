@@ -14,7 +14,7 @@ interface IPackage {
     section: ISection;
     name: string;
     isAnyArchitecture?: boolean;
-    preferredCandidate?: IPackagePoolEntry;
+    preferredLocation?: string;
     poolEntries?: {
         [key: string]: IPackagePoolEntry;
     };

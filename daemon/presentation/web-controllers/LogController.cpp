@@ -6,88 +6,64 @@
  */
 #include "LogController.h"
 
+#include "core/application/dtos/PackageLogEntryDTO.h"
+#include "core/domain/enums/LogEntryType.h"
 #include "core/domain/enums/PoolLocation.h"
 #include "drogon/HttpTypes.h"
+#include "presentation/messages/LogMessages.h"
+#include "presentation/messages/PackageMessages.h"
+#include "utilities/drogon/Helpers.h"
 #include "utilities/log/Logging.h"
+#include "utilities/reflect/PathParser.h"
+
+#include <filesystem>
+#include <rfl.hpp>
 
 namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
     LogController::get_package_logs(drogon::HttpRequestPtr req) {
-    Json::Value result;
-
     BXT_JWT_CHECK_PERMISSIONS("logs", req)
 
-    auto dtos = co_await m_service.events();
+    const auto dtos = co_await m_service.events();
 
     if (dtos.empty()) {
-        result["status"] = "error";
-        result["error"] = "No events found";
-
-        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
-        response->setStatusCode(drogon::k400BadRequest);
-
-        co_return response;
+        co_return drogon_helpers::make_error_response("No events found");
     }
 
-    for (const auto& dto : dtos) {
-        Json::Value json_value;
+    constexpr auto package_mapping = [](const auto& e) {
+        auto&& [location, entry] = e;
+        return std::make_pair(
+            bxt::to_string(location),
+            PoolEntryResponse {entry.version,
+                               entry.signature_path.has_value()});
+    };
 
-        json_value["id"] = dto.id;
-        json_value["time"] = dto.time;
-        json_value["package"]["name"] = dto.package.name;
+    co_return drogon_helpers::make_json_response(
+        dtos
+        | std::views::transform(
+            [package_mapping](const PackageLogEntryDTO& dto) {
+                auto&& [id, time, type, package] = dto;
+                LogEntryReponse result {
+                    id, time, type,
+                    PackageResponse {
+                        package.name, package.section,
+                        package.pool_entries
+                            | std::views::transform(package_mapping)
+                            | std::ranges::to<std::unordered_map>()}};
 
-        // Serialize section
-        json_value["package"]["section"]["branch"] = dto.package.section.branch;
-        json_value["package"]["section"]["repository"] =
-            dto.package.section.repository;
-        json_value["package"]["section"]["architecture"] =
-            dto.package.section.architecture;
-
-        // Serialize pool_entries
-        Json::Value pool_entries_json;
-        for (const auto& [pool_location, pool_entry] :
-             dto.package.pool_entries) {
-            Json::Value entry_json;
-            entry_json["version"] = pool_entry.version;
-            entry_json["hasSignature"] = pool_entry.signature_path.has_value();
-
-            pool_entries_json.append(entry_json);
-        }
-
-        json_value["package"]["pool_entries"] = pool_entries_json;
-        const auto preferred_location =
-            Core::Domain::select_preferred_pool_location(
-                dto.package.pool_entries);
-
-        if (!preferred_location) {
-            logd("Package {} has no pool entries, skipping preferred one "
-                 "selection",
-                 dto.package.name);
-            continue;
-        }
-
-        const auto preferred_candidate =
-            dto.package.pool_entries.at(*preferred_location);
-
-        json_value["package"]["preferredCandidate"]["version"] =
-            preferred_candidate.version;
-        json_value["package"]["preferredCandidate"]["hasSignature"] =
-            preferred_candidate.signature_path.has_value() ? "true" : "false";
-
-        // Serialize action
-        json_value["action"] = [dto] {
-            switch (dto.type) {
-            case Core::Domain::Add: return "Add";
-            case Core::Domain::Remove: return "Remove";
-            case Core::Domain::Update: return "Update";
-            default: return "Unknown";
-            }
-        }();
-
-        result.append(json_value);
-    }
-
-    co_return drogon::HttpResponse::newHttpJsonResponse(result);
+                if (const auto preferred_location =
+                        Core::Domain::select_preferred_pool_location(
+                            package.pool_entries)) {
+                    result.package.preferred_location =
+                        bxt::to_string(*preferred_location);
+                } else {
+                    logd("Package {} has no pool entries, skipping preferred "
+                         "one selection",
+                         package.name);
+                }
+                return result;
+            })
+        | std::ranges::to<std::vector>());
 }
 
 } // namespace bxt::Presentation

@@ -31,7 +31,7 @@ export default () => {
 
     const removeUser = useCallback(
         async (user: IUser) => {
-            await axios.post("/api/users/remove", { id: user.name });
+            await axios.post("/api/users/remove", { name: user.name });
             reloadUsers();
         },
         [reloadUsers]

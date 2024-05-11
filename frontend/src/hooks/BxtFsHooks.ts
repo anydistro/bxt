@@ -25,16 +25,13 @@ export const useFilesFromSections = (
     const [packages, setPackages] = useState<IPackage[]>();
 
     const getPackages = async (sections: ISection[], path: string[]) => {
-        const value = await axios.get(
-            `${process.env.PUBLIC_URL}/api/packages/get`,
-            {
-                params: {
-                    branch: path[1],
-                    repository: path[2],
-                    architecture: path[3]
-                }
+        const value = await axios.get(`/api/packages`, {
+            params: {
+                branch: path[1],
+                repository: path[2],
+                architecture: path[3]
             }
-        );
+        });
         if (value.data == null) {
             setFiles([]);
             setPackages(undefined);
@@ -43,20 +40,22 @@ export const useFilesFromSections = (
         setPackages(value.data);
 
         setFiles(
-            value.data.map(
-                (value: any): FileData => ({
-                    id: `root/${path[1]}/${path[2]}/${path[3]}/${value?.name}`,
-                    name: value.name,
+            value.data.map((pkg: any): FileData => {
+                console.log(pkg);
+                return {
+                    id: `root/${path[1]}/${path[2]}/${path[3]}/${pkg?.name}`,
+                    name: pkg.name,
                     ext: "",
                     isDir: false,
-                    thumbnailUrl:
-                        value?.preferredCandidate.hasSignature == "true"
+                    thumbnailUrl: pkg?.preferredLocation
+                        ? pkg?.poolEntries[pkg?.preferredLocation].hasSignature
                             ? `${process.env.PUBLIC_URL}/signature.svg`
-                            : `${process.env.PUBLIC_URL}/package.png`,
+                            : `${process.env.PUBLIC_URL}/package.png`
+                        : "",
                     icon: ChonkyIconName.archive,
                     color: "#8B756B"
-                })
-            )
+                };
+            })
         );
     };
 

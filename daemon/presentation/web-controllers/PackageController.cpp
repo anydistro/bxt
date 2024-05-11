@@ -6,24 +6,28 @@
  */
 #include "PackageController.h"
 
-#include "boost/algorithm/string/classification.hpp"
-#include "boost/algorithm/string/split.hpp"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/PackageService.h"
 #include "core/domain/enums/PoolLocation.h"
-#include "core/domain/value_objects/PackageVersion.h"
-#include "drogon/HttpResponse.h"
-#include "drogon/HttpTypes.h"
-#include "drogon/utils/FunctionTraits.h"
-#include "jwt-cpp/traits/nlohmann-json/defaults.h"
+#include "presentation/messages/PackageMessages.h"
+#include "utilities/drogon/Helpers.h"
 #include "utilities/drogon/Macro.h"
 #include "utilities/log/Logging.h"
+#include "utilities/to_string.h"
 
-#include "json/value.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <drogon/HttpResponse.h>
 #include <drogon/MultiPart.h>
+#include <drogon/utils/FunctionTraits.h>
+#include <json/value.h>
 #include <map>
+#include <ranges>
+#include <rfl/as.hpp>
+#include <rfl/json/read.hpp>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace bxt::Presentation {
@@ -91,12 +95,16 @@ drogon::Task<drogon::HttpResponsePtr>
 
         if (!packages.contains(file_number)) continue;
 
-        if (parts[1] == "branch") {
-            packages[file_number].section.branch = param;
-        } else if (parts[1] == "repository") {
-            packages[file_number].section.repository = param;
-        } else if (parts[1] == "architecture") {
-            packages[file_number].section.architecture = param;
+        if (parts[1] == "section") {
+            auto section =
+                rfl::json::read<PackageSectionDTO, rfl::SnakeCaseToCamelCase>(
+                    param);
+
+            if (!section) {
+                co_return drogon_helpers::make_error_response(fmt::format(
+                    "Invalid section format: {}", section.error()->what()));
+            }
+            packages[file_number].section = *section;
         }
     }
 
@@ -117,12 +125,10 @@ drogon::Task<drogon::HttpResponsePtr>
 
     auto result = co_await m_package_service.commit_transaction(transaction);
 
-    Json::Value res_json;
-    res_json["result"] = result ? "ok" : "error";
-
-    auto response = drogon::HttpResponse::newHttpJsonResponse(res_json);
-
-    co_return response;
+    if (!result.has_value()) {
+        co_return drogon_helpers::make_error_response(result.error().what());
+    }
+    co_return drogon_helpers::make_ok_response();
 }
 
 drogon::Task<drogon::HttpResponsePtr>
@@ -131,7 +137,6 @@ drogon::Task<drogon::HttpResponsePtr>
                                     const std::string &repository,
                                     const std::string &architecture) {
     PackageSectionDTO section {branch, repository, architecture};
-    Json::Value result;
 
     BXT_JWT_CHECK_PERMISSIONS((std::vector<std::string_view> {
                                   fmt::format("packages.get.{}.{}.{}", branch,
@@ -142,79 +147,54 @@ drogon::Task<drogon::HttpResponsePtr>
 
     const auto packages = co_await m_package_service.get_packages(section);
 
-    if (!packages.has_value()) {
-        result["status"] = "error";
-        result["message"] = packages.error().what();
-        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    if (!packages) {
+        co_return drogon_helpers::make_error_response(packages.error().what());
     }
 
-    for (const auto &package : *packages) {
-        Json::Value package_json;
+    {
+        using std::ranges::to;
+        using std::views::transform;
+        auto response = *packages | transform([](const auto &dto) {
+            auto &&[section, name, is_any_architecture, pool_entries] = dto;
 
-        package_json["name"] = package.name;
-        package_json["section"] = Json::Value();
-        package_json["section"]["branch"] = package.section.branch;
-        package_json["section"]["repository"] = package.section.repository;
-        package_json["section"]["architecture"] = package.section.architecture;
+            PackageResponse result {
+                name, section,
+                pool_entries | transform([](const auto &e) {
+                    auto &&[location, entry] = e;
 
-        Json::Value pool_entries_json;
-        for (const auto &[pool_location, pool_entry] : package.pool_entries) {
-            Json::Value entry_json;
-            entry_json["version"] = pool_entry.version;
-            entry_json["hasSignature"] =
-                pool_entry.signature_path.has_value() ? "true" : "false";
+                    return std::make_pair(
+                        bxt::to_string(location),
+                        PoolEntryResponse {entry.version,
+                                           entry.signature_path.has_value()});
+                }) | to<std::unordered_map>()};
 
-            pool_entries_json
-                [Core::Domain::pool_location_names.at(pool_location).data()] =
-                    entry_json;
-        }
+            if (const auto preferred_location =
+                    Core::Domain::select_preferred_pool_location(
+                        pool_entries)) {
+                result.preferred_location = bxt::to_string(*preferred_location);
+            } else {
+                logd("Package {} has no pool entries, skipping preferred "
+                     "one selection",
+                     dto.name);
+            }
 
-        package_json["poolEntries"] = pool_entries_json;
+            return result;
+        }) | to<std::vector>();
 
-        const auto preferred_location =
-            Core::Domain::select_preferred_pool_location(package.pool_entries);
-
-        if (!preferred_location) {
-            logd("Package {} has no pool entries, skipping preferred one "
-                 "selection",
-                 package.name);
-            continue;
-        }
-
-        const auto preferred_candidate =
-            package.pool_entries.at(*preferred_location);
-
-        package_json["preferredCandidate"]["version"] =
-            preferred_candidate.version;
-        package_json["preferredCandidate"]["hasSignature"] =
-            preferred_candidate.signature_path.has_value() ? "true" : "false";
-
-        result.append(package_json);
+        co_return drogon_helpers::make_json_response(response);
     }
-
-    co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
 
 drogon::Task<drogon::HttpResponsePtr>
     PackageController::snap(drogon::HttpRequestPtr req) {
-    const auto sections_json = *req->getJsonObject();
-    Json::Value result;
+    const auto snap_request =
+        rfl::json::read<SnapRequest>(std::string(req->getBody()));
 
-    if (sections_json.empty() || sections_json["source"].empty()
-        || sections_json["target"].empty()) {
-        result["error"] = "Invalid arguments";
-        result["status"] = "error";
-
-        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
-        response->setStatusCode(drogon::k400BadRequest);
-
-        co_return response;
+    if (snap_request.error()) {
+        co_return drogon_helpers::make_error_response("Invalid arguments");
     }
 
-    PackageSectionDTO source_branch {
-        .branch = sections_json["source"]["branch"].asString(),
-        .repository = sections_json["source"]["repository"].asString(),
-        .architecture = sections_json["source"]["architecture"].asString()};
+    auto &source_branch = (*snap_request).source;
 
     BXT_JWT_CHECK_PERMISSIONS(
         (std::vector<std::string_view> {
@@ -224,10 +204,7 @@ drogon::Task<drogon::HttpResponsePtr>
                         source_branch.repository, source_branch.architecture)}),
         req)
 
-    PackageSectionDTO target_branch {
-        .branch = sections_json["target"]["branch"].asString(),
-        .repository = sections_json["target"]["repository"].asString(),
-        .architecture = sections_json["target"]["architecture"].asString()};
+    auto &target_branch = (*snap_request).target;
 
     BXT_JWT_CHECK_PERMISSIONS(
         (std::vector<std::string_view> {
@@ -241,17 +218,11 @@ drogon::Task<drogon::HttpResponsePtr>
         co_await m_package_service.snap(source_branch, target_branch);
 
     if (!snap_ok.has_value()) {
-        result["error"] = "Snap failed";
-        result["status"] = "error";
-
-        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
-        response->setStatusCode(drogon::k400BadRequest);
-
-        co_return response;
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Snap failed: {}", snap_ok.error().what()));
     }
 
-    result["status"] = "ok";
-    co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    co_return drogon_helpers::make_ok_response();
 }
 
 } // namespace bxt::Presentation

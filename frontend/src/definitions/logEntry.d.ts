@@ -7,7 +7,7 @@
 interface ILogEntry {
     id: string;
 
-    action: string;
+    type: string;
     package: IPackage;
     time: Date;
 }

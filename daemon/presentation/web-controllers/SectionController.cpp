@@ -6,39 +6,28 @@
  */
 #include "SectionController.h"
 
+#include "presentation/messages/SectionMessages.h"
+#include "utilities/drogon/Helpers.h"
+
 #include <drogon/HttpResponse.h>
 #include <json/value.h>
+#include <ranges>
 
 drogon::Task<drogon::HttpResponsePtr>
     bxt::Presentation::SectionController::get_sections(
         drogon::HttpRequestPtr req) const {
-    const auto sections = co_await m_service.get_sections();
-
-    Json::Value result;
+    auto sections = co_await m_service.get_sections();
 
     if (!sections.has_value()) {
-        result["status"] = "error";
-        result["message"] = sections.error().what();
-
-        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+        co_return drogon_helpers::make_error_response(sections.error().what());
     }
 
-    for (const auto& [branch, repository, architecture] : *sections) {
-        if (!co_await m_permission_service.check(
-                fmt::format("sections.{}.{}.{}", branch, repository,
-                            architecture),
-                req->getAttributes()->get<std::string>("jwt_username"))) {
-            continue;
-        }
+    sections = *sections | std::views::filter([this, req](auto section) {
+        return coro::sync_wait(m_permission_service.check(
+            fmt::format("sections.{}.{}.{}", section.branch, section.repository,
+                        section.architecture),
+            req->getAttributes()->get<std::string>("jwt_username")));
+    }) | std::ranges::to<std::vector>();
 
-        Json::Value section_json;
-
-        section_json["branch"] = branch;
-        section_json["repository"] = repository;
-        section_json["architecture"] = architecture;
-
-        result.append(section_json);
-    }
-
-    co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    co_return drogon_helpers::make_json_response(*sections);
 }
