@@ -47,3 +47,4 @@ conan_cmake_run(CONANFILE conanfile.txt
 
 add_subdirectory(daemon)
 add_subdirectory(frontend)
+add_subdirectory(dbcli)
