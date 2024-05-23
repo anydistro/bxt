@@ -2,18 +2,18 @@ branches: [unstable, testing, stable]
 (alpm.sync):
   sync-branches: [unstable]
 repositories:
-  [core]:
+  [core, extra, multilib]:
     architecture: x86_64
     (alpm.sync):
-      repo-url: "cloudflaremirrors.com"
-      repo-structure-template: "/archlinux/{repository}/os/{architecture}"
+      repo-url: "repo.manjaro.org"
+      repo-structure-template: "/repo/{branch}/{repository}/{architecture}"
     (box.pool):
       template: "/{location}/"
 
-  [core]:
+  [core, extra]:
     architecture: aarch64
     (alpm.sync):
-      repo-url: "de3.mirror.archlinuxarm.org"
-      repo-structure-template: "/{architecture}/{repository}"
+      repo-url: "repo.manjaro.org"
+      repo-structure-template: "/repo/arm-{branch}/{repository}/{architecture}"
     (box.pool):
       template: "/{location}-arm/"
