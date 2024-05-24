@@ -6,11 +6,12 @@
  */
 #pragma once
 
-#include "utilities/repo-schema/SchemaExtension.h"
-
 #include <filesystem>
+#include <fstream>
 #include <optional>
+#include <parallel_hashmap/phmap.h>
 #include <string>
+#include <yaml-cpp/yaml.h>
 
 namespace bxt::Infrastructure {
 struct ArchRepoSource {
@@ -30,6 +31,16 @@ struct ArchRepoSource {
             "repo-structure-template", result.repo_structure_template);
         result.download_path = get_if_defined.operator()<std::string>(
             "pool-path", result.download_path);
+        const auto exclude_list_path = get_if_defined.operator()<std::string>(
+            "exclude-list-path", "exclude_list");
+        std::ifstream file(exclude_list_path);
+        if (file.is_open()) {
+            std::string line;
+            while (std::getline(file, line)) {
+                result.exclude_list.insert(std::move(line));
+            }
+            file.close();
+        }
 
         return result;
     };
@@ -38,6 +49,7 @@ struct ArchRepoSource {
     std::string repo_structure_template =
         "/archlinux/{repository}/os/{architecture}";
     std::filesystem::path download_path = "/var/tmp/bxt/";
+    phmap::parallel_flat_hash_set<std::string> exclude_list;
 
     std::optional<std::string> repo_name;
 };

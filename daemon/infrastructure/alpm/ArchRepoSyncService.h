@@ -65,6 +65,9 @@ protected:
     coro::task<std::optional<httplib::Result>> download_file(
         std::string url, std::string path, std::string filename = "");
 
+    bool is_excluded(const PackageSectionDTO& section,
+                     const std::string& package_name) const;
+
 private:
     Utilities::EventBusDispatcher& m_dispatcher;
     PackageRepositoryBase& m_package_repository;

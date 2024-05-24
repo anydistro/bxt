@@ -260,6 +260,11 @@ coro::task<ArchRepoSyncService::Result<std::vector<std::string>>>
 
         const auto& [name, filename, version] = *parsed_package_info;
 
+        if (is_excluded(section, name)) {
+            logi("Package {} is excluded. Skipping.", name);
+            continue;
+        }
+
         const auto existing_package =
             co_await m_package_repository.find_by_section_async(
                 SectionDTOMapper::to_entity(section), name);
@@ -385,6 +390,18 @@ coro::task<std::optional<httplib::Result>> ArchRepoSyncService::download_file(
 
     loge("Failed to download file: {} after {} retries", path, retry_max);
     co_return response;
+}
+
+bool ArchRepoSyncService::is_excluded(const PackageSectionDTO& section,
+                                      const std::string& package_name) const {
+    const auto& exclude_list = m_options.sources.at(section).exclude_list;
+    for (const auto& pattern : exclude_list) {
+        if (std::regex_match(package_name, std::regex(pattern))) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 coro::task<std::unique_ptr<httplib::SSLClient>>
