@@ -73,7 +73,7 @@ private:
     PackageRepositoryBase& m_package_repository;
 
     ArchRepoOptions m_options;
-    coro::io_scheduler tp {{.pool = {.thread_count = 4}}};
+    coro::io_scheduler tp {{.pool = {.thread_count = 1}}};
 };
 
 } // namespace bxt::Infrastructure
