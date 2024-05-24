@@ -11,6 +11,7 @@
 #include "fmt/core.h"
 #include "scn/tuple_return/tuple_return.h"
 #include "utilities/Error.h"
+#include "utilities/alpmdb/Desc.h"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -68,6 +69,11 @@ Package::Result<Package> Package::from_file_path(
     auto name = parse_file_name(filepath.filename());
 
     if (!name.has_value()) { return bxt::make_error<ParseError>(); }
+
+    auto desc = bxt::Utilities::AlpmDb::Desc::parse_package(filepath, false);
+    if (!desc.has_value()) {
+        return bxt::make_error_with_source<ParseError>(std::move(desc.error()));
+    }
 
     Package result(section, *name, false);
     result.pool_entries().emplace(location, *pool_entry);

@@ -76,7 +76,8 @@ std::optional<std::string> Desc::get(const std::string &key) const {
     return desc.substr(value_begin, value_end - value_begin);
 }
 
-Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
+Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
+                                       bool create_files) {
     std::ostringstream desc;
     std::ostringstream files;
 
@@ -96,12 +97,10 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
 
     bool found = false;
     for (auto &[a, b] : file_reader) {
-        if (!std::string(archive_entry_pathname(*a)).ends_with(".PKGINFO")) {
-            if (!std::string(archive_entry_pathname(*a)).starts_with("/.")) {
-                continue;
-            }
-
-            files << archive_entry_pathname(*a) << "\n";
+        std::string pathname = archive_entry_pathname(*a);
+        if (!pathname.ends_with(".PKGINFO") && !pathname.starts_with("/.")) {
+            if (create_files) { files << archive_entry_pathname(*a) << "\n"; }
+            continue;
         }
         found = true;
 
@@ -123,6 +122,8 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
         }
 
         infoObj.parse(reinterpret_cast<char *>(contents->data()));
+
+        if (!create_files) { break; }
     }
 
     if (!found) {
