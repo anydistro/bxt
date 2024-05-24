@@ -19,22 +19,11 @@
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 
-const std::string md5_from_file(const std::string &path) {
-    unsigned char result[MD5_DIGEST_LENGTH];
+template<auto HashFunction, size_t DigestLength>
+const std::string hash_from_file(const std::string &path) {
+    unsigned char result[DigestLength];
     boost::iostreams::mapped_file_source src(path);
-    MD5((unsigned char *)src.data(), src.size(), result);
-
-    std::ostringstream sout;
-    sout << std::hex << std::setfill('0');
-    for (auto c : result)
-        sout << std::setw(2) << (int)c;
-
-    return sout.str();
-}
-const std::string sha256_from_file(const std::string &path) {
-    unsigned char result[SHA256_DIGEST_LENGTH];
-    boost::iostreams::mapped_file_source src(path);
-    SHA256((unsigned char *)src.data(), src.size(), result);
+    HashFunction((unsigned char *)src.data(), src.size(), result);
 
     std::ostringstream sout;
     sout << std::hex << std::setfill('0');
@@ -93,18 +82,22 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
                                           std::move(package_infos.error())));
     }
 
-    PkgInfo infoObj;
+    PkgInfo package_info;
 
     bool found = false;
-    for (auto &[a, b] : file_reader) {
-        std::string pathname = archive_entry_pathname(*a);
+    for (auto &[header, entry] : file_reader) {
+        if (!header) { continue; }
+        std::string pathname = archive_entry_pathname(*header);
+
         if (!pathname.ends_with(".PKGINFO") && !pathname.starts_with("/.")) {
-            if (create_files) { files << archive_entry_pathname(*a) << "\n"; }
+            if (create_files) {
+                files << archive_entry_pathname(*header) << "\n";
+            }
             continue;
         }
         found = true;
 
-        auto contents = b.read_all();
+        auto contents = entry.read_all();
 
         if (!contents.has_value()) {
             if (const auto invalidentry =
@@ -121,7 +114,7 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
             }
         }
 
-        infoObj.parse(reinterpret_cast<char *>(contents->data()));
+        package_info.parse(reinterpret_cast<char *>(contents->data()));
 
         if (!create_files) { break; }
     }
@@ -138,11 +131,15 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
     desc << fmt::format(format_string, "CSIZE",
                         std::to_string(std::filesystem::file_size(filepath)));
 
-    desc << fmt::format(format_string, "MD5SUM", md5_from_file(filepath));
-    desc << fmt::format(format_string, "SHA256SUM", sha256_from_file(filepath));
+    desc << fmt::format(
+        format_string, "MD5SUM",
+        hash_from_file<MD5, MD5_DIGEST_LENGTH>(filepath.string()));
+    desc << fmt::format(
+        format_string, "SHA256SUM",
+        hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(filepath.string()));
 
     for (const auto &mapping : m_desc_to_info_mapping) {
-        auto values = infoObj.values(
+        auto values = package_info.values(
             std::string {mapping.second.data(), mapping.second.size()});
 
         if (values.size() == 0) continue;
