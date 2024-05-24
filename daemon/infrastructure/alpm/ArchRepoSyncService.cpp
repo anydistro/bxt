@@ -6,118 +6,201 @@
  */
 #include "ArchRepoSyncService.h"
 
-#include "boost/uuid/name_generator.hpp"
-#include "boost/uuid/uuid_io.hpp"
+#include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/events/IntegrationEventBase.h"
 #include "core/application/events/SyncEvent.h"
 #include "core/domain/entities/Package.h"
 #include "core/domain/enums/PoolLocation.h"
-#include "coro/sync_wait.hpp"
-#include "coro/when_all.hpp"
-#include "httplib.h"
+#include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/libarchive/Reader.h"
 #include "utilities/log/Logging.h"
 
+#include <boost/uuid/uuid_io.hpp>
+#include <coro/sync_wait.hpp>
 #include <coro/thread_pool.hpp>
-#include <initializer_list>
+#include <coro/when_all.hpp>
+#include <expected>
+#include <httplib.h>
+#include <ios>
 #include <iterator>
+#include <memory>
+#include <nonstd/scope.hpp>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <system_error>
 #include <vector>
 
 namespace bxt::Infrastructure {
 
-coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
+coro::task<SyncService::Result<void>>
+    ArchRepoSyncService::sync(const PackageSectionDTO section) {
     using namespace Core::Application::Events;
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
         std::make_shared<SyncStarted>());
 
     auto all_packages = co_await sync_section(section);
+    if (!all_packages.has_value()) {
+        co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
+            std::make_shared<SyncFinished>(std::move(*all_packages)));
 
+        co_return std::unexpected(all_packages.error());
+    }
     co_await m_package_repository.commit_async();
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-        std::make_shared<SyncFinished>(std::move(all_packages)));
+        std::make_shared<SyncFinished>(std::move(*all_packages)));
 
-    co_return;
+    co_return {};
 }
 
-coro::task<void> ArchRepoSyncService::sync_all() {
+coro::task<SyncService::Result<void>> ArchRepoSyncService::sync_all() {
     using namespace Core::Application::Events;
 
-    std::vector<coro::task<std::vector<Package>>> tasks;
-    for (const auto& src : m_options.sources) {
-        tasks.emplace_back(sync_section(src.first));
-    }
+    auto tasks = m_options.sources
+                 | std::views::transform([this](const auto& src) {
+                       return sync_section(src.first);
+                   })
+                 | std::ranges::to<std::vector>();
+
+    auto guard = nonstd::make_scope_exit([this]() {
+        coro::sync_wait(m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
+            std::make_shared<SyncFinished>()));
+    });
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
         std::make_shared<SyncStarted>());
 
     auto package_lists = co_await coro::when_all(std::move(tasks));
 
-    if (package_lists.empty()) { co_return; }
+    if (package_lists.empty()) {
+        logi("No packages to sync");
+        co_return {};
+    }
 
     auto& all_packages = package_lists[0].return_value();
+    if (!all_packages.has_value()) {
+        co_return std::unexpected(all_packages.error());
+    }
 
     for (auto it = package_lists.begin() + 1; it != package_lists.end(); ++it) {
         auto& package_list = it->return_value();
 
-        all_packages.insert(all_packages.end(),
-                            std::make_move_iterator(package_list.begin()),
-                            std::make_move_iterator(package_list.end()));
+        if (!package_list.has_value()) {
+            co_return std::unexpected(package_list.error());
+        }
+
+        all_packages->insert(all_packages->end(),
+                             std::make_move_iterator(package_list->begin()),
+                             std::make_move_iterator(package_list->end()));
     }
 
-    co_await m_package_repository.commit_async();
+    auto commit_ok = co_await m_package_repository.commit_async();
+
+    if (!commit_ok.has_value()) {
+        co_return bxt::make_error_with_source<SyncError>(
+            std::move(commit_ok.error()), SyncError::RepositoryError);
+    }
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-        std::make_shared<SyncFinished>(std::move(all_packages)));
-
-    co_return;
+        std::make_shared<SyncFinished>(std::move(*all_packages)));
+    guard.release();
+    co_return {};
 }
 
-coro::task<std::vector<Package>>
+coro::task<SyncService::Result<std::vector<Package>>>
     ArchRepoSyncService::sync_section(const PackageSectionDTO section) {
     if (!m_options.sources.contains(section)) { co_return {}; }
-    const auto remote_packages = co_await get_available_packages(section);
+    auto remote_packages = co_await get_available_packages(section);
 
-    std::vector<coro::task<void>> tasks;
-
-    const auto uuid = boost::uuids::random_generator()();
-    std::vector<Package> packages;
-    packages.reserve(remote_packages.size());
-
-    auto task = [this, section, uuid,
-                 &packages](const auto pkgname) -> coro::task<void> {
-        const auto package_file =
-            co_await download_package(section, pkgname, uuid);
-
-        auto package_result = Package::from_file_path(
-            SectionDTOMapper::to_entity(package_file.section()),
-            Core::Domain::PoolLocation::Sync, package_file.file_path());
-
-        if (package_result.has_value()) {
-            packages.emplace_back(std::move(*package_result));
-        }
-    };
-
-    for (const auto& pkgname : remote_packages) {
-        tasks.emplace_back(task(pkgname));
+    if (!remote_packages.has_value()) {
+        co_return bxt::make_error_with_source<SyncError>(
+            std::move(remote_packages.error()), SyncError::NetworkError);
     }
 
-    co_await coro::when_all(std::move(tasks));
+    const auto uuid = boost::uuids::random_generator()();
 
-    co_await m_package_repository.add_async(packages);
+    auto task = [this, section, uuid](const auto pkgname)
+        -> coro::task<ArchRepoSyncService::Result<Package>> {
+        auto package_file = co_await download_package(section, pkgname, uuid);
+
+        if (!package_file) { co_return std::unexpected(package_file.error()); }
+
+        auto package_result = Package::from_file_path(
+            SectionDTOMapper::to_entity(package_file->section()),
+            Core::Domain::PoolLocation::Sync, package_file->file_path());
+
+        if (!package_result.has_value()) {
+            co_return bxt::make_error_with_source<DownloadError>(
+                std::move(package_result.error()), package_file->file_path(),
+                "Parse error");
+        }
+
+        co_return *package_result;
+    };
+
+    auto tasks = *remote_packages | std::views::transform(task)
+                 | std::ranges::to<std::vector>();
+
+    const auto package_results = co_await coro::when_all(std::move(tasks));
+    std::vector<Package> packages;
+    packages.reserve(package_results.size());
+    for (const auto& package_result : package_results) {
+        auto& package = package_result.return_value();
+
+        if (!package.has_value()) {
+            loge("Download of {} has failed. The reason is \"{}\". Aborting "
+                 "sync.",
+                 package.error().package_filename, package.error().what());
+
+            co_return bxt::make_error_with_source<SyncError>(
+                std::move(package.error()), SyncError::RepositoryError);
+        }
+
+        co_await m_package_repository.add_async(*package);
+        packages.emplace_back(std::move(*package));
+    }
 
     co_return packages;
 }
 
-coro::task<std::vector<std::string>>
+struct ParseResult {
+    std::string name;
+    std::string filename;
+    Core::Domain::PackageVersion version;
+};
+
+std::optional<ParseResult> parse_descfile(auto& entry) {
+    auto contents = entry.read_all();
+
+    if (!contents.has_value()) { return {}; }
+
+    Utilities::AlpmDb::Desc desc(reinterpret_cast<char*>(contents->data()));
+
+    const auto filename = desc.get("FILENAME");
+    if (!filename.has_value()) { return {}; }
+
+    const auto name = desc.get("NAME");
+    if (!name.has_value()) { return {}; }
+
+    auto version_field = desc.get("VERSION");
+
+    if (!version_field.has_value()) { return {}; }
+
+    const auto version =
+        Core::Domain::PackageVersion::from_string(*version_field);
+
+    if (!version.has_value()) { return {}; }
+
+    return ParseResult {
+        .name = *name, .filename = *filename, .version = *version};
+}
+coro::task<ArchRepoSyncService::Result<std::vector<std::string>>>
     ArchRepoSyncService::get_available_packages(
         const PackageSectionDTO section) {
     std::vector<std::string> result;
-
-    const auto client =
-        co_await get_client(m_options.sources[section].repo_url);
 
     const auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
@@ -131,113 +214,191 @@ coro::task<std::vector<std::string>>
         fmt::arg("repository", repository_name),
         fmt::arg("architecture", section.architecture));
 
-    auto response = client->Get(path, httplib::Headers());
+    auto download_result =
+        co_await download_file(m_options.sources[section].repo_url, path);
 
-    if (response.error() != httplib::Error::Success) { co_return {}; }
+    if (!download_result.has_value()) {
+        co_return bxt::make_error<DownloadError>(path,
+                                                 "Can't download the database");
+    }
+    if (!(*download_result)) {
+        co_return bxt::make_error<DownloadError>(
+            path, httplib::to_string(download_result->error()));
+    }
 
-    if (response->status != 200) { co_return result; }
+    auto response = download_result->value();
+
+    if (response.status != 200) {
+        co_return bxt::make_error<DownloadError>(path,
+                                                 "The response is non-200");
+    }
 
     Archive::Reader reader;
 
     archive_read_support_filter_all(reader);
     archive_read_support_format_all(reader);
 
-    reader.open_memory(reinterpret_cast<uint8_t*>(response->body.data()),
-                       response->body.size());
+    auto open_ok = reader.open_memory(
+        reinterpret_cast<uint8_t*>(response.body.data()), response.body.size());
+
+    if (!open_ok.has_value()) {
+        co_return bxt::make_error_with_source<DownloadError>(
+            std::move(open_ok.error()), path, "The archive cannot be opened");
+    }
 
     for (auto& [header, entry] : reader) {
         std::string pname = archive_entry_pathname(*header);
 
         if (!pname.ends_with("/desc")) { continue; }
 
-        auto contents = entry.read_all();
+        auto parsed_package_info = parse_descfile(entry);
 
-        if (!contents.has_value()) { continue; }
+        if (!parsed_package_info.has_value()) {
+            co_return bxt::make_error<DownloadError>(
+                "Unknown", fmt::format("Cannot parse descfile {}", pname));
+        }
 
-        Utilities::AlpmDb::Desc desc(reinterpret_cast<char*>(contents->data()));
-
-        const auto filename = desc.get("FILENAME");
-        if (!filename.has_value()) { continue; }
-
-        const auto name = desc.get("NAME");
-        if (!name.has_value()) { continue; }
-
-        auto version_field = desc.get("VERSION");
-
-        if (!version_field.has_value()) { co_return {}; }
-
-        const auto version =
-            Core::Domain::PackageVersion::from_string(*version_field);
-
-        if (!version.has_value()) { continue; }
+        const auto& [name, filename, version] = *parsed_package_info;
 
         const auto existing_package =
             co_await m_package_repository.find_by_section_async(
-                SectionDTOMapper::to_entity(section), *name);
-
+                SectionDTOMapper::to_entity(section), name);
         if (existing_package.has_value()) {
-            if (existing_package->version() < *version) {
-                result.emplace_back(*filename);
+            if (existing_package->version() < version) {
+                result.emplace_back(filename);
             }
         } else {
-            result.emplace_back(*filename);
+            result.emplace_back(filename);
         }
     }
     co_return result;
 }
 
-coro::task<PackageFile>
+coro::task<ArchRepoSyncService::Result<PackageFile>>
     ArchRepoSyncService::download_package(PackageSectionDTO section,
                                           std::string package_filename,
                                           boost::uuids::uuid id) {
-    const auto client =
-        co_await get_client(m_options.sources[section].repo_url);
-
-    auto repository_name =
+    const auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
 
-    auto path_format = fmt::format(
+    const auto path_format = fmt::format(
         "{}/{{pkgfname}}", m_options.sources[section].repo_structure_template);
 
-    auto path = fmt::format(fmt::runtime(path_format),
-                            fmt::arg("branch", section.branch),
-                            fmt::arg("repository", repository_name),
-                            fmt::arg("architecture", section.architecture),
-                            fmt::arg("pkgfname", package_filename));
+    const auto path = fmt::format(
+        fmt::runtime(path_format), fmt::arg("branch", section.branch),
+        fmt::arg("repository", repository_name),
+        fmt::arg("architecture", section.architecture),
+        fmt::arg("pkgfname", package_filename));
 
-    auto filepath = m_options.sources[section].download_path
-                    / std::string(boost::uuids::to_string(id));
+    const auto filepath = m_options.sources[section].download_path
+                          / std::string(boost::uuids::to_string(id));
 
-    std::filesystem::create_directories(filepath);
+    std::error_code ec;
+    if (std::filesystem::create_directories(filepath, ec); ec) {
+        co_return bxt::make_error<DownloadError>(
+            package_filename, "Cannot create directory: " + ec.message());
+    }
 
-    auto full_filename =
+    const auto full_filename =
         fmt::format("{}/{}", filepath.string(), package_filename);
 
     if (std::filesystem::exists(full_filename)) {
         co_return PackageFile(section, full_filename);
     }
 
-    logd("Sync: Downloading {} as {}...", package_filename, full_filename);
+    auto response = co_await download_file(m_options.sources[section].repo_url,
+                                           path, full_filename);
 
-    std::ofstream stream(full_filename);
+    if (!response.has_value()) {
+        co_return bxt::make_error<DownloadError>(package_filename,
+                                                 "Can't download the package");
+    }
+    if (!(*response)) {
+        co_return bxt::make_error<DownloadError>(
+            package_filename, httplib::to_string(response->error()));
+    }
 
-    auto response =
-        client->Get(path, [&](const char* data, size_t data_length) {
-            stream.write(data, data_length);
-            return true;
-        });
+    response = co_await download_file(m_options.sources[section].repo_url,
+                                      path + ".sig", full_filename + ".sig");
+
+    if (!response.has_value()) {
+        co_return bxt::make_error<DownloadError>(
+            package_filename + ".sig", "Can't download the signature");
+    }
+    if (!(*response)) {
+        co_return bxt::make_error<DownloadError>(
+            package_filename + ".sig", httplib::to_string(response->error()));
+    }
 
     co_return PackageFile(section, full_filename);
+}
+coro::task<std::optional<httplib::Result>> ArchRepoSyncService::download_file(
+    std::string url, std::string path, std::string filename) {
+    using namespace std::chrono_literals;
+    constexpr int retry_max = 5;
+    constexpr auto delay = 50ms;
+
+    int current_retry = 0;
+
+    std::optional<httplib::Result> response;
+
+    while (current_retry < retry_max) {
+        auto client = co_await get_client(url);
+        if (!client) {
+            loge("Failed to get client for URL: {}", url);
+            co_return {};
+        }
+
+        if (!filename.empty()) {
+            std::ofstream stream(filename, std::ios::binary);
+            if (!stream.is_open()) {
+                loge("Failed to open file: {}", filename);
+                co_return {};
+            }
+
+            response = client->Get(path, [&](const char* data,
+                                             size_t data_length) {
+                stream.write(data, static_cast<std::streamsize>(data_length));
+                return stream.good();
+            });
+
+            stream.close();
+
+            if (!stream) {
+                loge("Failed to write to file: {}", filename);
+                co_return {};
+            }
+        } else {
+            response = client->Get(path, httplib::Headers());
+        }
+
+        if (response && response->error() == httplib::Error::Success
+            && response->value().status == 200) {
+            logi("Successfully downloaded file: {}", path);
+            co_return response;
+        }
+
+        logw("Failed to download file: {}, retrying...", path);
+        co_await tp.yield_for(delay);
+        ++current_retry;
+    }
+
+    loge("Failed to download file: {} after {} retries", path, retry_max);
+    co_return response;
 }
 
 coro::task<std::unique_ptr<httplib::SSLClient>>
     ArchRepoSyncService::get_client(const std::string url) {
+    using namespace std::chrono_literals;
+    constexpr static auto timeout = 5s;
+
     co_await tp.schedule();
 
     auto client_ptr = std::make_unique<httplib::SSLClient>(url);
 
     client_ptr->set_follow_location(true);
     client_ptr->enable_server_certificate_verification(true);
+    client_ptr->set_connection_timeout(timeout);
 
     co_return client_ptr;
 }
