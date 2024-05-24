@@ -31,6 +31,13 @@ if(NOT event-bus_POPULATED)
     add_subdirectory(${event-bus_SOURCE_DIR}/lib ${event-bus_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif(NOT event-bus_POPULATED)
 
+FetchContent_Declare(
+    reflect-cpp
+    GIT_REPOSITORY https://github.com/getml/reflect-cpp.git
+    GIT_TAG v0.10.0
+    GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(reflect-cpp)
 
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")

@@ -25,6 +25,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/bin)
 target_link_libraries(${PROJECT_NAME}
     ${CONAN_LIBS}
     Dexode::EventBus
+    reflectcpp
 )
 
 add_dependencies(${PROJECT_NAME} deploy_swagger)
