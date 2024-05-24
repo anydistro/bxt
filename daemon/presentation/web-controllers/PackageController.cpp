@@ -32,8 +32,10 @@ using namespace drogon;
 drogon::Task<HttpResponsePtr>
     PackageController::sync(drogon::HttpRequestPtr req) {
     BXT_JWT_CHECK_PERMISSIONS("packages.sync", req)
-
-    co_await m_sync_service.sync_all();
+    drogon::async_run([this]() -> drogon::Task<void> {
+        co_await m_sync_service.sync_all();
+        co_return;
+    });
 
     co_return HttpResponse::newHttpResponse();
 }
