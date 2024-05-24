@@ -7,10 +7,15 @@
 #pragma once
 
 #include "drogon/utils/FunctionTraits.h"
+#include "utilities/reflect/PathParser.h"
 
 #include "json/value.h"
+#include <drogon/HttpRequest.h>
 #include <drogon/HttpResponse.h>
 #include <drogon/HttpTypes.h>
+#include <rfl/SnakeCaseToCamelCase.hpp>
+#include <rfl/json/read.hpp>
+#include <rfl/json/write.hpp>
 
 namespace bxt::drogon_helpers {
 inline ::drogon::HttpResponsePtr make_error_response(
@@ -39,4 +44,20 @@ inline ::drogon::HttpResponsePtr
 
     return result;
 }
+
+// Use reflect-cpp to make json response
+template<typename T>
+inline ::drogon::HttpResponsePtr make_json_response(const T& value) {
+    auto result = ::drogon::HttpResponse::newHttpResponse();
+    result->setBody(rfl::json::write<rfl::SnakeCaseToCamelCase>(value));
+    result->setStatusCode(drogon::k200OK);
+
+    return result;
+}
+
+template<typename T> inline auto get_request_json(drogon::HttpRequestPtr req) {
+    return rfl::json::read<T, rfl::SnakeCaseToCamelCase>(
+        std::string(req->body()));
+}
+
 } // namespace bxt::drogon_helpers
