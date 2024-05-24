@@ -62,13 +62,16 @@ constexpr static frozen::set<frozen::string, 19> desc_keys {
 };
 
 namespace bxt::Utilities::AlpmDb {
-
 std::optional<std::string> Desc::get(const std::string &key) const {
     auto prepared_key = fmt::format("%{}%\n", key);
+    auto value_begin = desc.find(prepared_key);
 
-    auto value_begin = desc.find(prepared_key) + prepared_key.size();
+    if (value_begin == std::string::npos) { return {}; }
 
+    value_begin += prepared_key.size();
     auto value_end = desc.find("\n", value_begin);
+
+    if (value_end == std::string::npos) { return {}; }
 
     return desc.substr(value_begin, value_end - value_begin);
 }
