@@ -25,5 +25,5 @@ interface IPackageUpload {
     name: string;
     version?: string;
     file: File;
-    signatureFile?: File;
+    signatureFile: File;
 }

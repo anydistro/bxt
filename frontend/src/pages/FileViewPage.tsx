@@ -128,12 +128,36 @@ const usePackageDropHandler = (
                 repository: path[2],
                 architecture: path[3]
             };
+            const packages: {
+                [key: string]: Partial<IPackageUpload>;
+            } = {};
+            for (const file of acceptedFiles) {
+                if (file.name.endsWith(".sig")) {
+                    const name = file.name.replace(".sig", "");
 
-            const packages = acceptedFiles.map((value) => {
-                return { name: value.name, section, file: value };
+                    packages[name].signatureFile = file;
+                    continue;
+                }
+
+                if (!packages[file.name]) {
+                    packages[file.name] = {
+                        name: file.name,
+                        signatureFile: file.name.endsWith(".sig")
+                            ? file
+                            : undefined,
+                        section,
+                        file: file
+                    };
+                }
+            }
+
+            setCommit({
+                id: uuid.v4(),
+                section,
+                packages: Object.values(packages)
+                    .filter((partial) => partial as IPackageUpload)
+                    .map((partial) => partial as IPackageUpload)
             });
-
-            setCommit({ id: uuid.v4(), section, packages });
         },
         [path, setCommit]
     );
@@ -146,31 +170,29 @@ const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
 
             let packages = commits.flatMap((value) => value.packages);
             packages.forEach((pkg, index) => {
-                if (pkg.file) {
+                const missingFields = [];
+                if (!pkg.file) missingFields.push("package file");
+                if (!pkg.signatureFile) missingFields.push("signature file");
+                if (!pkg.section.branch) missingFields.push("branch");
+                if (!pkg.section.repository) missingFields.push("repository");
+                if (!pkg.section.architecture)
+                    missingFields.push("architecture");
+
+                if (missingFields.length === 0) {
                     formData.append(`package${index + 1}.filepath`, pkg.file);
-                }
-                if (pkg.signatureFile !== undefined) {
                     formData.append(
-                        `package${index + 1}.signature_path`,
-                        `${pkg.file}.sig`
+                        `package${index + 1}.signature`,
+                        pkg.signatureFile
                     );
-                }
-                if (pkg.section.branch) {
                     formData.append(
-                        `package${index + 1}.branch`,
-                        pkg.section.branch
+                        `package${index + 1}.section`,
+                        JSON.stringify(pkg.section)
                     );
-                }
-                if (pkg.section.repository) {
-                    formData.append(
-                        `package${index + 1}.repository`,
-                        pkg.section.repository
-                    );
-                }
-                if (pkg.section.architecture) {
-                    formData.append(
-                        `package${index + 1}.architecture`,
-                        pkg.section.architecture
+                } else {
+                    toast.error(
+                        `Missing package fields for ${
+                            pkg.name
+                        }: ${missingFields.join(", ")}`
                     );
                 }
             });
@@ -180,7 +202,7 @@ const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
                 formData
             );
 
-            if (result.data["result"] == "ok") {
+            if (result.data["status"] == "ok") {
                 toast.done("Pushed!");
                 reload();
             }
