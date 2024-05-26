@@ -62,6 +62,9 @@ export default forwardRef<HTMLDialogElement, CommitModalProps>(
                             sections={props.sections || []}
                             selectedSection={section}
                             className="w-full"
+                            onSelected={(section) => {
+                                setCommit({ ...commit, section: section });
+                            }}
                         />
                         <Form.Label title="Packages" />
 
