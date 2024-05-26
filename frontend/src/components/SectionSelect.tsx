@@ -29,7 +29,7 @@ import { ClassNamesArg } from "@emotion/react";
 type ISectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
     sections: ISection[];
     selectedSection?: ISection;
-    onSelected?: (section: ISection | undefined) => void;
+    onSelected?: (section: ISection) => void;
     disabled?: boolean | boolean[];
 };
 
