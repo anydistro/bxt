@@ -19,8 +19,9 @@ export interface SnapshotActionPayload {
 
 export const SnapshotAction = defineFileAction({
     id: "snap",
+    requiresSelection: true,
     fileFilter: (file: FileData | null) => {
-        return file != null && file.id.split("/").length == 2;
+        return file?.id.split("/").length == 2;
     },
     __payloadType: {} as SnapshotActionPayload
 });
@@ -28,6 +29,7 @@ export const SnapshotAction = defineFileAction({
 export const SnapToAction = defineFileAction(
     {
         id: "snap_to",
+        requiresSelection: true,
         fileFilter: (file: FileData | null) => {
             return file?.id.split("/").length == 2;
         },
