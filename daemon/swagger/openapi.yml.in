@@ -47,8 +47,8 @@ paths:
                 $ref: "#/components/schemas/LogResponse"
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/compare:
     post:
       summary: Compare sections
@@ -68,8 +68,8 @@ paths:
                 $ref: "#/components/schemas/CompareResponse"
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/packages/commit:
     post:
       summary: Commit package transaction
@@ -94,8 +94,8 @@ paths:
           description: Transaction committed successfully
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/packages:
     get:
       summary: Get packages by section
@@ -127,8 +127,8 @@ paths:
                   $ref: "#/components/schemas/PackageResponse"
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/packages/sync:
     post:
       summary: Synchronize packages
@@ -138,8 +138,8 @@ paths:
           description: Packages synchronized successfully
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/packages/snap:
     post:
       summary: Snap packages between branches
@@ -155,8 +155,8 @@ paths:
           description: Packages snapped successfully
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/sections:
     get:
       summary: Get sections
@@ -172,8 +172,8 @@ paths:
                   $ref: "#/components/schemas/SectionResponse"
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/users/add:
     post:
       summary: Add a new user
@@ -189,8 +189,8 @@ paths:
           description: User added successfully
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/users/update:
     post:
       summary: Update an existing user
@@ -206,8 +206,8 @@ paths:
           description: User updated successfully
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/users/remove:
     post:
       summary: Remove a user
@@ -223,8 +223,8 @@ paths:
           description: User removed successfully
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
   /api/users:
     get:
       summary: Get list of users
@@ -240,8 +240,8 @@ paths:
                   $ref: "#/components/schemas/UserResponse"
         "400":
           description: Invalid request
-        "401":
-          description: Unauthorized
+        "403":
+          description: No permissions
 
 components:
   schemas:

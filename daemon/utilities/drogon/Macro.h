@@ -25,7 +25,7 @@ coro::task<drogon::HttpResponsePtr> bxt_jwt_check_permissions(
                 "jwt_username"))) {
         co_return bxt::drogon_helpers::make_error_response(
             "Not sufficient permissions to perform this action",
-            drogon::k401Unauthorized);
+            drogon::k403Forbidden);
     }
     co_return nullptr;
 }
