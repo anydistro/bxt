@@ -12,7 +12,7 @@ import { useLocalStorage } from "@uidotdev/usehooks";
 import LoginPage from "./LoginPage";
 import ComparePage from "./ComparePage";
 import DrawerLayout from "../components/DrawerLayout";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import AdminPage from "./AdminPage";
 
 declare module "@uidotdev/usehooks" {
@@ -23,13 +23,24 @@ declare module "@uidotdev/usehooks" {
 }
 export default (props: any) => {
     const [userName, setUserName] = useLocalStorage("username", null);
-
     axios.interceptors.response.use(
         (response) => response,
-        (error) => {
+        (error: AxiosError<any>) => {
             toast.error(`Response error: ${error.response?.data?.message}`, {
                 autoClose: false
             });
+            if (error.response?.status === 401) {
+                setUserName(null);
+
+                // Dismiss existing toasts to avoid duplicate error messages
+                toast.dismiss();
+                toast.error(
+                    "You are not authorized to access this page, try logging in again.",
+                    {
+                        autoClose: false
+                    }
+                );
+            }
         }
     );
 
