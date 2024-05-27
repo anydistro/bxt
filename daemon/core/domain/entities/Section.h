@@ -8,6 +8,7 @@
 
 #include "AggregateRoot.h"
 #include "core/domain/value_objects/Name.h"
+#include "utilities/to_string.h"
 
 #include <fmt/format.h>
 
@@ -46,3 +47,8 @@ private:
 };
 
 } // namespace bxt::Core::Domain
+
+template<>
+inline std::string bxt::to_string(const Core::Domain::Section& section) {
+    return section.string();
+}
