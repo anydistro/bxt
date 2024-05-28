@@ -6,6 +6,7 @@
  */
 #include "Desc.h"
 
+#include "utilities/hash_from_file.h"
 #include "utilities/libarchive/Error.h"
 #include "utilities/libarchive/Reader.h"
 
@@ -18,20 +19,6 @@
 #include <frozen/unordered_map.h>
 #include <openssl/md5.h>
 #include <openssl/sha.h>
-
-template<auto HashFunction, size_t DigestLength>
-const std::string hash_from_file(const std::string &path) {
-    unsigned char result[DigestLength];
-    boost::iostreams::mapped_file_source src(path);
-    HashFunction((unsigned char *)src.data(), src.size(), result);
-
-    std::ostringstream sout;
-    sout << std::hex << std::setfill('0');
-    for (auto c : result)
-        sout << std::setw(2) << (int)c;
-
-    return sout.str();
-}
 
 constexpr static frozen::unordered_map<frozen::string, frozen::string, 14>
     m_desc_to_info_mapping {
@@ -133,10 +120,10 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
 
     desc << fmt::format(
         format_string, "MD5SUM",
-        hash_from_file<MD5, MD5_DIGEST_LENGTH>(filepath.string()));
+        bxt::hash_from_file<MD5, MD5_DIGEST_LENGTH>(filepath.string()));
     desc << fmt::format(
         format_string, "SHA256SUM",
-        hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(filepath.string()));
+        bxt::hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(filepath.string()));
 
     for (const auto &mapping : m_desc_to_info_mapping) {
         auto values = package_info.values(
