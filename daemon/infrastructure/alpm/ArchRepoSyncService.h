@@ -8,8 +8,8 @@
 
 #include "ArchRepoOptions.h"
 #include "core/application/services/SyncService.h"
+#include "core/domain/entities/Package.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
-#include "infrastructure/PackageFile.h"
 #include "utilities/Error.h"
 #include "utilities/eventbus/EventBusDispatcher.h"
 
@@ -37,6 +37,13 @@ public:
     };
     BXT_DECLARE_RESULT(DownloadError);
 
+    struct PackageInfo {
+        std::string name;
+        std::string filename;
+        Core::Domain::PackageVersion version;
+        std::string hash;
+    };
+
     ArchRepoSyncService(Utilities::EventBusDispatcher& dispatcher,
                         PackageRepositoryBase& package_repository,
                         ArchRepoOptions& options)
@@ -52,12 +59,11 @@ protected:
     coro::task<SyncService::Result<std::vector<Package>>>
         sync_section(const PackageSectionDTO section);
 
-    coro::task<Result<std::vector<std::string>>>
+    coro::task<Result<std::vector<PackageInfo>>>
         get_available_packages(const PackageSectionDTO section);
-    coro::task<Result<PackageFile>>
-        download_package(PackageSectionDTO section,
-                         std::string package_filename,
-                         boost::uuids::uuid id);
+    coro::task<Result<Package>> download_package(PackageSectionDTO section,
+                                                 std::string package_filename,
+                                                 std::string sha256_hash);
 
     coro::task<std::unique_ptr<httplib::SSLClient>>
         get_client(const std::string url);

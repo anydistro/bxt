@@ -13,10 +13,11 @@
 #include "core/domain/enums/PoolLocation.h"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/hash_from_file.h"
 #include "utilities/libarchive/Reader.h"
 #include "utilities/log/Logging.h"
+#include "utilities/to_string.h"
 
-#include <boost/uuid/uuid_io.hpp>
 #include <coro/sync_wait.hpp>
 #include <coro/thread_pool.hpp>
 #include <coro/when_all.hpp>
@@ -26,6 +27,7 @@
 #include <iterator>
 #include <memory>
 #include <nonstd/scope.hpp>
+#include <openssl/sha.h>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -120,25 +122,10 @@ coro::task<SyncService::Result<std::vector<Package>>>
             std::move(remote_packages.error()), SyncError::NetworkError);
     }
 
-    const auto uuid = boost::uuids::random_generator()();
-
-    auto task = [this, section, uuid](const auto pkgname)
-        -> coro::task<ArchRepoSyncService::Result<Package>> {
-        auto package_file = co_await download_package(section, pkgname, uuid);
-
-        if (!package_file) { co_return std::unexpected(package_file.error()); }
-
-        auto package_result = Package::from_file_path(
-            SectionDTOMapper::to_entity(package_file->section()),
-            Core::Domain::PoolLocation::Sync, package_file->file_path());
-
-        if (!package_result.has_value()) {
-            co_return bxt::make_error_with_source<DownloadError>(
-                std::move(package_result.error()), package_file->file_path(),
-                "Parse error");
-        }
-
-        co_return *package_result;
+    auto task = [this, section](
+                    const PackageInfo pkginfo) -> coro::task<Result<Package>> {
+        co_return co_await download_package(section, pkginfo.filename,
+                                            pkginfo.hash);
     };
 
     auto tasks = *remote_packages | std::views::transform(task)
@@ -166,13 +153,7 @@ coro::task<SyncService::Result<std::vector<Package>>>
     co_return packages;
 }
 
-struct ParseResult {
-    std::string name;
-    std::string filename;
-    Core::Domain::PackageVersion version;
-};
-
-std::optional<ParseResult> parse_descfile(auto& entry) {
+std::optional<ArchRepoSyncService::PackageInfo> parse_descfile(auto& entry) {
     auto contents = entry.read_all();
 
     if (!contents.has_value()) { return {}; }
@@ -194,13 +175,20 @@ std::optional<ParseResult> parse_descfile(auto& entry) {
 
     if (!version.has_value()) { return {}; }
 
-    return ParseResult {
-        .name = *name, .filename = *filename, .version = *version};
+    const auto hash = desc.get("SHA256SUM");
+
+    if (!hash.has_value()) { return {}; }
+
+    return ArchRepoSyncService::PackageInfo {.name = *name,
+                                             .filename = *filename,
+                                             .version = *version,
+                                             .hash = *hash};
 }
-coro::task<ArchRepoSyncService::Result<std::vector<std::string>>>
+coro::task<
+    ArchRepoSyncService::Result<std::vector<ArchRepoSyncService::PackageInfo>>>
     ArchRepoSyncService::get_available_packages(
         const PackageSectionDTO section) {
-    std::vector<std::string> result;
+    std::vector<PackageInfo> result;
 
     const auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
@@ -258,7 +246,7 @@ coro::task<ArchRepoSyncService::Result<std::vector<std::string>>>
                 "Unknown", fmt::format("Cannot parse descfile {}", pname));
         }
 
-        const auto& [name, filename, version] = *parsed_package_info;
+        const auto& [name, filename, version, hash] = *parsed_package_info;
 
         if (is_excluded(section, name)) {
             logi("Package {} is excluded. Skipping.", name);
@@ -270,19 +258,19 @@ coro::task<ArchRepoSyncService::Result<std::vector<std::string>>>
                 SectionDTOMapper::to_entity(section), name);
         if (existing_package.has_value()) {
             if (existing_package->version() < version) {
-                result.emplace_back(filename);
+                result.emplace_back(std::move(*parsed_package_info));
             }
         } else {
-            result.emplace_back(filename);
+            result.emplace_back(std::move(*parsed_package_info));
         }
     }
     co_return result;
 }
 
-coro::task<ArchRepoSyncService::Result<PackageFile>>
+coro::task<ArchRepoSyncService::Result<Package>>
     ArchRepoSyncService::download_package(PackageSectionDTO section,
                                           std::string package_filename,
-                                          boost::uuids::uuid id) {
+                                          std::string sha256_hash) {
     const auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
 
@@ -295,8 +283,8 @@ coro::task<ArchRepoSyncService::Result<PackageFile>>
         fmt::arg("architecture", section.architecture),
         fmt::arg("pkgfname", package_filename));
 
-    const auto filepath = m_options.sources[section].download_path
-                          / std::string(boost::uuids::to_string(id));
+    const auto filepath =
+        m_options.sources[section].download_path / bxt::to_string(section);
 
     std::error_code ec;
     if (std::filesystem::create_directories(filepath, ec); ec) {
@@ -308,23 +296,36 @@ coro::task<ArchRepoSyncService::Result<PackageFile>>
         fmt::format("{}/{}", filepath.string(), package_filename);
 
     if (std::filesystem::exists(full_filename)) {
-        co_return PackageFile(section, full_filename);
-    }
+        logi("Found package file in local cache: {}", full_filename);
+        auto package = Package::from_file_path(
+            SectionDTOMapper::to_entity(section),
+            Core::Domain::PoolLocation::Sync, full_filename);
 
-    auto response = co_await download_file(m_options.sources[section].repo_url,
-                                           path, full_filename);
-
-    if (!response.has_value()) {
-        co_return bxt::make_error<DownloadError>(package_filename,
-                                                 "Can't download the package");
+        if (package.has_value()
+            && bxt::hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(full_filename)
+                   == sha256_hash) {
+            logi("Using local cache package file: {}", full_filename);
+        } else {
+            logw("Invalid package file: {}, removing it", full_filename);
+            std::filesystem::remove(full_filename);
+        }
     }
-    if (!(*response)) {
-        co_return bxt::make_error<DownloadError>(
-            package_filename, httplib::to_string(response->error()));
-    }
+    if (!std::filesystem::exists(full_filename)) {
+        auto response = co_await download_file(
+            m_options.sources[section].repo_url, path, full_filename);
 
-    response = co_await download_file(m_options.sources[section].repo_url,
-                                      path + ".sig", full_filename + ".sig");
+        if (!response.has_value()) {
+            co_return bxt::make_error<DownloadError>(
+                package_filename, "Can't download the package");
+        }
+        if (!(*response)) {
+            co_return bxt::make_error<DownloadError>(
+                package_filename, httplib::to_string(response->error()));
+        }
+    }
+    auto response =
+        co_await download_file(m_options.sources[section].repo_url,
+                               path + ".sig", full_filename + ".sig");
 
     if (!response.has_value()) {
         co_return bxt::make_error<DownloadError>(
@@ -335,7 +336,17 @@ coro::task<ArchRepoSyncService::Result<PackageFile>>
             package_filename + ".sig", httplib::to_string(response->error()));
     }
 
-    co_return PackageFile(section, full_filename);
+    auto result = Package::from_file_path(SectionDTOMapper::to_entity(section),
+                                          Core::Domain::PoolLocation::Sync,
+                                          full_filename);
+
+    if (result.has_value()) {
+        co_return result.value();
+    } else {
+        co_return bxt::make_error_with_source<DownloadError>(
+            std::move(result.error()), package_filename,
+            "Can't parse the package");
+    }
 }
 coro::task<std::optional<httplib::Result>> ArchRepoSyncService::download_file(
     std::string url, std::string path, std::string filename) {
