@@ -5,211 +5,29 @@
  *
  */
 
-import {
-    FullFileBrowser,
-    FileArray,
-    setChonkyDefaults,
-    ChonkyFileActionData,
-    ChonkyActions,
-    FileHelper,
-    FileData
-} from "chonky";
+import { FullFileBrowser, setChonkyDefaults } from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSections } from "../hooks/BxtHooks";
+import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
 import Dropzone from "react-dropzone";
 import CommitModal from "../components/CommitModal";
 import { Button, Drawer, Menu } from "react-daisyui";
 import CommitCard from "../components/CommitCard";
 import { useFilesFromSections } from "../hooks/BxtFsHooks";
-import * as uuid from "uuid";
 import { toast } from "react-toastify";
 import SnapshotModal, {
     ISnapshotModalProps
 } from "../components/SnapshotModal";
-import {
-    SnapshotAction,
-    SnapshotActionPayload,
-    SnapToAction
-} from "../components/SnapshotAction";
-import { OpenFilesPayload } from "chonky/dist/types/action-payloads.types";
-import axios from "axios";
+import { SnapshotAction, SnapToAction } from "../components/SnapshotAction";
 import PackageModal, { PackageModalProps } from "../components/PackageModal";
 import _ from "lodash";
+import {
+    useFileActionHandler,
+    useFolderChainForPath
+} from "../hooks/FileManagementHooks";
+import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 
 setChonkyDefaults({ iconComponent: ChonkyIconFA });
-
-const useFolderChainForPath = (path: string[]): FileArray => {
-    const result: FileArray = [];
-
-    result.push({
-        id: "root",
-        name: "root",
-        isDir: true
-    });
-
-    for (let i = 1; i < path.length; i++) {
-        result.push({
-            id: `${result[i - 1]!.id}/${path[i]}`,
-            name: path[i],
-            isDir: true
-        });
-    }
-
-    return result;
-};
-
-const packageFromFilePath = (filePath: string, packages: IPackage[]) => {
-    const parts = filePath.split("/");
-    if (parts.length != 5) return;
-    const section: ISection = {
-        branch: parts[1],
-        repository: parts[2],
-        architecture: parts[3]
-    };
-    const packageName = parts[4];
-
-    return packages.find((value) => {
-        return _.isEqual(value.section, section) && value.name == packageName;
-    });
-};
-
-export const useFileActionHandler = (
-    setPath: (path: string[]) => void,
-    setSnapshotModalBranches: (
-        sourceBranch?: string,
-        targetBranch?: string
-    ) => void,
-    setPackage: (pkg?: IPackage) => void,
-    packages: IPackage[]
-) => {
-    return useCallback(
-        (data: ChonkyFileActionData) => {
-            switch (data.id as string) {
-                case ChonkyActions.OpenFiles.id:
-                    const { targetFile, files } =
-                        data.payload as OpenFilesPayload;
-                    const fileToOpen = targetFile ?? files[0];
-                    if (fileToOpen && FileHelper.isDirectory(fileToOpen)) {
-                        const pathToOpen = fileToOpen.id.split("/");
-
-                        setPath(pathToOpen);
-                    } else if (
-                        fileToOpen &&
-                        !FileHelper.isDirectory(fileToOpen)
-                    ) {
-                        setPackage(
-                            packageFromFilePath(
-                                (fileToOpen as FileData).id,
-                                packages
-                            )
-                        );
-                    }
-                    break;
-                case "snap":
-                    const { sourceBranch, targetBranch } =
-                        data.payload as SnapshotActionPayload;
-
-                    setSnapshotModalBranches(sourceBranch, targetBranch);
-            }
-        },
-        [setPath, setSnapshotModalBranches, setPackage, packages]
-    );
-};
-
-const usePackageDropHandler = (
-    path: string[],
-    setCommit: (commits: ICommit) => void
-) => {
-    return useCallback(
-        (acceptedFiles: File[]) => {
-            const section: ISection = {
-                branch: path[1],
-                repository: path[2],
-                architecture: path[3]
-            };
-            const packages: {
-                [key: string]: Partial<IPackageUpload>;
-            } = {};
-            for (const file of acceptedFiles) {
-                if (file.name.endsWith(".sig")) {
-                    const name = file.name.replace(".sig", "");
-
-                    packages[name].signatureFile = file;
-                    continue;
-                }
-
-                if (!packages[file.name]) {
-                    packages[file.name] = {
-                        name: file.name,
-                        signatureFile: file.name.endsWith(".sig")
-                            ? file
-                            : undefined,
-                        section,
-                        file: file
-                    };
-                }
-            }
-
-            setCommit({
-                id: uuid.v4(),
-                section,
-                packages: Object.values(packages)
-                    .filter((partial) => partial as IPackageUpload)
-                    .map((partial) => partial as IPackageUpload)
-            });
-        },
-        [path, setCommit]
-    );
-};
-
-const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
-    return useCallback(
-        async (e: any) => {
-            let formData = new FormData();
-
-            let packages = commits.flatMap((value) => value.packages);
-            packages.forEach((pkg, index) => {
-                const missingFields = [];
-                if (!pkg.file) missingFields.push("package file");
-                if (!pkg.signatureFile) missingFields.push("signature file");
-                if (!pkg.section.branch) missingFields.push("branch");
-                if (!pkg.section.repository) missingFields.push("repository");
-                if (!pkg.section.architecture)
-                    missingFields.push("architecture");
-
-                if (missingFields.length === 0) {
-                    formData.append(`package${index + 1}.filepath`, pkg.file);
-                    formData.append(
-                        `package${index + 1}.signature`,
-                        pkg.signatureFile
-                    );
-                    formData.append(
-                        `package${index + 1}.section`,
-                        JSON.stringify(pkg.section)
-                    );
-                } else {
-                    toast.error(
-                        `Missing package fields for ${
-                            pkg.name
-                        }: ${missingFields.join(", ")}`
-                    );
-                }
-            });
-
-            const result = await axios.post(
-                `${process.env.PUBLIC_URL}/api/packages/commit`,
-                formData
-            );
-
-            if (result.data["status"] == "ok") {
-                toast.done("Pushed!");
-                reload();
-            }
-        },
-        [commits, reload]
-    );
-};
 
 export default (props: any) => {
     const [sections, updateSections] = useSections();

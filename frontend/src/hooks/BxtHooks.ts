@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export interface IUpdateSections {
     (): void;
@@ -90,4 +91,55 @@ export const useCompareResults = (): [
     );
 
     return [results, updateResults, () => setResults(undefined)];
+};
+
+export const usePushCommitsHandler = (
+    commits: ICommit[],
+    reload: () => void
+) => {
+    return useCallback(
+        async (e: any) => {
+            let formData = new FormData();
+
+            let packages = commits.flatMap((value) => value.packages);
+            packages.forEach((pkg, index) => {
+                const missingFields = [];
+                if (!pkg.file) missingFields.push("package file");
+                if (!pkg.signatureFile) missingFields.push("signature file");
+                if (!pkg.section.branch) missingFields.push("branch");
+                if (!pkg.section.repository) missingFields.push("repository");
+                if (!pkg.section.architecture)
+                    missingFields.push("architecture");
+
+                if (missingFields.length === 0) {
+                    formData.append(`package${index + 1}.filepath`, pkg.file);
+                    formData.append(
+                        `package${index + 1}.signature`,
+                        pkg.signatureFile
+                    );
+                    formData.append(
+                        `package${index + 1}.section`,
+                        JSON.stringify(pkg.section)
+                    );
+                } else {
+                    toast.error(
+                        `Missing package fields for ${
+                            pkg.name
+                        }: ${missingFields.join(", ")}`
+                    );
+                }
+            });
+
+            const result = await axios.post(
+                `${process.env.PUBLIC_URL}/api/packages/commit`,
+                formData
+            );
+
+            if (result.data["status"] == "ok") {
+                toast.done("Pushed!");
+                reload();
+            }
+        },
+        [commits, reload]
+    );
 };
