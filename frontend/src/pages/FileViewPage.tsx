@@ -9,23 +9,26 @@ import { FullFileBrowser, setChonkyDefaults } from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
-import Dropzone from "react-dropzone";
-import CommitModal from "../components/CommitModal";
-import { Button, Drawer, Menu } from "react-daisyui";
-import CommitCard from "../components/CommitCard";
+import Dropzone, { useDropzone } from "react-dropzone";
+import CommitModal, { CommitModalProps } from "../components/CommitModal";
+import { Button, Loading } from "react-daisyui";
 import { useFilesFromSections } from "../hooks/BxtFsHooks";
-import { toast } from "react-toastify";
 import SnapshotModal, {
     ISnapshotModalProps
 } from "../components/SnapshotModal";
 import { SnapshotAction, SnapToAction } from "../components/SnapshotAction";
 import PackageModal, { PackageModalProps } from "../components/PackageModal";
-import _ from "lodash";
+import _, { set } from "lodash";
+import CommitDrawer from "../components/CommitDrawer";
+import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     useFileActionHandler,
     useFolderChainForPath
 } from "../hooks/FileManagementHooks";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
+import { SectionUtils } from "../utils/SectionUtils";
+import { unstable_useBlocker } from "react-router-dom";
 
 setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
@@ -42,16 +45,50 @@ export default (props: any) => {
 
     useEffect(() => updateFiles(sections, path), [sections, path]);
 
-    const [modalCommit, setModalCommit] = useState<ICommit>();
+    const [commitModalProps, setCommitModalProps] = useState<CommitModalProps>({
+        isNew: true,
+        section: sections[0],
+        sections: sections
+    });
+
+    const openModalWithCommitHandler = (isNew: boolean) => {
+        return (section: ISection, commit: Commit) => {
+            setIsCommitInModalNew(isNew);
+
+            const currentCommit = commits.get(SectionUtils.toString(section));
+
+            currentCommit?.forEach((value, key) => {
+                commit.set(key, { ...value, ...commit.get(key) });
+            });
+
+            setCommitModalProps((prevCommitProps) => ({
+                ...prevCommitProps,
+                commit,
+                section: section
+            }));
+            commitModalRef.current?.showModal();
+        };
+    };
+
+    const [progress, setProgress] = useState<number | undefined>(undefined);
+    unstable_useBlocker(() => !!progress);
+    window.onbeforeunload = () => {
+        if (progress) {
+            return "";
+        }
+    };
+
     const commitModalRef = useRef<HTMLDialogElement>(null);
 
-    const [commits, setCommits] = useState<ICommit[]>([]);
+    const [commits, setCommits] = useState<Commits>(new Map());
 
     const [isCommitInModalNew, setIsCommitInModalNew] =
         useState<boolean>(false);
 
     const snapshotModalRef = useRef<HTMLDialogElement>(null);
     const packageModalRef = useRef<HTMLDialogElement>(null);
+
+    const [drawerOpened, setDrawerOpened] = useState<boolean>(false);
 
     const [snapshotModalProps, setSnapshotModalProps] =
         useState<ISnapshotModalProps>({
@@ -75,20 +112,6 @@ export default (props: any) => {
             sections
         });
     }, [sections]);
-
-    const openModalWithCommitHandler = (isNew: boolean) => {
-        return (commit: ICommit) => {
-            setIsCommitInModalNew(isNew);
-            setModalCommit(commit);
-            commitModalRef.current?.showModal();
-        };
-    };
-
-    const deleteCommitById = (id: string) => {
-        toast.success("Deleted!");
-        setCommits(commits.filter((value) => value.id != id));
-        commitModalRef.current?.close();
-    };
 
     const openSnapshotModalWithBranchHandler = useCallback(
         (sourceBranch?: string, targetBranch?: string) => {
@@ -132,16 +155,30 @@ export default (props: any) => {
     return (
         <div className="flex w-full h-full items-center justify-center font-sans">
             <CommitModal
+                {...commitModalProps}
                 ref={commitModalRef}
                 isNew={isCommitInModalNew}
                 sections={sections}
                 backdrop={true}
-                commit={modalCommit}
-                onCommitSubmit={(commit) => {
+                onCommitSubmit={(section, commit) => {
+                    setCommits((prevCommit) => {
+                        const newCommit = new Map(prevCommit);
+                        newCommit.set(SectionUtils.toString(section), commit);
+                        return newCommit;
+                    });
+
                     commitModalRef.current?.close();
-                    setCommits([...commits, commit]);
                 }}
-                onCommitDelete={deleteCommitById}
+                onCommitDelete={(section) => {
+                    if (section) {
+                        setCommits((prevCommit) => {
+                            const newCommit = new Map(prevCommit);
+                            newCommit.delete(SectionUtils.toString(section));
+                            return newCommit;
+                        });
+                    }
+                    commitModalRef.current?.close();
+                }}
             />
             <SnapshotModal
                 ref={snapshotModalRef}
@@ -154,52 +191,28 @@ export default (props: any) => {
                 backdrop={true}
             />
 
-            <Drawer
-                open={commits.length > 0}
-                contentClassName="fm-content h-full"
-                className="h-full"
-                side={
-                    <div>
-                        <label
-                            htmlFor="my-drawer-2"
-                            className="drawer-overlay"
-                        ></label>
-                        <Menu className="h-screen p-4 w-100 space-y-4 bg-sky-700">
-                            <li className="text-3xl font-bold text-white">
-                                Pending commits
-                            </li>
-                            {commits?.map((value) => {
-                                return (
-                                    <Menu.Item>
-                                        <CommitCard
-                                            onActivate={openModalWithCommitHandler(
-                                                true
-                                            )}
-                                            commit={value}
-                                            onDeleteRequested={deleteCommitById}
-                                        />
-                                    </Menu.Item>
-                                );
-                            })}
-                            <div className="grow"></div>
-                            <Button
-                                color="ghost"
-                                onClick={usePushCommitsHandler(commits, () => {
-                                    setCommits([]);
-                                    updateSections();
-                                })}
-                            >
-                                Push commits
-                            </Button>
-                        </Menu>
-                    </div>
-                }
-                end={true}
+            <CommitDrawer
+                isOpen={drawerOpened && !progress}
+                commits={commits}
+                onPush={usePushCommitsHandler(commits, setProgress, () => {
+                    setCommits(new Map());
+                    updateSections();
+                })}
+                onCardActivate={openModalWithCommitHandler(true)}
+                onCardDelete={(section) => {
+                    setCommits((prevCommit) => {
+                        const newCommit = new Map(prevCommit);
+                        newCommit.delete(SectionUtils.toString(section));
+                        return newCommit;
+                    });
+                }}
+                side={true}
+                onClickOverlay={() => setDrawerOpened(false)}
             >
                 <Dropzone
                     noClick={true}
                     onDrop={usePackageDropHandler(
-                        path,
+                        SectionUtils.fromPath(path),
                         openModalWithCommitHandler(false)
                     )}
                 >
@@ -220,7 +233,28 @@ export default (props: any) => {
                         </div>
                     )}
                 </Dropzone>
-            </Drawer>
+                {commits.size > 0 && !progress && (
+                    <Button
+                        color="accent"
+                        className="fixed bottom-6 right-6"
+                        onClick={() => setDrawerOpened(true)}
+                    >
+                        <FontAwesomeIcon icon={faCodeCommit} />
+                        {commits.size} commit{commits.size == 1 ? "" : "s"}{" "}
+                        pending
+                    </Button>
+                )}
+                {progress && (
+                    <Button
+                        disabled={true}
+                        color="accent"
+                        className="fixed bottom-6 right-6"
+                    >
+                        <Loading />
+                        Upload in progress...
+                    </Button>
+                )}
+            </CommitDrawer>
         </div>
     );
 };

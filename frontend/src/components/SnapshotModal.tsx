@@ -13,7 +13,7 @@ import {
     useState
 } from "react";
 import { Button, Form, Modal, ModalProps, Select } from "react-daisyui";
-import { branches } from "../utils/SectionUtils";
+
 import { createPortal } from "react-dom";
 import axios from "axios";
 import SectionSelect from "./SectionSelect";

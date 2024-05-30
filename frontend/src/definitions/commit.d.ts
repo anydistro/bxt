@@ -4,8 +4,7 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-interface ICommit {
-    id: string;
-    section: ISection;
-    packages: IPackageUpload[];
-}
+
+type Commit = Map<string, Partial<IPackageUpload>>;
+
+type Commits = Map<string, Commit>;

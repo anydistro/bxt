@@ -6,21 +6,16 @@
  */
 
 import { useCallback } from "react";
-import * as uuid from "uuid";
 
 export const usePackageDropHandler = (
-    path: string[],
-    setCommit: (commits: ICommit) => void
+    section: ISection | undefined,
+    addCommit: (section: ISection, commit: Commit) => void
 ) => {
     return useCallback(
         (acceptedFiles: File[]) => {
-            const section: ISection = {
-                branch: path[1],
-                repository: path[2],
-                architecture: path[3]
-            };
+            if (!section) return;
             const packages: {
-                [key: string]: Partial<IPackageUpload>;
+                [packageName: string]: Partial<IPackageUpload>;
             } = {};
             for (const file of acceptedFiles) {
                 if (file.name.endsWith(".sig")) {
@@ -40,14 +35,8 @@ export const usePackageDropHandler = (
                 };
             }
 
-            setCommit({
-                id: uuid.v4(),
-                section,
-                packages: Object.values(packages)
-                    .filter((partial) => partial as IPackageUpload)
-                    .map((partial) => partial as IPackageUpload)
-            });
+            addCommit(section, new Map(Object.entries(packages)));
         },
-        [path, setCommit]
+        [section, addCommit]
     );
 };

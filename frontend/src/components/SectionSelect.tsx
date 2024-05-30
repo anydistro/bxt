@@ -10,11 +10,6 @@ import Select, {
     StylesConfig,
     components
 } from "react-select";
-import {
-    branches,
-    reposForBranch,
-    architecturesForBranchAndRepo
-} from "../utils/SectionUtils";
 import { HTMLAttributes, useCallback, useEffect } from "react";
 import {
     faCodeBranch,
@@ -25,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import * as daisyui from "react-daisyui";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { ClassNamesArg } from "@emotion/react";
+import { SectionUtils } from "../utils/SectionUtils";
 
 type ISectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
     sections: ISection[];
@@ -146,7 +142,7 @@ export default (props: ISectionSelectorProps) => {
                 components={makeComponents(faCodeBranch)}
                 styles={makeStyles(isDisabled(0))}
                 value={makeValue(props.selectedSection?.branch)}
-                options={branches(props.sections).map(makeValue)}
+                options={SectionUtils.branches(props.sections).map(makeValue)}
                 onChange={(value) => updateSection({ branch: value?.value })}
             />
             <Select<IOption>
@@ -154,7 +150,7 @@ export default (props: ISectionSelectorProps) => {
                 components={makeComponents(faCubes)}
                 styles={makeStyles(isDisabled(1))}
                 value={makeValue(props.selectedSection?.repository)}
-                options={reposForBranch(
+                options={SectionUtils.reposForBranch(
                     props.sections,
                     props.selectedSection?.branch
                 ).map(makeValue)}
@@ -167,7 +163,7 @@ export default (props: ISectionSelectorProps) => {
                 components={makeComponents(faMicrochip)}
                 styles={makeStyles(isDisabled(2))}
                 value={makeValue(props.selectedSection?.architecture)}
-                options={architecturesForBranchAndRepo(
+                options={SectionUtils.architecturesForBranchAndRepo(
                     props.sections,
                     props.selectedSection?.branch,
                     props.selectedSection?.repository

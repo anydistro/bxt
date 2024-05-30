@@ -11,20 +11,25 @@ import {
     faTrashCan
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useMemo } from "react";
 import { Card, CardProps } from "react-daisyui";
 
-export type ICommitCardProps = CardProps & {
-    commit: ICommit;
-    onActivate?: (commit: ICommit) => void;
-    onDeleteRequested?: (id: string) => void;
+export type CommitCardProps = CardProps & {
+    section: ISection;
+    commit: Commit;
+    onActivate?: (section: ISection, commit: Commit) => void;
+    onDeleteRequested?: (section: ISection) => void;
 };
 
-export default (props: ICommitCardProps) => {
-    const section = props.commit.section;
+export default (props: CommitCardProps) => {
+    const { branch, repository, architecture } = useMemo(
+        () => props.section,
+        [props.section]
+    );
 
     return (
         <Card
-            onClick={() => props.onActivate?.(props.commit)}
+            onClick={() => props.onActivate?.(props.section, props.commit)}
             {...props}
             className="h-30 bg-white"
         >
@@ -33,22 +38,23 @@ export default (props: ICommitCardProps) => {
                     onClick={(e) => {
                         e.stopPropagation();
                         if (props.onDeleteRequested)
-                            return props.onDeleteRequested(props.commit.id);
+                            return props.onDeleteRequested(props.section);
                     }}
                     className="px-1"
                     icon={faTrashCan}
                 />
             </div>
             <Card.Body className="font-bold">
-                {props.commit.packages.length} packages
+                {props.commit.size} package
+                {props.commit.size == 1 ? "" : "s"}
             </Card.Body>
             <span className="space-x-4">
                 <FontAwesomeIcon className="px-1" icon={faCodeBranch} />
-                {section.branch}
+                {branch}
                 <FontAwesomeIcon className="px-1" icon={faCubes} />
-                {section.repository}
+                {repository}
                 <FontAwesomeIcon className="px-1" icon={faMicrochip} />
-                {section.architecture}
+                {architecture}
             </span>
         </Card>
     );

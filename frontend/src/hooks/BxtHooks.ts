@@ -93,53 +93,79 @@ export const useCompareResults = (): [
     return [results, updateResults, () => setResults(undefined)];
 };
 
+const formFromCommits = (commits: Commits) => {
+    let index = 0;
+
+    let formData = new FormData();
+    for (const [section, commit] of Array.from(commits)) {
+        for (const [name, pkg] of Array.from(commit)) {
+            const missingFields = [];
+            if (!pkg.file) missingFields.push("package file");
+            if (!pkg.signatureFile) missingFields.push("signature file");
+            if (!pkg.section) missingFields.push("section");
+            if (!pkg.section?.branch) missingFields.push("branch");
+            if (!pkg.section?.repository) missingFields.push("repository");
+            if (!pkg.section?.architecture) missingFields.push("architecture");
+
+            if (missingFields.length === 0) {
+                formData.append(`package${index + 1}.filepath`, pkg.file!);
+                formData.append(
+                    `package${index + 1}.signature`,
+                    pkg.signatureFile!
+                );
+                formData.append(
+                    `package${index + 1}.section`,
+                    JSON.stringify(pkg.section)
+                );
+            } else {
+                return {
+                    form: formData,
+                    missingFields: missingFields,
+                    errorPackage: name
+                };
+            }
+            index++;
+        }
+    }
+    return {
+        form: formData,
+        missingFields: undefined,
+        errorPackage: undefined
+    };
+};
+
 export const usePushCommitsHandler = (
-    commits: ICommit[],
+    commits: Commits,
+    onProgress: (progress: number | undefined) => void,
     reload: () => void
 ) => {
     return useCallback(
         async (e: any) => {
-            let formData = new FormData();
+            const { form, missingFields, errorPackage } =
+                formFromCommits(commits);
 
-            let packages = commits.flatMap((value) => value.packages);
-            packages.forEach((pkg, index) => {
-                const missingFields = [];
-                if (!pkg.file) missingFields.push("package file");
-                if (!pkg.signatureFile) missingFields.push("signature file");
-                if (!pkg.section.branch) missingFields.push("branch");
-                if (!pkg.section.repository) missingFields.push("repository");
-                if (!pkg.section.architecture)
-                    missingFields.push("architecture");
+            if (missingFields) {
+                toast.error(
+                    `Missing fields for package ${errorPackage}: ${missingFields.join(
+                        ", "
+                    )}`
+                );
+                return;
+            }
 
-                if (missingFields.length === 0) {
-                    formData.append(`package${index + 1}.filepath`, pkg.file);
-                    formData.append(
-                        `package${index + 1}.signature`,
-                        pkg.signatureFile
-                    );
-                    formData.append(
-                        `package${index + 1}.section`,
-                        JSON.stringify(pkg.section)
-                    );
-                } else {
-                    toast.error(
-                        `Missing package fields for ${
-                            pkg.name
-                        }: ${missingFields.join(", ")}`
-                    );
+            const result = await axios.post(`/api/packages/commit`, form, {
+                onUploadProgress: (p) => {
+                    const progress = p.loaded / (p.total || 1);
+                    onProgress(progress);
                 }
             });
 
-            const result = await axios.post(
-                `${process.env.PUBLIC_URL}/api/packages/commit`,
-                formData
-            );
-
             if (result.data["status"] == "ok") {
-                toast.done("Pushed!");
+                onProgress(undefined);
                 reload();
             }
         },
-        [commits, reload]
+
+        [commits, reload, onProgress]
     );
 };

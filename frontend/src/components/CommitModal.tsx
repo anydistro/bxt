@@ -8,104 +8,166 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Form, Modal, ModalProps, Table } from "react-daisyui";
 import {
     faCube,
+    faRemove,
     faSignature,
     faTrashCan
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import * as uuid from "uuid";
 import { forwardRef, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import SectionSelect from "./SectionSelect";
+import Dropzone from "react-dropzone";
+import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 
 export type CommitModalProps = ModalProps & {
     isNew?: boolean;
-    commit?: ICommit;
+    commit?: Commit;
+    section: ISection;
     sections?: ISection[];
-    onCommitSubmit?: (commit: ICommit) => void;
-    onCommitDelete?: (id: string) => void;
+    onCommitSubmit?: (section: ISection, commit: Commit) => void;
+    onCommitDelete?: (section: ISection | undefined) => void;
+    onPackageDrop?: (files: File[]) => void;
 };
 
 export default forwardRef<HTMLDialogElement, CommitModalProps>(
     (props: CommitModalProps, ref) => {
-        const [commit, setCommit] = useState<ICommit>(
-            props.commit || { id: uuid.v4(), section: {}, packages: [] }
-        );
+        const [commit, setCommit] = useState<Commit>();
+        const [section, setSection] = useState<ISection>();
 
-        useEffect(
-            () =>
-                setCommit(
-                    props.commit || { id: uuid.v4(), section: {}, packages: [] }
-                ),
-            [props.commit]
-        );
+        useEffect(() => setCommit(props.commit), [props.commit]);
 
-        const { id, section, packages } = commit;
+        useEffect(() => setSection(props.section), [props.section]);
 
-        const { branch, repository, architecture } = section;
+        useEffect(() => {
+            if (commit?.size == 0) {
+                props.onCommitDelete?.(section);
+            }
+        }, [commit, props.onCommitDelete, section]);
 
         const commitCallback = useCallback(() => {
             toast.success("Commit created!");
 
-            if (props.onCommitSubmit) props.onCommitSubmit(commit);
+            if (props.onCommitSubmit && commit && section)
+                props.onCommitSubmit(section, commit);
         }, [commit, props.onSubmit]);
 
         return createPortal(
             <Modal ref={ref} className="w-11/12 max-w-5xl" {...props}>
-                <Modal.Header className="text-3xl font-bold">
-                    Commit
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Label title="Section" />
+                <Modal.Header>
+                    <span>Commit</span>
+                    <div className="float-right">
                         <SectionSelect
                             sections={props.sections || []}
                             selectedSection={section}
-                            className="w-full"
                             onSelected={(section) => {
-                                setCommit({ ...commit, section: section });
+                                setSection(section);
                             }}
                         />
-                        <Form.Label title="Packages" />
+                    </div>
+                </Modal.Header>
+                <Dropzone
+                    noClick={true}
+                    onDrop={usePackageDropHandler(section, (section, commit) =>
+                        setCommit((prevCommit) => {
+                            const newCommit = new Map(prevCommit);
 
-                        <Table
-                            zebra={true}
-                            size="xs"
-                            className="overflow-x-auto"
-                        >
-                            <Table.Head>
-                                <span>Name</span>
-                                <span />
-                            </Table.Head>
-                            <Table.Body>
-                                {props.commit?.packages.map((value) => {
-                                    return (
-                                        <Table.Row>
-                                            <span className="flex items-center">
-                                                <FontAwesomeIcon
-                                                    icon={faCube}
-                                                    className="px-2 max-h-6"
-                                                />
-                                                {value.signatureFile !==
-                                                    undefined && (
-                                                    <FontAwesomeIcon
-                                                        icon={faSignature}
-                                                        color="green"
-                                                        className="px-2 max-h-6"
-                                                    />
-                                                )}
+                            commit.forEach((value, key) => {
+                                newCommit.set(key, {
+                                    ...value,
+                                    ...commit.get(key)
+                                });
+                            });
 
-                                                {value.name}
-                                            </span>
-                                            <span></span>
-                                        </Table.Row>
-                                    );
-                                })}
-                            </Table.Body>
-                        </Table>
-                    </Form>
-                </Modal.Body>
+                            return newCommit;
+                        })
+                    )}
+                >
+                    {({ getRootProps, getInputProps }) => (
+                        <Modal.Body {...getRootProps()}>
+                            <input {...getInputProps()} />
+                            <Form>
+                                <Form.Label title="Packages" />
 
+                                <Table
+                                    zebra={true}
+                                    size="xs"
+                                    className="overflow-x-auto"
+                                >
+                                    <Table.Head>
+                                        <span>Name</span>
+                                        <span />
+                                        <span />
+                                    </Table.Head>
+                                    <Table.Body>
+                                        {Array.from(commit || []).map(
+                                            ([name, upload]) => {
+                                                return (
+                                                    <Table.Row>
+                                                        <span className="flex items-center">
+                                                            {upload.file !==
+                                                                undefined && (
+                                                                <FontAwesomeIcon
+                                                                    icon={
+                                                                        faCube
+                                                                    }
+                                                                    className="px-2 max-h-6"
+                                                                />
+                                                            )}
+                                                            {upload.signatureFile !==
+                                                                undefined && (
+                                                                <FontAwesomeIcon
+                                                                    icon={
+                                                                        faSignature
+                                                                    }
+                                                                    color="green"
+                                                                    className="px-2 max-h-6"
+                                                                />
+                                                            )}
+
+                                                            {name}
+                                                        </span>
+                                                        <span></span>
+                                                        <span>
+                                                            <Button
+                                                                size="xs"
+                                                                color="error"
+                                                                onClick={() => {
+                                                                    setCommit(
+                                                                        (
+                                                                            prevCommit
+                                                                        ) => {
+                                                                            const newCommit =
+                                                                                new Map(
+                                                                                    prevCommit
+                                                                                );
+                                                                            newCommit.delete(
+                                                                                name
+                                                                            );
+                                                                            return newCommit;
+                                                                        }
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <FontAwesomeIcon
+                                                                    icon={
+                                                                        faTrashCan
+                                                                    }
+                                                                    color="white"
+                                                                    className="max-h-6"
+                                                                />
+                                                            </Button>
+                                                        </span>
+                                                    </Table.Row>
+                                                );
+                                            }
+                                        )}
+                                    </Table.Body>
+                                </Table>
+                            </Form>
+                        </Modal.Body>
+                    )}
+                </Dropzone>
                 <Form className="mt-6">
                     <span className="flex space-x-4 justify-end">
                         {props.isNew && (
@@ -118,7 +180,7 @@ export default forwardRef<HTMLDialogElement, CommitModalProps>(
                                 }
                                 onClick={(e) => {
                                     if (props.onCommitDelete)
-                                        props.onCommitDelete(commit.id);
+                                        props.onCommitDelete(props.section);
                                 }}
                                 type="button"
                                 color="error"

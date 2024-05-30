@@ -6,11 +6,7 @@
  */
 import { ChonkyIconName, FileArray, FileData } from "chonky";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    architecturesForBranchAndRepo,
-    branches,
-    reposForBranch
-} from "../utils/SectionUtils";
+import { SectionUtils } from "../utils/SectionUtils";
 import axios from "axios";
 
 export interface IUpdateFiles {
@@ -64,20 +60,22 @@ export const useFilesFromSections = (
             switch (path.length) {
                 case 1:
                     setFiles(
-                        branches(sections).map((value): FileData => {
-                            return {
-                                id: `root/${value}`,
-                                name: value,
-                                isDir: true,
-                                thumbnailUrl: `${process.env.PUBLIC_URL}/branch.svg`,
-                                color: "#8B756B"
-                            };
-                        })
+                        SectionUtils.branches(sections).map(
+                            (value): FileData => {
+                                return {
+                                    id: `root/${value}`,
+                                    name: value,
+                                    isDir: true,
+                                    thumbnailUrl: `${process.env.PUBLIC_URL}/branch.svg`,
+                                    color: "#8B756B"
+                                };
+                            }
+                        )
                     );
                     break;
                 case 2:
                     setFiles(
-                        reposForBranch(sections, path[1]).map(
+                        SectionUtils.reposForBranch(sections, path[1]).map(
                             (value): FileData => {
                                 return {
                                     id: `root/${path[1]}/${value}`,
@@ -92,7 +90,7 @@ export const useFilesFromSections = (
                     break;
                 case 3:
                     setFiles(
-                        architecturesForBranchAndRepo(
+                        SectionUtils.architecturesForBranchAndRepo(
                             sections,
                             path[1],
                             path[2]
