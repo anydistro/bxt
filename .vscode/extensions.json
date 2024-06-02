@@ -11,6 +11,11 @@
     "tdennis4496.cmantic",
     "twxs.cmake",
     "xaver.clang-format",
-    "vadimcn.vscode-lldb"
+    "vadimcn.vscode-lldb",
+    "42crunch.vscode-openapi",
+    "eamodio.gitlens",
+    "redhat.vscode-yaml",
+    "cheshirekow.cmake-format",
+    "GitHub.vscode-pull-request-github"
   ]
 }
