@@ -7,6 +7,7 @@
 #pragma once
 
 #include "core/domain/value_objects/PackageVersion.h"
+#include "utilities/alpmdb/Desc.h"
 #include "utilities/errors/Macro.h"
 
 #include <boost/algorithm/string/classification.hpp>
@@ -22,7 +23,8 @@ public:
             InvalidVersion,
             InvalidReleaseTag,
             InvalidName,
-            InvalidEpoch
+            InvalidEpoch,
+            InvalidPackage
         };
 
         const ErrorCode error_code;
@@ -54,6 +56,8 @@ public:
 
     PackageVersion version() const { return m_version; }
 
+    Utilities::AlpmDb::Desc desc() const { return m_desc; }
+
     static Result<PackagePoolEntry> parse_file_path(
         const std::filesystem::path& file_path,
         const std::optional<std::filesystem::path>& signature_path);
@@ -61,6 +65,7 @@ public:
 private:
     std::filesystem::path m_file_path;
     std::optional<std::filesystem::path> m_signature_path;
+    Utilities::AlpmDb::Desc m_desc;
 
     PackageVersion m_version;
 };
