@@ -10,6 +10,7 @@
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/SectionService.h"
 #include "core/domain/entities/User.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "core/domain/value_objects/Name.h"
 #include "core/domain/value_objects/Permission.h"
 #include "coro/io_scheduler.hpp"
@@ -137,6 +138,8 @@ void setup_di_container(kgr::container& container) {
     container.emplace<di::Persistence::PackageLogEntryRepository>(
         std::string("bxt::PackageLogs"));
 
+    container.emplace<di::Persistence::UnitOfWorkFactory>();
+
     container.emplace<di::Persistence::Box::Pool>();
     container.emplace<di::Persistence::Box::LMDBPackageStore>("bxt::Box");
 
@@ -180,10 +183,13 @@ void setup_scheduler(auto& app, auto scheduler, auto eventbus) {
 
 void setup_defaults(kgr::container& container) {
     using namespace bxt;
+    auto& unit_of_work_factory =
+        container.service<di::Core::Domain::UnitOfWorkBaseFactory>();
+    auto uow = coro::sync_wait(unit_of_work_factory());
 
     auto& repository = container.service<di::Core::Domain::UserRepository>();
 
-    const auto users = coro::sync_wait(repository.all_async());
+    const auto users = coro::sync_wait(repository.all_async(uow));
 
     if (!users.has_value()) {
         BOOST_LOG_TRIVIAL(error) << users.error().what();
@@ -194,8 +200,25 @@ void setup_defaults(kgr::container& container) {
         User default_user(Name("default"), "ILoveMacarons");
         default_user.set_permissions({Permission("*")});
 
-        coro::sync_wait(repository.add_async(default_user));
-        coro::sync_wait(repository.commit_async());
+        const auto result = coro::sync_wait(uow->begin_async());
+        if (!result.has_value()) {
+            bxt::loge(result.error().what());
+            abort();
+        }
+
+        const auto add_result =
+            coro::sync_wait(repository.add_async(default_user, uow));
+        if (!add_result.has_value()) {
+            bxt::loge(add_result.error().what());
+            coro::sync_wait(uow->rollback_async());
+            abort();
+        }
+
+        const auto commit_result = coro::sync_wait(uow->commit_async());
+        if (!commit_result.has_value()) {
+            bxt::loge(commit_result.error().what());
+            abort();
+        }
     }
 }
 

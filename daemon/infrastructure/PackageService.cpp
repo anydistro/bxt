@@ -22,37 +22,55 @@ namespace bxt::Infrastructure {
 coro::task<PackageService::Result<void>> PackageService::commit_transaction(
     const PackageService::Transaction transaction) {
     std::vector<PackageDTO> packages_to_add;
-    std::vector<Package::TId> ids_to_remove;
 
     packages_to_add.reserve(transaction.to_add.size());
-    ids_to_remove.reserve(transaction.to_remove.size());
 
-    std::ranges::transform(
-        transaction.to_remove, std::back_inserter(ids_to_remove),
-        [](const std::pair<PackageSectionDTO, std::string> &value) {
-            return Package::TId {SectionDTOMapper::to_entity(value.first),
-                                 Name(value.second)};
-        });
+    auto ids_to_remove =
+        transaction.to_remove
+        | std::views::transform(
+            [](const std::pair<PackageSectionDTO, std::string> &value) {
+                return Package::TId {SectionDTOMapper::to_entity(value.first),
+                                     Name(value.second)};
+            })
+        | std::ranges::to<std::vector>();
+
+    auto uow = co_await m_uow_factory(true);
 
     std::vector<coro::task<PackageService::Result<void>>> tasks;
     for (const auto &package : transaction.to_add) {
-        tasks.push_back(add_package(package));
+        tasks.push_back(add_package(package, uow));
     }
 
-    co_await coro::when_all(std::move(tasks));
-    co_await m_repository.remove_async(ids_to_remove);
+    auto added = co_await coro::when_all(std::move(tasks));
+    for (auto &added_package : added) {
+        if (!added_package.return_value().has_value()) {
+            co_return bxt::make_error_with_source<CrudError>(
+                std::move(added_package.return_value().error()),
+                CrudError::ErrorType::InternalError);
+        }
+    }
+    auto deleted = co_await m_repository.delete_async(ids_to_remove, uow);
+    if (!deleted.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(deleted.error()), CrudError::ErrorType::InternalError);
+    }
 
-    co_await m_repository.commit_async();
+    auto commit_ok = co_await uow->commit_async();
+    if (!commit_ok) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(commit_ok.error()), CrudError::ErrorType::InternalError);
+    }
 
     co_return {};
 }
 
 coro::task<PackageService::Result<void>>
-    PackageService::add_package(const PackageDTO package) {
+    PackageService::add_package(const PackageDTO package,
+                                std::shared_ptr<UnitOfWorkBase> unitofwork) {
     auto deployed_entity = PackageDTOMapper::to_entity(package);
 
-    auto current_entitites = m_repository.find_by_section(
-        SectionDTOMapper::to_entity(package.section));
+    auto current_entitites = co_await m_repository.find_by_section_async(
+        SectionDTOMapper::to_entity(package.section), unitofwork);
 
     if (!current_entitites.has_value()) {
         co_return bxt::make_error<CrudError>(
@@ -68,7 +86,13 @@ coro::task<PackageService::Result<void>>
             CrudError::ErrorType::EntityAlreadyExists);
     }
 
-    co_await m_repository.add_async(PackageDTOMapper::to_entity(package));
+    auto add_ok = co_await m_repository.add_async(
+        PackageDTOMapper::to_entity(package), unitofwork);
+
+    if (!add_ok.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(add_ok.error()), CrudError::ErrorType::InternalError);
+    }
 
     co_return {};
 }
@@ -78,7 +102,8 @@ coro::task<PackageService::Result<std::vector<PackageDTO>>>
     auto section = SectionDTOMapper::to_entity(section_dto);
     std::vector<PackageDTO> result;
 
-    auto result_entities = co_await m_repository.find_by_section_async(section);
+    auto result_entities = co_await m_repository.find_by_section_async(
+        section, co_await m_uow_factory());
 
     if (!result_entities.has_value()) { co_return result; }
 
@@ -92,8 +117,10 @@ coro::task<PackageService::Result<std::vector<PackageDTO>>>
 coro::task<PackageService::Result<void>>
     PackageService::snap(const PackageSectionDTO from_section,
                          const PackageSectionDTO to_section) {
+    auto uow = co_await m_uow_factory(true);
+
     auto source_packages = co_await m_repository.find_by_section_async(
-        SectionDTOMapper::to_entity(from_section));
+        SectionDTOMapper::to_entity(from_section), uow);
 
     if (!source_packages.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -102,7 +129,7 @@ coro::task<PackageService::Result<void>>
     }
 
     auto target_packages = co_await m_repository.find_by_section_async(
-        SectionDTOMapper::to_entity(to_section));
+        SectionDTOMapper::to_entity(to_section), uow);
 
     if (!target_packages.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -116,15 +143,29 @@ coro::task<PackageService::Result<void>>
     std::ranges::transform(*target_packages, std::back_inserter(target_ids),
                            &Package::id);
 
-    co_await m_repository.remove_async(target_ids);
+    auto deleted = co_await m_repository.delete_async(target_ids, uow);
+
+    if (!deleted.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(deleted.error()), CrudError::ErrorType::InternalError);
+    }
 
     for (auto &source_package : *source_packages) {
         source_package.set_section(SectionDTOMapper::to_entity(to_section));
     }
 
-    co_await m_repository.add_async(*source_packages);
+    auto added = co_await m_repository.add_async(*source_packages, uow);
+    if (!added.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(added.error()), CrudError::ErrorType::InternalError);
+    }
 
-    co_await m_repository.commit_async();
+    auto commit_ok = co_await uow->commit_async();
+
+    if (!commit_ok.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(commit_ok.error()), CrudError::ErrorType::InternalError);
+    }
 
     co_return {};
 }

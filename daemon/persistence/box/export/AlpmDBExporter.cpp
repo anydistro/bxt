@@ -8,6 +8,7 @@
 
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/domain/enums/PoolLocation.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "utilities/Error.h"
 #include "utilities/NavigationAction.h"
 #include "utilities/alpmdb/Database.h"
@@ -51,9 +52,13 @@ std::expected<void, FsError>
 AlpmDBExporter::AlpmDBExporter(
     BoxOptions& box_options,
     PackageStoreBase& package_store,
-    ReadOnlyRepositoryBase<Section>& section_repository)
-    : m_box_path(box_options.box_path), m_package_store(package_store) {
-    auto sections_result = coro::sync_wait(section_repository.all_async());
+    ReadOnlyRepositoryBase<Section>& section_repository,
+    UnitOfWorkBaseFactory& uow_factory)
+    : m_box_path(box_options.box_path),
+      m_package_store(package_store),
+      m_uow_factory(uow_factory) {
+    auto sections_result = coro::sync_wait(
+        section_repository.all_async(coro::sync_wait(uow_factory())));
 
     if (!sections_result.has_value()) {
         loge("Pool: Can't get available sections, the reason is \"{}\". "
@@ -105,8 +110,7 @@ coro::task<void> AlpmDBExporter::export_to_disk() {
 
                 return Utilities::NavigationAction::Next;
             },
-            std::string(section));
-
+            std::string(section), co_await m_uow_factory());
         logi("Exporter: \"{}\" export finished", std::string(section));
     }
 

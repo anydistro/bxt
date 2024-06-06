@@ -12,6 +12,7 @@
 #include "core/domain/entities/Section.h"
 #include "core/domain/events/PackageEvents.h"
 #include "core/domain/repositories/RepositoryBase.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "core/domain/value_objects/PackagePoolEntry.h"
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/record/PackageRecord.h"
@@ -22,10 +23,12 @@
 #include "utilities/alpmdb/Desc.h"
 
 #include <coro/sync_wait.hpp>
+#include <expected>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <functional>
 #include <kangaru/operator.hpp>
+#include <ranges>
 #include <string>
 #include <vector>
 namespace bxt::Persistence::Box {
@@ -38,54 +41,137 @@ BoxRepository::BoxRepository(BoxOptions options,
       m_package_store(package_store),
       m_scheduler(writeback_sceduler),
       m_exporter(exporter) {};
-
-coro::task<BoxRepository::TResult> BoxRepository::find_by_id_async(TId id) {
+coro::task<BoxRepository::TResult>
+    BoxRepository::find_by_id_async(TId id,
+                                    std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
 coro::task<BoxRepository::TResult>
-    BoxRepository::find_first_async(std::function<bool(const Package &)>) {
+    BoxRepository::find_first_async(std::function<bool(const Package &)>,
+                                    std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
 coro::task<BoxRepository::TResults>
-    BoxRepository::find_async(std::function<bool(const Package &)> condition) {
+    BoxRepository::find_async(std::function<bool(const Package &)> condition,
+                              std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
-coro::task<BoxRepository::TResults> BoxRepository::all_async() {
+coro::task<BoxRepository::TResults>
+    BoxRepository::all_async(std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
 coro::task<BoxRepository::WriteResult<void>>
-    BoxRepository::add_async(const Package entity) {
-    m_to_add.emplace_back(entity);
+    BoxRepository::add_async(const std::vector<Package> entity,
+                             std::shared_ptr<UnitOfWorkBase> uow) {
+    auto tasks = entity | std::views::transform(RecordMapper::to_record)
+                 | std::views::transform([&](auto &&record) {
+                       return m_package_store.add(record, uow);
+                   })
+                 | std::ranges::to<std::vector>();
+
+    auto added_list = co_await coro::when_all(std::move(tasks));
+    for (const auto &added : added_list) {
+        auto &added_result = added.return_value();
+        if (!added_result.has_value()) {
+            co_return bxt::make_error_with_source<WriteError>(
+                std::move(added_result.error()), WriteError::OperationError);
+        }
+    }
+    co_return {};
+}
+coro::task<BoxRepository::WriteResult<void>>
+    BoxRepository::add_async(const Package entity,
+                             std::shared_ptr<UnitOfWorkBase> uow) {
+    auto result =
+        co_await m_package_store.add(RecordMapper::to_record(entity), uow);
+
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<WriteError>(
+            std::move(result.error()), WriteError::OperationError);
+    }
+
     co_return {};
 }
 
 coro::task<BoxRepository::WriteResult<void>>
-    BoxRepository::remove_async(const TId entity) {
-    m_to_remove.emplace_back(entity);
+    BoxRepository::delete_async(const std::vector<TId> ids,
+                                std::shared_ptr<UnitOfWorkBase> uow) {
+    auto tasks = ids | std::views::transform([&](const auto &id) {
+                     return m_package_store.delete_by_id(
+                         PackageRecord::Id {
+                             .section = SectionDTOMapper::to_dto(id.section),
+                             .name = id.package_name},
+                         uow);
+                 })
+                 | std::ranges::to<std::vector>();
+
+    auto deleted_list = co_await coro::when_all(std::move(tasks));
+    for (const auto &deleted : deleted_list) {
+        auto &deleted_result = deleted.return_value();
+        if (!deleted_result.has_value()) {
+            co_return bxt::make_error_with_source<WriteError>(
+                std::move(deleted_result.error()), WriteError::OperationError);
+        }
+    }
     co_return {};
 }
 
 coro::task<BoxRepository::WriteResult<void>>
-    BoxRepository::add_async(const std::vector<Package> entities) {
-    m_to_add.insert(m_to_add.end(), entities.begin(), entities.end());
+    BoxRepository::delete_async(const TId id,
+                                std::shared_ptr<UnitOfWorkBase> uow) {
+    auto result = co_await m_package_store.delete_by_id(
+        PackageRecord::Id {.section = SectionDTOMapper::to_dto(id.section),
+                           .name = id.package_name},
+        uow);
+
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<WriteError>(
+            std::move(result.error()), WriteError::OperationError);
+    }
     co_return {};
 }
 
 coro::task<BoxRepository::WriteResult<void>>
-    BoxRepository::update_async(const Package entity) {
-    m_to_update.emplace_back(entity);
+    BoxRepository::update_async(const std::vector<Package> entity,
+                                std::shared_ptr<UnitOfWorkBase> uow) {
+    auto tasks = entity | std::views::transform(RecordMapper::to_record)
+                 | std::views::transform([&](auto &&record) {
+                       return m_package_store.update(record, uow);
+                   })
+                 | std::ranges::to<std::vector>();
+
+    auto updated_list = co_await coro::when_all(std::move(tasks));
+    for (const auto &updated : updated_list) {
+        auto &updated_result = updated.return_value();
+        if (!updated_result.has_value()) {
+            co_return bxt::make_error_with_source<WriteError>(
+                std::move(updated_result.error()), WriteError::OperationError);
+        }
+    }
+    co_return {};
+}
+
+coro::task<BoxRepository::WriteResult<void>>
+    BoxRepository::update_async(const Package entity,
+                                std::shared_ptr<UnitOfWorkBase> uow) {
+    auto result =
+        co_await m_package_store.update(RecordMapper::to_record(entity), uow);
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<WriteError>(
+            std::move(result.error()), WriteError::OperationError);
+    }
     co_return {};
 }
 
 coro::task<BoxRepository::TResults>
-    BoxRepository::find_by_section_async(const Core::Domain::Section section) {
+    BoxRepository::find_by_section_async(const Section section,
+                                         std::shared_ptr<UnitOfWorkBase> uow) {
     auto packages = co_await m_package_store.find_by_section(
-        SectionDTOMapper::to_dto(section));
+        SectionDTOMapper::to_dto(section), uow);
 
     if (!packages.has_value()) {
         co_return bxt::make_error_with_source<ReadError>(
-            std::move(packages.error()),
-            ReadError::ErrorTypes::InvalidArgument);
+            std::move(packages.error()), ReadError::InvalidArgument);
     };
 
     std::vector<Core::Domain::Package> result;
@@ -102,14 +188,14 @@ coro::task<BoxRepository::TResults>
 
 coro::task<BoxRepository::TResults> BoxRepository::find_by_section_async(
     const Section section,
-    const std::function<bool(const Package &)> predicate) {
+    const std::function<bool(const Package &)> predicate,
+    std::shared_ptr<UnitOfWorkBase> uow) {
     auto packages = co_await m_package_store.find_by_section(
-        SectionDTOMapper::to_dto(section));
+        SectionDTOMapper::to_dto(section), uow);
 
     if (!packages.has_value()) {
         co_return bxt::make_error_with_source<ReadError>(
-            std::move(packages.error()),
-            ReadError::ErrorTypes::InvalidArgument);
+            std::move(packages.error()), ReadError::InvalidArgument);
     };
 
     std::vector<Core::Domain::Package> result;
@@ -126,7 +212,8 @@ coro::task<BoxRepository::TResults> BoxRepository::find_by_section_async(
 
 coro::task<BoxRepository::TResult>
     BoxRepository::find_by_section_async(const Section section,
-                                         const Name name) {
+                                         const Name name,
+                                         std::shared_ptr<UnitOfWorkBase> uow) {
     std::optional<Core::Domain::Package> result;
 
     co_await m_package_store.accept(
@@ -135,59 +222,13 @@ coro::task<BoxRepository::TResult>
 
             return Utilities::NavigationAction::Stop;
         },
-        fmt::format("{}/{}", section.string(), name));
+        fmt::format("{}/{}", section.string(), name), uow);
 
     if (result.has_value()) {
         co_return *result;
     } else {
-        co_return bxt::make_error<ReadError>(
-            ReadError::ErrorTypes::EntityNotFound);
+        co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
     }
-}
-
-coro::task<UnitOfWorkBase::Result<void>> BoxRepository::commit_async() {
-    std::vector<coro::task<std::expected<void, DatabaseError>>> tasks;
-
-    std::set<PackageSectionDTO> added_sections;
-
-    for (const auto &entity : m_to_add) {
-        auto record = RecordMapper::to_record(entity);
-        tasks.emplace_back(m_package_store.add(record));
-
-        added_sections.emplace(record.id.section);
-
-        auto event = std::make_shared<Events::PackageAdded>(entity);
-
-        m_event_store.emplace_back(event);
-    }
-
-    phmap::node_hash_map<PackageSectionDTO, std::set<std::string>>
-        names_to_remove;
-
-    /// TODO: Implement update and remove
-
-    co_await coro::when_all(std::move(tasks));
-
-    m_exporter.add_dirty_sections(std::move(added_sections));
-
-    co_await m_scheduler.schedule([](auto *self) -> coro::task<void> {
-        co_await self->m_exporter.export_to_disk();
-        co_return;
-    }(this));
-
-    m_to_add.clear();
-    m_to_remove.clear();
-    m_to_update.clear();
-
-    co_return {};
-}
-
-coro::task<UnitOfWorkBase::Result<void>> BoxRepository::rollback_async() {
-    m_to_add.clear();
-    m_to_remove.clear();
-    m_to_update.clear();
-
-    co_return {};
 }
 
 } // namespace bxt::Persistence::Box

@@ -13,6 +13,7 @@
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/task.hpp"
 #include "coro/when_all.hpp"
+#include "persistence/lmdb/LmdbUnitOfWork.h"
 #include "utilities/Error.h"
 #include "utilities/StaticDTOMapper.h"
 #include "utilities/errors/DatabaseError.h"
@@ -20,6 +21,7 @@
 #include "utilities/lmdb/Environment.h"
 
 #include <coro/coro.hpp>
+#include <memory>
 #include <vector>
 
 namespace bxt::Persistence {
@@ -47,28 +49,44 @@ public:
     using WriteResult = typename bxt::Core::Domain::ReadWriteRepositoryBase<
         TEntity>::template Result<T>;
 
+    using WriteError = typename bxt::Core::Domain::WriteError;
+
     using TMapper = Utilities::StaticDTOMapper<TEntity, TDTO>;
 
-    virtual coro::task<TResult> find_by_id_async(TId id) override {
+    coro::task<TResult> find_by_id_async(
+        TId id, std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
         using namespace bxt::Core::Domain;
 
-        const auto entity = co_await m_db.get(std::string(id));
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<ReadError>(ReadError::InvalidArgument);
+        }
+
+        const auto entity =
+            co_await m_db.get(lmdb_uow->txn().value, std::string(id));
 
         if (!entity.has_value()) {
-            co_return bxt::make_error<ReadError>(
-                ReadError::ErrorTypes::EntityNotFound);
+            co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
         }
 
         co_return TMapper::to_entity(*entity);
     }
-    virtual coro::task<TResult>
-        find_first_async(std::function<bool(const TEntity &)>) override {}
-    virtual coro::task<TResults>
-        find_async(std::function<bool(const TEntity &)> condition) override {}
-    virtual coro::task<TResults> all_async() override {
+    coro::task<TResult> find_first_async(
+        std::function<bool(const TEntity &)>,
+        std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {}
+    coro::task<TResults>
+        find_async(std::function<bool(const TEntity &)> condition,
+                   std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
+    }
+    coro::task<TResults>
+        all_async(std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
         TEntities results;
-
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<ReadError>(ReadError::InvalidArgument);
+        }
         co_await m_db.accept(
+            lmdb_uow->txn().value,
             [&results]([[maybe_unused]] std::string_view key, const TDTO &e) {
                 results.push_back(TMapper::to_entity(e));
                 return Utilities::NavigationAction::Next;
@@ -76,46 +94,57 @@ public:
 
         co_return results;
     }
-
-    virtual coro::task<WriteResult<void>>
-        add_async(const TEntity entity) override {
-        m_to_add.push_back(entity);
-        co_return {};
-    }
-    virtual coro::task<WriteResult<void>>
-        update_async(const TEntity entity) override {
-        m_to_update.push_back(entity);
-        co_return {};
-    }
-    virtual coro::task<WriteResult<void>> remove_async(const TId id) override {
-        m_to_remove.push_back(id);
-        co_return {};
-    }
-
-    virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override {
-        std::vector<coro::task<typename decltype(m_db)::template Result<bool>>>
-            tasks;
-
-        for (const auto &el : m_to_add) {
-            tasks.push_back(
-                m_db.put(std::string(el.id()), TMapper::to_dto(el)));
-        }
-        for (const auto &el : m_to_remove) {
-            tasks.push_back(m_db.del(std::string(el)));
+    coro::task<WriteResult<void>>
+        add_async(const TEntity entity,
+                  std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<WriteError>(WriteError::InvalidArgument);
         }
 
-        co_await coro::when_all(std::move(tasks));
-
-        m_to_add.clear();
-        m_to_remove.clear();
-        m_to_update.clear();
+        auto result =
+            co_await m_db.put(lmdb_uow->txn().value, std::string(entity.id()),
+                              TMapper::to_dto(entity));
+        if (!result) {
+            co_return bxt::make_error_with_source<WriteError>(
+                std::move(result.error()), WriteError::OperationError);
+        }
 
         co_return {};
     }
-    virtual coro::task<UnitOfWorkBase::Result<void>> rollback_async() override {
-        m_to_add.clear();
-        m_to_remove.clear();
-        m_to_update.clear();
+
+    coro::task<WriteResult<void>> update_async(
+        const TEntity entity,
+        std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<WriteError>(WriteError::InvalidArgument);
+        }
+
+        auto result =
+            co_await m_db.put(lmdb_uow->txn().value, std::string(entity.id()),
+                              TMapper::to_dto(entity));
+        if (!result) {
+            co_return bxt::make_error_with_source<WriteError>(
+                std::move(result.error()), WriteError::OperationError);
+        }
+
+        co_return {};
+    }
+
+    coro::task<WriteResult<void>> delete_async(
+        const TId id,
+        std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<WriteError>(WriteError::InvalidArgument);
+        }
+
+        auto result = co_await m_db.del(lmdb_uow->txn().value, std::string(id));
+        if (!result) {
+            co_return bxt::make_error_with_source<WriteError>(
+                std::move(result.error()), WriteError::OperationError);
+        }
 
         co_return {};
     }
@@ -123,10 +152,6 @@ public:
 private:
     std::shared_ptr<bxt::Utilities::LMDB::Environment> m_environment;
     Utilities::LMDB::Database<TDTO> m_db;
-
-    std::vector<TEntity> m_to_add;
-    std::vector<TId> m_to_remove;
-    std::vector<TEntity> m_to_update;
 };
 
 } // namespace bxt::Persistence

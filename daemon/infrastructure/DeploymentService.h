@@ -25,9 +25,11 @@ public:
     DeploymentService(
         bxt::Core::Application::PackageService& service,
         bxt::Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section>&
-            section_repository)
+            section_repository,
+        UnitOfWorkBaseFactory& uow_factory)
         : m_package_service(service),
-          m_section_repository(section_repository) {}
+          m_section_repository(section_repository),
+          m_uow_factory(uow_factory) {}
 
     virtual coro::task<Result<uint64_t>> deploy_start() override;
     virtual coro::task<Result<void>> deploy_push(PackageDTO package,
@@ -43,6 +45,7 @@ private:
     bxt::Core::Application::PackageService& m_package_service;
     bxt::Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section>&
         m_section_repository;
+    UnitOfWorkBaseFactory& m_uow_factory;
 };
 
 } // namespace bxt::Infrastructure

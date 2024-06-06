@@ -12,12 +12,12 @@
 #include "utilities/errors/Macro.h"
 
 namespace bxt::Core::Application {
-
 class UserService {
 public:
     BXT_DECLARE_RESULT(CrudError)
-    UserService(bxt::Core::Domain::UserRepository& repository)
-        : m_repository(repository) {}
+    UserService(bxt::Core::Domain::UserRepository& repository,
+                Domain::UnitOfWorkBaseFactory& uow_factory)
+        : m_repository(repository), m_uow_factory(uow_factory) {}
 
     virtual coro::task<Result<void>> add_user(const UserDTO user);
     virtual coro::task<Result<void>> remove_user(const std::string name);
@@ -26,6 +26,7 @@ public:
 
 private:
     bxt::Core::Domain::UserRepository& m_repository;
+    Domain::UnitOfWorkBaseFactory& m_uow_factory;
 };
 
 } // namespace bxt::Core::Application
