@@ -24,7 +24,8 @@ export default (props: any) => {
         const result = await axios
             .post("/api/auth", {
                 name: name,
-                password: password
+                password: password,
+                response_type: "cookie"
             })
             .catch((err) => {
                 toast.error("Login failed");

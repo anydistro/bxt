@@ -20,14 +20,14 @@ namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
     AuthController::auth(drogon::HttpRequestPtr req) {
     const auto auth_request =
-        drogon_helpers::get_request_json<AuthRequest>(req);
+        drogon_helpers::get_request_json<AuthRequest>(req, true);
 
     if (!auth_request) {
         co_return drogon_helpers::make_error_response(
             fmt::format("Invalid request: {}", auth_request.error()->what()));
     }
 
-    const auto& [name, password] = *auth_request;
+    const auto& [name, password, response_type] = *auth_request;
 
     const auto check_ok = co_await m_service.auth(name, password);
 
@@ -38,21 +38,39 @@ drogon::Task<drogon::HttpResponsePtr>
 
     const auto token = jwt::create()
                            .set_payload_claim("username", name)
+                           .set_payload_claim("storage", response_type)
                            .set_issuer("auth0")
                            .set_type("JWS")
                            .sign(jwt::algorithm::hs256 {m_options.secret});
-    drogon::Cookie jwt_cookie("token", token);
-    jwt_cookie.setHttpOnly(true);
 
-    auto response = drogon::HttpResponse::newHttpResponse();
-    response->addCookie(jwt_cookie);
+    if (response_type == "bearer") {
+        co_return drogon_helpers::make_json_response(
+            AuthResponse {.access_token = token, .token_type = "bearer"}, true);
+    } else if (response_type == "cookie") {
+        drogon::Cookie jwt_cookie("token", token);
+        jwt_cookie.setHttpOnly(true);
 
-    co_return response;
+        auto response = drogon_helpers::make_ok_response();
+        response->addCookie(jwt_cookie);
+        co_return response;
+    }
+    co_return drogon_helpers::make_error_response(
+        "Invalid response type requested", drogon::k400BadRequest);
 }
 
 drogon::Task<drogon::HttpResponsePtr>
     AuthController::verify(drogon::HttpRequestPtr req) {
-    const auto token = req->getCookie("token");
+    auto token = req->getCookie("token");
+    auto provided_storage = "cookie";
+
+    if (token.empty()) {
+        auto bearer = req->getHeader("Authorization");
+        provided_storage = "bearer";
+        if (!bearer.empty() && bearer.substr(0, 7) == "Bearer ") {
+            token = bearer.substr(7);
+        }
+    }
+
     if (token.empty()) {
         co_return drogon_helpers::make_error_response("Token is missing",
                                                       drogon::k401Unauthorized);
@@ -67,6 +85,21 @@ drogon::Task<drogon::HttpResponsePtr>
 
         verifier.verify(decoded);
 
+        if (!decoded.has_payload_claim("storage")) {
+            co_return drogon_helpers::make_error_response(
+                "No token storage provided", drogon::k401Unauthorized);
+        }
+
+        auto storage = decoded.get_payload_claim("storage").as_string();
+
+        if (storage != provided_storage) {
+            co_return drogon_helpers::make_error_response(
+                fmt::format(
+                    R"(Token storage is invalid, expected: "{}", got: "{}")",
+                    provided_storage, storage),
+                drogon::k401Unauthorized);
+        }
+
         co_return drogon_helpers::make_ok_response();
 
     } catch (const std::exception& exception) {
@@ -76,4 +109,5 @@ drogon::Task<drogon::HttpResponsePtr>
             drogon::k401Unauthorized);
     }
 }
+
 } // namespace bxt::Presentation

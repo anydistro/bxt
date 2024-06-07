@@ -5,6 +5,11 @@ info:
   version: "MVP"
 servers:
   - url: "/"
+
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+
 paths:
   /api/auth:
     post:
@@ -18,7 +23,11 @@ paths:
               $ref: "#/components/schemas/AuthRequest"
       responses:
         "200":
-          description: Authentication successful, JWT token set in cookie
+          description: Authentication successful, JWT token set in cookie or returned as bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
         "400":
           description: Invalid request
         "401":
@@ -244,6 +253,16 @@ paths:
           description: No permissions
 
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     AuthRequest:
       type: object
@@ -252,9 +271,20 @@ components:
           type: string
         password:
           type: string
+        response_type:
+          type: string
       required:
         - name
         - password
+        - response_type
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
 
     CompareRequest:
       type: array

@@ -12,5 +12,12 @@ namespace bxt::Presentation {
 struct AuthRequest {
     std::string name;
     std::string password;
+    std::string response_type;
+};
+
+// for CLI usage
+struct AuthResponse {
+    std::string access_token;
+    std::string token_type;
 };
 } // namespace bxt::Presentation

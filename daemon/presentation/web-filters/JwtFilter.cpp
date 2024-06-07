@@ -27,6 +27,15 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
     if (request->getMethod() == HttpMethod::Options) return fccb();
 
     std::string token = request->getCookie("token");
+    std::string provided_storage = "cookie";
+
+    if (token.empty()) {
+        auto auth_header = request->getHeader("Authorization");
+        if (!auth_header.empty() && auth_header.find("Bearer ") == 0) {
+            token = auth_header.substr(7);
+            provided_storage = "bearer";
+        }
+    }
 
     if (token.empty()) {
         return fcb(drogon_helpers::make_error_response(
@@ -55,9 +64,22 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
         return fcb(drogon_helpers::make_error_response(
             "Authentification token is invalid", k401Unauthorized));
     }
-    auto claims = decoded->get_payload_claims();
 
-    for (auto &claim : claims)
+    if (!decoded->has_payload_claim("storage")) {
+        return fcb(drogon_helpers::make_error_response(
+            "No token storage provided", k401Unauthorized));
+    }
+
+    auto storage = decoded->get_payload_claim("storage").as_string();
+    if (storage != provided_storage) {
+        return fcb(drogon_helpers::make_error_response(
+            fmt::format(
+                R"(Token storage is invalid, expected: "{}", got: "{}")",
+                provided_storage, storage),
+            k401Unauthorized));
+    }
+
+    for (auto &claim : decoded->get_payload_claims())
         request->getAttributes()->insert("jwt_" + claim.first,
                                          claim.second.as_string());
 
