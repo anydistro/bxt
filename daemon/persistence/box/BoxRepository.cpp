@@ -28,6 +28,7 @@
 #include <fmt/format.h>
 #include <functional>
 #include <kangaru/operator.hpp>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <vector>
@@ -44,20 +45,92 @@ BoxRepository::BoxRepository(BoxOptions options,
 coro::task<BoxRepository::TResult>
     BoxRepository::find_by_id_async(TId id,
                                     std::shared_ptr<UnitOfWorkBase> uow) {
+    std::optional<BoxRepository::TResult> result;
+    auto accept_ok = co_await m_package_store.accept(
+        [&](std::string_view key, const PackageRecord &value) {
+            if (value.id.section == SectionDTOMapper::to_dto(id.section)
+                && value.id.name == id.package_name) {
+                result = RecordMapper::to_entity(value);
+                return Utilities::NavigationAction::Stop;
+            }
+            return Utilities::NavigationAction::Next;
+        },
+        uow);
+
+    if (!result.has_value()) {
+        co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
+    }
+
+    if (!accept_ok.has_value()) {
+        co_return bxt::make_error_with_source<ReadError>(
+            std::move(accept_ok.error()), ReadError::EntityFindError);
+    }
+
+    co_return *result;
 }
 
-coro::task<BoxRepository::TResult>
-    BoxRepository::find_first_async(std::function<bool(const Package &)>,
-                                    std::shared_ptr<UnitOfWorkBase> uow) {
+coro::task<BoxRepository::TResult> BoxRepository::find_first_async(
+    std::function<bool(const Package &)> condition,
+    std::shared_ptr<UnitOfWorkBase> uow) {
+    std::optional<BoxRepository::TResult> result;
+    auto accept_ok = co_await m_package_store.accept(
+        [&](std::string_view key, const PackageRecord &value) {
+            if (condition(RecordMapper::to_entity(value))) {
+                return Utilities::NavigationAction::Stop;
+            }
+            return Utilities::NavigationAction::Next;
+        },
+        uow);
+
+    if (!result.has_value()) {
+        co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
+    }
+
+    if (!accept_ok.has_value()) {
+        co_return bxt::make_error_with_source<ReadError>(
+            std::move(accept_ok.error()), ReadError::EntityFindError);
+    }
+
+    co_return result.value();
 }
 
 coro::task<BoxRepository::TResults>
     BoxRepository::find_async(std::function<bool(const Package &)> condition,
                               std::shared_ptr<UnitOfWorkBase> uow) {
+    std::vector<Package> packages;
+    auto accept_ok = co_await m_package_store.accept(
+        [&](std::string_view key, const PackageRecord &value) {
+            if (condition(RecordMapper::to_entity(value))) {
+                packages.push_back(RecordMapper::to_entity(value));
+            }
+            return Utilities::NavigationAction::Next;
+        },
+        uow);
+
+    if (!accept_ok.has_value()) {
+        co_return bxt::make_error_with_source<ReadError>(
+            std::move(accept_ok.error()), ReadError::EntityFindError);
+    }
+
+    co_return packages;
 }
 
 coro::task<BoxRepository::TResults>
     BoxRepository::all_async(std::shared_ptr<UnitOfWorkBase> uow) {
+    std::vector<Package> packages;
+    auto accept_ok = co_await m_package_store.accept(
+        [&](std::string_view key, const PackageRecord &value) {
+            packages.push_back(RecordMapper::to_entity(value));
+            return Utilities::NavigationAction::Next;
+        },
+        uow);
+
+    if (!accept_ok.has_value()) {
+        co_return bxt::make_error_with_source<ReadError>(
+            std::move(accept_ok.error()), ReadError::EntityFindError);
+    }
+
+    co_return packages;
 }
 
 coro::task<BoxRepository::WriteResult<void>>

@@ -22,6 +22,7 @@
 
 #include <coro/coro.hpp>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace bxt::Persistence {
@@ -49,6 +50,7 @@ public:
     using WriteResult = typename bxt::Core::Domain::ReadWriteRepositoryBase<
         TEntity>::template Result<T>;
 
+    using ReadError = typename bxt::Core::Domain::ReadError;
     using WriteError = typename bxt::Core::Domain::WriteError;
 
     using TMapper = Utilities::StaticDTOMapper<TEntity, TDTO>;
@@ -72,12 +74,53 @@ public:
         co_return TMapper::to_entity(*entity);
     }
     coro::task<TResult> find_first_async(
-        std::function<bool(const TEntity &)>,
-        std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {}
+        std::function<bool(const TEntity &)> condition,
+        std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<ReadError>(ReadError::InvalidArgument);
+        }
+
+        std::optional<TResult> result;
+
+        co_await m_db.accept(
+            lmdb_uow->txn().value,
+            [&result, &condition](std::string_view key, const TDTO &e) {
+                TEntity entity = TMapper::to_entity(e);
+                if (condition(entity)) {
+                    result = entity;
+                    return Utilities::NavigationAction::Stop;
+                }
+                return Utilities::NavigationAction::Next;
+            });
+
+        if (!result.has_value()) {
+            co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
+        }
+
+        co_return *result;
+    }
+
     coro::task<TResults>
         find_async(std::function<bool(const TEntity &)> condition,
                    std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
+        TResults results = {};
+        auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+        if (!lmdb_uow) {
+            co_return bxt::make_error<ReadError>(ReadError::InvalidArgument);
+        }
+
+        co_await m_db.accept(
+            lmdb_uow->txn().value,
+            [&results, &condition](std::string_view key, const TDTO &e) {
+                TEntity entity = TMapper::to_entity(e);
+                if (condition(entity)) { results->push_back(entity); }
+                return Utilities::NavigationAction::Next;
+            });
+
+        co_return results;
     }
+
     coro::task<TResults>
         all_async(std::shared_ptr<Core::Domain::UnitOfWorkBase> uow) override {
         TEntities results;
