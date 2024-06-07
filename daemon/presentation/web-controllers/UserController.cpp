@@ -63,18 +63,16 @@ drogon::Task<drogon::HttpResponsePtr>
 }
 
 drogon::Task<drogon::HttpResponsePtr>
-    UserController::remove_user(drogon::HttpRequestPtr req) {
+    UserController::remove_user(drogon::HttpRequestPtr req,
+                                std::string user_name) {
     BXT_JWT_CHECK_PERMISSIONS("users.remove", req)
 
-    const auto user_request =
-        drogon_helpers::get_request_json<RemoveUserRequest>(req);
-
-    if (!user_request) {
+    if (user_name.empty()) {
         co_return drogon_helpers::make_error_response(
-            fmt::format("Invalid request: {}", user_request.error()->what()));
+            fmt::format("Invalid user name"));
     }
 
-    const auto remove_ok = co_await m_service.remove_user((*user_request).name);
+    const auto remove_ok = co_await m_service.remove_user(user_name);
 
     if (!remove_ok.has_value()) {
         co_return drogon_helpers::make_error_response(remove_ok.error().what());

@@ -7,6 +7,7 @@
 #pragma once
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/UserService.h"
+#include "drogon/HttpTypes.h"
 #include "utilities/drogon/Macro.h"
 
 #include <drogon/HttpController.h>
@@ -29,11 +30,11 @@ public:
 
     BXT_JWT_ADD_METHOD_TO(UserController::update_user,
                           "/api/users/update",
-                          drogon::Post);
+                          drogon::Patch);
 
     BXT_JWT_ADD_METHOD_TO(UserController::remove_user,
-                          "/api/users/remove",
-                          drogon::Post);
+                          "/api/users/remove/{1}",
+                          drogon::Delete);
 
     BXT_JWT_ADD_METHOD_TO(UserController::get_users, "/api/users", drogon::Get);
 
@@ -45,7 +46,8 @@ public:
         update_user(drogon::HttpRequestPtr req);
 
     drogon::Task<drogon::HttpResponsePtr>
-        remove_user(drogon::HttpRequestPtr req);
+        remove_user(drogon::HttpRequestPtr req, std::string user_name);
+
     drogon::Task<drogon::HttpResponsePtr> get_users(drogon::HttpRequestPtr req);
 
 private:

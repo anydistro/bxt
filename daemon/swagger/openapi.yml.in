@@ -192,7 +192,7 @@ paths:
         "403":
           description: No permissions
   /api/users/update:
-    post:
+    patch:
       summary: Update an existing user
       operationId: updateUser
       requestBody:
@@ -208,16 +208,16 @@ paths:
           description: Invalid request
         "403":
           description: No permissions
-  /api/users/remove:
-    post:
+  /api/users/remove/{user_name}:
+    delete:
       summary: Remove a user
       operationId: removeUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RemoveUserRequest"
+      parameters:
+        - name: user_name
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: User removed successfully
@@ -383,12 +383,6 @@ components:
           type: array
           items:
             type: string
-
-    RemoveUserRequest:
-      type: object
-      properties:
-        name:
-          type: string
 
     UserResponse:
       type: object
