@@ -356,7 +356,7 @@ components:
       properties:
         version:
           type: string
-        signaturePath:
+        hasSignature:
           type: boolean
 
     PackageSection:
