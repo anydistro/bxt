@@ -47,17 +47,26 @@ inline ::drogon::HttpResponsePtr
 
 // Use reflect-cpp to make json response
 template<typename T>
-inline ::drogon::HttpResponsePtr make_json_response(const T& value) {
+inline ::drogon::HttpResponsePtr make_json_response(const T& value,
+                                                    bool raw = false) {
     auto result = ::drogon::HttpResponse::newHttpResponse();
-    result->setBody(rfl::json::write<rfl::SnakeCaseToCamelCase>(value));
+    if (raw) {
+        result->setBody(rfl::json::write(value));
+    } else {
+        result->setBody(rfl::json::write<rfl::SnakeCaseToCamelCase>(value));
+    }
     result->setStatusCode(drogon::k200OK);
 
     return result;
 }
-
-template<typename T> inline auto get_request_json(drogon::HttpRequestPtr req) {
-    return rfl::json::read<T, rfl::SnakeCaseToCamelCase>(
-        std::string(req->body()));
+template<typename T>
+inline auto get_request_json(drogon::HttpRequestPtr req, bool raw = false) {
+    if (raw) {
+        return rfl::json::read<T>(std::string(req->body()));
+    } else {
+        return rfl::json::read<T, rfl::SnakeCaseToCamelCase>(
+            std::string(req->body()));
+    }
 }
 
 } // namespace bxt::drogon_helpers
