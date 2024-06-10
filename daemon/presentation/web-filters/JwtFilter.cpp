@@ -39,7 +39,7 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
 
     if (token.empty()) {
         return fcb(drogon_helpers::make_error_response(
-            "Authentification header is not found", k401Unauthorized));
+            "Authentication token is missing", k401Unauthorized));
     }
 
     auto verifier =
@@ -62,7 +62,7 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
 
     if (ec) {
         return fcb(drogon_helpers::make_error_response(
-            "Authentification token is invalid", k401Unauthorized));
+            "Authentication token is invalid", k401Unauthorized));
     }
 
     if (!decoded->has_payload_claim("storage")) {
