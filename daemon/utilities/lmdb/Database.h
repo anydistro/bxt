@@ -15,6 +15,7 @@
 #include "utilities/errors/Macro.h"
 #include "utilities/lmdb/CerealSerializer.h"
 #include "utilities/lmdb/Error.h"
+#include "utilities/log/Logging.h"
 
 #include <exception>
 #include <lmdbxx/lmdb++.h>
@@ -36,8 +37,8 @@ public:
 
         txn->value.commit();
     }
-
-    coro::task<Result<bool>> put(std::string_view key, const TEntity value) {
+    coro::task<Result<bool>>
+        put(lmdb::txn& txn, std::string_view key, const TEntity value) {
         bool result;
         try {
             auto value_string = TSerializer::serialize(value);
@@ -48,12 +49,10 @@ public:
                     DatabaseError::ErrorType::DatabaseMalformedError);
             }
 
-            auto txn = co_await m_env->begin_rw_txn();
-
-            result = m_dbi.put(txn->value, key, *value_string);
-            txn->value.commit();
+            result = m_dbi.put(txn, key, *value_string);
 
         } catch (const lmdb::error& err) {
+            loge("LMDB::Database::put: {}", err.what());
             co_return bxt::make_error_with_source<DatabaseError>(
                 LMDB::Error(std::move(err)),
                 DatabaseError::ErrorType::DatabaseMalformedError);
@@ -65,14 +64,11 @@ public:
         co_return result;
     }
 
-    coro::task<Result<bool>> del(std::string_view key) {
+    coro::task<Result<bool>> del(lmdb::txn& txn, std::string_view key) {
         bool result;
         try {
-            auto txn = co_await m_env->begin_rw_txn();
+            result = m_dbi.del(txn, key);
 
-            result = m_dbi.del(txn->value, key);
-
-            txn->value.commit();
         } catch (const lmdb::error& err) {
             co_return bxt::make_error_with_source<DatabaseError>(
                 LMDB::Error(std::move(err)),
@@ -85,13 +81,11 @@ public:
         co_return result;
     }
 
-    coro::task<Result<TEntity>> get(std::string_view key) {
+    coro::task<Result<TEntity>> get(lmdb::txn& txn, std::string_view key) {
         try {
-            auto txn = co_await m_env->begin_ro_txn();
-
             std::string_view value_string;
 
-            if (!m_dbi.get(txn->value, key, value_string)) {
+            if (!m_dbi.get(txn, key, value_string)) {
                 co_return bxt::make_error<DatabaseError>(
                     DatabaseError::ErrorType::EntityNotFound);
             }
@@ -117,13 +111,12 @@ public:
     }
 
     coro::task<Result<void>>
-        accept(std::function<NavigationAction(std::string_view key,
+        accept(lmdb::txn& txn,
+               std::function<NavigationAction(std::string_view key,
                                               const TEntity& value)> visitor,
                std::string_view prefix = "") {
-        auto rotxn = lmdb::txn::begin(m_env->env(), nullptr, MDB_RDONLY);
-
         {
-            auto cursor = lmdb::cursor::open(rotxn, m_dbi);
+            auto cursor = lmdb::cursor::open(txn, m_dbi);
 
             std::string_view key = prefix;
             std::string_view value;

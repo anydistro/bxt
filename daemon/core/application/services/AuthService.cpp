@@ -11,7 +11,8 @@ namespace bxt::Core::Application {
 
 coro::task<AuthService::Result<void>> AuthService::auth(std::string name,
                                                         std::string password) {
-    const auto entity = co_await m_user_repository.find_by_id_async(name);
+    const auto entity = co_await m_user_repository.find_by_id_async(
+        name, co_await m_uow_factory());
 
     if (!entity.has_value()) {
         co_return bxt::make_error<AuthError>(

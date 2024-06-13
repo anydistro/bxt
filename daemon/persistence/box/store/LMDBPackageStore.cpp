@@ -6,10 +6,12 @@
  */
 #include "LMDBPackageStore.h"
 
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "persistence/box/pool/PoolBase.h"
+#include "persistence/lmdb/LmdbUnitOfWork.h"
 
 #include <filesystem>
-#include <set>
+#include <memory>
 #include <string>
 
 namespace bxt::Persistence::Box {
@@ -21,9 +23,15 @@ LMDBPackageStore::LMDBPackageStore(
     const std::string_view name)
     : m_root_path(box_options.box_path), m_pool(pool), m_db(env, name) {
 }
-
 coro::task<std::expected<void, DatabaseError>>
-    LMDBPackageStore::add(const PackageRecord package) {
+    LMDBPackageStore::add(const PackageRecord package,
+                          std::shared_ptr<UnitOfWorkBase> uow) {
+    auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+    if (!lmdb_uow) {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
     auto moved_package = m_pool.move_to(package);
 
     if (!moved_package.has_value()) {
@@ -34,15 +42,13 @@ coro::task<std::expected<void, DatabaseError>>
 
     const auto key = package.id.to_string();
 
-    auto existing_package = co_await m_db.get(key);
+    auto existing_package = co_await m_db.get(lmdb_uow->txn().value, key);
     if (existing_package.has_value()) {
-        for (const auto& [location, desc] : moved_package->descriptions) {
-            existing_package->descriptions[location] = desc;
-        }
-        moved_package = *existing_package;
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::AlreadyExists);
     }
 
-    auto result = co_await m_db.put(key, *moved_package);
+    auto result = co_await m_db.put(lmdb_uow->txn().value, key, *moved_package);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
@@ -54,8 +60,53 @@ coro::task<std::expected<void, DatabaseError>>
 }
 
 coro::task<std::expected<void, DatabaseError>>
-    LMDBPackageStore::remove(const PackageRecord::Id package_id) {
-    auto result = co_await m_db.del(package_id.to_string());
+    LMDBPackageStore::delete_by_id(const PackageRecord::Id package_id,
+                                   std::shared_ptr<UnitOfWorkBase> uow) {
+    auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+    if (!lmdb_uow) {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
+    auto result =
+        co_await m_db.del(lmdb_uow->txn().value, package_id.to_string());
+
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<DatabaseError>(
+            std::move(result.error()),
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
+    co_return {};
+}
+
+coro::task<std::expected<void, DatabaseError>>
+    LMDBPackageStore::update(const PackageRecord package,
+                             std::shared_ptr<UnitOfWorkBase> uow) {
+    auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+    if (!lmdb_uow) {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+    auto moved_package = m_pool.move_to(package);
+
+    if (!moved_package.has_value()) {
+        co_return bxt::make_error_with_source<DatabaseError>(
+            std::move(moved_package.error()),
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
+    const auto key = package.id.to_string();
+
+    auto existing_package = co_await m_db.get(lmdb_uow->txn().value, key);
+    if (existing_package.has_value()) {
+        for (const auto& [location, desc] : moved_package->descriptions) {
+            existing_package->descriptions[location] = desc;
+        }
+        moved_package = *existing_package;
+    }
+
+    auto result = co_await m_db.put(lmdb_uow->txn().value, key, *moved_package);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
@@ -70,10 +121,17 @@ coro::task<std::expected<void, DatabaseError>>
 }
 
 coro::task<std::expected<std::vector<PackageRecord>, DatabaseError>>
-    LMDBPackageStore::find_by_section(PackageSectionDTO section) {
-    std::vector<PackageRecord> result;
+    LMDBPackageStore::find_by_section(PackageSectionDTO section,
+                                      std::shared_ptr<UnitOfWorkBase> uow) {
+    auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+    if (!lmdb_uow) {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::InvalidArgument);
+    }
 
+    std::vector<PackageRecord> result;
     co_await m_db.accept(
+        lmdb_uow->txn().value,
         [&result]([[maybe_unused]] std::string_view key, const auto& value) {
             result.emplace_back(value);
             return Utilities::NavigationAction::Next;
@@ -82,4 +140,27 @@ coro::task<std::expected<std::vector<PackageRecord>, DatabaseError>>
 
     co_return result;
 }
+
+coro::task<std::expected<void, DatabaseError>> LMDBPackageStore::accept(
+    std::function<Utilities::NavigationAction(
+        std::string_view key, const PackageRecord& value)> visitor,
+    std::shared_ptr<UnitOfWorkBase> uow) {
+    co_return co_await accept(visitor, "", uow);
+}
+
+coro::task<std::expected<void, DatabaseError>> LMDBPackageStore::accept(
+    std::function<Utilities::NavigationAction(
+        std::string_view key, const PackageRecord& value)> visitor,
+    std::string_view prefix,
+    std::shared_ptr<UnitOfWorkBase> uow) {
+    auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
+    if (!lmdb_uow) {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+    co_await m_db.accept(lmdb_uow->txn().value, visitor, prefix);
+
+    co_return {};
+}
+
 } // namespace bxt::Persistence::Box

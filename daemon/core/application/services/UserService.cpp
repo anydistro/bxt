@@ -15,13 +15,15 @@ coro::task<UserService::Result<void>>
     UserService::add_user(const UserDTO user) {
     const auto user_entity = UserDTOMapper::to_entity(user);
 
-    auto result = co_await m_repository.add_async(user_entity);
+    auto uow = co_await m_uow_factory(true);
+
+    auto result = co_await m_repository.add_async(user_entity, uow);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(result.error()), CrudError::ErrorType::InternalError);
     }
-    auto commit_ok = co_await m_repository.commit_async();
+    auto commit_ok = co_await uow->commit_async();
 
     if (!commit_ok) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -38,14 +40,16 @@ coro::task<UserService::Result<void>>
             CrudError::ErrorType::InvalidArgument);
     }
 
-    auto result = co_await m_repository.remove_async(name);
+    auto uow = co_await m_uow_factory(true);
+
+    auto result = co_await m_repository.delete_async(name, uow);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(result.error()), CrudError::ErrorType::InternalError);
     }
 
-    auto commit_ok = co_await m_repository.commit_async();
+    auto commit_ok = co_await uow->commit_async();
 
     if (!commit_ok) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -57,8 +61,10 @@ coro::task<UserService::Result<void>>
 
 coro::task<UserService::Result<void>>
     UserService::update_user(const UserDTO user) {
+    auto uow = co_await m_uow_factory(true);
+
     auto existing_user_entity =
-        co_await m_repository.find_by_id_async(user.name);
+        co_await m_repository.find_by_id_async(user.name, uow);
 
     if (!existing_user_entity) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -79,13 +85,13 @@ coro::task<UserService::Result<void>>
         existing_user_entity->set_permissions(permission_entities);
     }
 
-    auto result = co_await m_repository.add_async(*existing_user_entity);
+    auto result = co_await m_repository.add_async(*existing_user_entity, uow);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(result.error()), CrudError::ErrorType::InternalError);
     }
-    auto commit_ok = co_await m_repository.commit_async();
+    auto commit_ok = co_await uow->commit_async();
 
     if (!commit_ok) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -99,7 +105,7 @@ coro::task<UserService::Result<std::vector<UserDTO>>>
     UserService::get_users() const {
     std::vector<bxt::Core::Application::UserDTO> result;
 
-    auto values = co_await m_repository.all_async();
+    auto values = co_await m_repository.all_async(co_await m_uow_factory());
     if (!values.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(values.error()), CrudError::ErrorType::InternalError);

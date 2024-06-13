@@ -37,8 +37,6 @@ public:
     virtual coro::task<Result<void>>
         commit_transaction(const Transaction transaction) = 0;
 
-    virtual coro::task<Result<void>> add_package(const PackageDTO package) = 0;
-
     virtual coro::task<Result<std::vector<PackageDTO>>>
         get_packages(const PackageSectionDTO section_dto) const = 0;
 

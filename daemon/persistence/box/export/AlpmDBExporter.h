@@ -10,6 +10,7 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/domain/entities/Section.h"
 #include "core/domain/repositories/RepositoryBase.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "parallel_hashmap/phmap.h"
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/export/ExporterBase.h"
@@ -30,7 +31,8 @@ class AlpmDBExporter : public ExporterBase {
 public:
     AlpmDBExporter(BoxOptions& box_options,
                    PackageStoreBase& package_store,
-                   ReadOnlyRepositoryBase<Section>& section_repository);
+                   ReadOnlyRepositoryBase<Section>& section_repository,
+                   UnitOfWorkBaseFactory& uow_factory);
 
     coro::task<void> export_to_disk() override;
     void add_dirty_sections(
@@ -51,6 +53,7 @@ private:
     std::filesystem::path m_box_path;
     std::set<Core::Application::PackageSectionDTO> m_sections;
     PackageStoreBase& m_package_store;
+    UnitOfWorkBaseFactory& m_uow_factory;
 
     phmap::parallel_node_hash_set<PackageSectionDTO> m_dirty_sections;
 };

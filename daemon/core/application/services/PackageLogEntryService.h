@@ -9,6 +9,7 @@
 #include "core/application/dtos/PackageLogEntryDTO.h"
 #include "core/domain/entities/PackageLogEntry.h"
 #include "core/domain/repositories/RepositoryBase.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "dexode/EventBus.hpp"
 
 #include <memory>
@@ -19,11 +20,13 @@ class PackageLogEntryService {
 public:
     PackageLogEntryService(
         std::shared_ptr<dexode::EventBus> evbus,
-        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::PackageLogEntry>
-            &repository)
+        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::PackageLogEntry>&
+            repository,
+        UnitOfWorkBaseFactory& uow_factory)
         : m_evbus(evbus),
           m_listener(dexode::EventBus::Listener::createNotOwning(*m_evbus)),
-          m_repository(repository) {}
+          m_repository(repository),
+          m_uow_factory(uow_factory) {}
 
     void init();
 
@@ -32,8 +35,9 @@ public:
 private:
     std::shared_ptr<dexode::EventBus> m_evbus;
     dexode::EventBus::Listener m_listener;
-    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::PackageLogEntry>
-        &m_repository;
+    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::PackageLogEntry>&
+        m_repository;
+    UnitOfWorkBaseFactory& m_uow_factory;
 };
 
 } // namespace bxt::Core::Application

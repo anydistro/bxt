@@ -18,7 +18,7 @@ coro::task<SectionService::Result<std::vector<PackageSectionDTO>>>
     SectionService::get_sections() const {
     std::vector<PackageSectionDTO> result;
 
-    auto sections = co_await m_repository.all_async();
+    auto sections = co_await m_repository.all_async(co_await m_uow_factory());
 
     if (!sections.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(

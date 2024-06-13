@@ -19,7 +19,8 @@ coro::task<bool>
 coro::task<bool> PermissionService::check(
     const std::vector<std::string_view> target_permissions,
     const std::string user_name) {
-    auto user = co_await m_repository.find_by_id_async(user_name);
+    auto user = co_await m_repository.find_by_id_async(
+        user_name, co_await m_uow_factory());
 
     if (!user) { co_return {}; }
 

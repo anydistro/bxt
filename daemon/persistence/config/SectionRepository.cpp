@@ -11,20 +11,24 @@
 namespace bxt::Persistence {
 
 coro::task<SectionRepository::TResult>
-    bxt::Persistence::SectionRepository::find_by_id_async(TId id) {
+    bxt::Persistence::SectionRepository::find_by_id_async(
+        TId id, std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
 coro::task<SectionRepository::TResult>
     bxt::Persistence::SectionRepository::find_first_async(
-        std::function<bool(const Section&)>) {
+        std::function<bool(const Section&)>,
+        std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
 coro::task<SectionRepository::TResults>
     bxt::Persistence::SectionRepository::find_async(
-        std::function<bool(const Section&)> condition) {
+        std::function<bool(const Section&)> condition,
+        std::shared_ptr<UnitOfWorkBase> uow) {
 }
 
-coro::task<SectionRepository::TResults> SectionRepository::all_async() {
+coro::task<SectionRepository::TResults>
+    SectionRepository::all_async(std::shared_ptr<UnitOfWorkBase> uow) {
     const auto& sections = m_parser.sections();
 
     std::vector<Section> result;

@@ -10,6 +10,7 @@
 #include "PoolOptions.h"
 #include "core/domain/enums/PoolLocation.h"
 #include "core/domain/repositories/RepositoryBase.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/pool/PoolBase.h"
 
@@ -23,7 +24,8 @@ class Pool : public PoolBase {
 public:
     Pool(BoxOptions& box_options,
          PoolOptions& options,
-         ReadOnlyRepositoryBase<Section>& section_repository);
+         ReadOnlyRepositoryBase<Section>& section_repository,
+         UnitOfWorkBaseFactory& uow_factory);
 
     PoolBase::Result<PackageRecord>
         move_to(const PackageRecord& package) override;
@@ -37,6 +39,7 @@ private:
     std::filesystem::path m_pool_path;
     std::set<std::string> m_architectures;
     PoolOptions& m_options;
+    UnitOfWorkBaseFactory& m_uow_factory;
 };
 
 } // namespace bxt::Persistence::Box

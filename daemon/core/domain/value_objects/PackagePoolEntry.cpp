@@ -52,6 +52,13 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
         result.m_signature_path = deduced_signature_path;
     }
 
+    auto desc = bxt::Utilities::AlpmDb::Desc::parse_package(file_path);
+    if (!desc.has_value()) {
+        return bxt::make_error_with_source<ParsingError>(
+            std::move(desc.error()), ParsingError::ErrorCode::InvalidPackage);
+    }
+    result.m_desc = std::move(desc.value());
+
     return result;
 }
 } // namespace bxt::Core::Domain

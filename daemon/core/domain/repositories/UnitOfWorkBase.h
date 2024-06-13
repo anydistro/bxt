@@ -19,9 +19,7 @@ struct UnitOfWorkBase {
     struct Error : public bxt::Error {
         enum class ErrorType { OperationError };
 
-        Error(ErrorType error_type, const bxt::Error&& result)
-            : bxt::Error(std::make_unique<bxt::Error>(std::move(result))),
-              error_type(error_type) {
+        Error(ErrorType error_type) : error_type(error_type) {
             message = error_messages.at(error_type).data();
         }
 
@@ -40,5 +38,16 @@ struct UnitOfWorkBase {
     virtual coro::task<Result<void>> commit_async() = 0;
 
     virtual coro::task<Result<void>> rollback_async() = 0;
+
+    virtual coro::task<Result<void>> begin_async() = 0;
+
+    virtual coro::task<Result<void>> begin_ro_async() = 0;
 };
+
+struct UnitOfWorkBaseFactory {
+    virtual ~UnitOfWorkBaseFactory() = default;
+    virtual coro::task<std::shared_ptr<UnitOfWorkBase>>
+        operator()(bool rw = false) = 0;
+};
+
 } // namespace bxt::Core::Domain

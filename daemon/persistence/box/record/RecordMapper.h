@@ -21,13 +21,7 @@ static PackageRecord to_record(const Core::Domain::Package &from) {
     for (const auto &[location, entry] : from.pool_entries()) {
         result.descriptions[location].filepath = entry.file_path();
         result.descriptions[location].signature_path = entry.signature_path();
-
-        auto desc_result =
-            Utilities::AlpmDb::Desc::parse_package(entry.file_path());
-
-        if (!desc_result.has_value()) { continue; }
-
-        result.descriptions[location].descfile = *desc_result;
+        result.descriptions[location].descfile = entry.desc();
     }
 
     return result;

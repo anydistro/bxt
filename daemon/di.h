@@ -14,9 +14,9 @@
 #include "core/application/services/SectionService.h"
 #include "core/application/services/UserService.h"
 #include "core/domain/entities/PackageLogEntry.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/io_scheduler.hpp"
 #include "infrastructure/DeploymentService.h"
-#include "infrastructure/DispatchingUnitOfWork.h"
 #include "infrastructure/PackageService.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
@@ -35,6 +35,7 @@
 #include "persistence/box/store/PackageStoreBase.h"
 #include "persistence/box/writeback/WritebackScheduler.h"
 #include "persistence/config/SectionRepository.h"
+#include "persistence/lmdb/LmdbUnitOfWork.h"
 #include "persistence/lmdb/PackageLogEntryRepository.h"
 #include "persistence/lmdb/UserRepository.h"
 #include "presentation/JwtOptions.h"
@@ -114,6 +115,10 @@ namespace Core {
                   bxt::Core::Domain::ReadWriteRepositoryBase<PackageLogEntry>> {
         };
 
+        struct UnitOfWorkBaseFactory
+            : kgr::abstract_service<bxt::Core::Domain::UnitOfWorkBaseFactory> {
+        };
+
     } // namespace Domain
 
     namespace Application {
@@ -121,7 +126,8 @@ namespace Core {
         struct AuthService
             : kgr::single_service<
                   bxt::Core::Application::AuthService,
-                  kgr::dependency<di::Core::Domain::UserRepository>> {};
+                  kgr::dependency<di::Core::Domain::UserRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>> {};
 
         struct DeploymentService
             : kgr::abstract_service<bxt::Core::Application::DeploymentService> {
@@ -136,26 +142,29 @@ namespace Core {
         struct UserService
             : kgr::single_service<
                   bxt::Core::Application::UserService,
-                  kgr::dependency<di::Core::Domain::UserRepository>> {};
+                  kgr::dependency<di::Core::Domain::UserRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>> {};
 
         struct PermissionService
             : kgr::single_service<
                   bxt::Core::Application::PermissionService,
-                  kgr::dependency<di::Core::Domain::UserRepository>> {};
+                  kgr::dependency<di::Core::Domain::UserRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>> {};
 
         struct PackageLogEntryService
             : kgr::single_service<
                   bxt::Core::Application::PackageLogEntryService,
                   kgr::dependency<di::Utilities::EventBus,
-                                  di::Core::Domain::PackageLogEntryRepository>>,
+                                  di::Core::Domain::PackageLogEntryRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>>,
               kgr::autocall<kgr::invoke<method<
                   &bxt::Core::Application::PackageLogEntryService::init>>> {};
 
         struct SectionService
             : kgr::single_service<
                   bxt::Core::Application::SectionService,
-                  kgr::dependency<
-                      di::Core::Domain::ReadOnlySectionRepository>> {};
+                  kgr::dependency<di::Core::Domain::ReadOnlySectionRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>> {};
 
         struct CompareService
             : kgr::single_service<
@@ -178,14 +187,16 @@ namespace Infrastructure {
     struct PackageService
         : kgr::single_service<
               bxt::Infrastructure::PackageService,
-              kgr::dependency<di::Core::Domain::PackageRepositoryBase>>,
+              kgr::dependency<di::Core::Domain::PackageRepositoryBase,
+                              di::Core::Domain::UnitOfWorkBaseFactory>>,
           kgr::overrides<di::Core::Application::PackageService> {};
 
     struct DeploymentService
         : kgr::single_service<
               bxt::Infrastructure::DeploymentService,
               kgr::dependency<di::Core::Application::PackageService,
-                              di::Core::Domain::ReadOnlySectionRepository>>,
+                              di::Core::Domain::ReadOnlySectionRepository,
+                              di::Core::Domain::UnitOfWorkBaseFactory>>,
           kgr::overrides<di::Core::Application::DeploymentService> {};
 
     struct ArchRepoOptions
@@ -196,12 +207,20 @@ namespace Infrastructure {
               bxt::Infrastructure::ArchRepoSyncService,
               kgr::dependency<di::Utilities::EventBusDispatcher,
                               di::Core::Domain::PackageRepositoryBase,
-                              di::Infrastructure::ArchRepoOptions>>,
+                              di::Infrastructure::ArchRepoOptions,
+                              di::Core::Domain::UnitOfWorkBaseFactory>>,
           kgr::overrides<di::Core::Application::SyncService> {};
 
 } // namespace Infrastructure
 
 namespace Persistence {
+
+    struct UnitOfWorkFactory
+        : kgr::single_service<
+              bxt::Persistence::LmdbUnitOfWorkFactory,
+              kgr::dependency<di::Utilities::LMDB::Environment>>,
+          kgr::overrides<di::Core::Domain::UnitOfWorkBaseFactory> {};
+
     struct UserRepository
         : kgr::single_service<
               bxt::Persistence::LMDB::UserRepository,
@@ -210,15 +229,9 @@ namespace Persistence {
 
     struct PackageLogEntryRepository
         : kgr::single_service<
-              bxt::Infrastructure::DispatchingUnitOfWork<
-                  bxt::Persistence::LMDB::PackageLogEntryRepository>,
+              bxt::Persistence::LMDB::PackageLogEntryRepository,
               kgr::dependency<di::Utilities::LMDB::Environment>>,
-          kgr::overrides<di::Core::Domain::PackageLogEntryRepository>,
-          kgr::autocall<
-              kgr::invoke<method<&bxt::Infrastructure::DispatchingUnitOfWork<
-                              bxt::Persistence::LMDB::
-                                  PackageLogEntryRepository>::init_dispatcher>,
-                          di::Utilities::EventBusDispatcher>> {};
+          kgr::overrides<di::Core::Domain::PackageLogEntryRepository> {};
 
     struct SectionRepository
         : kgr::single_service<
@@ -241,7 +254,8 @@ namespace Persistence {
                   bxt::Persistence::Box::Pool,
                   kgr::dependency<di::Persistence::Box::BoxOptions,
                                   di::Persistence::Box::PoolOptions,
-                                  di::Core::Domain::ReadOnlySectionRepository>>,
+                                  di::Core::Domain::ReadOnlySectionRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>>,
               kgr::overrides<PoolBase> {};
 
         struct PackageStoreBase
@@ -267,21 +281,17 @@ namespace Persistence {
                   bxt::Persistence::Box::AlpmDBExporter,
                   kgr::dependency<di::Persistence::Box::BoxOptions,
                                   di::Persistence::Box::PackageStoreBase,
-                                  Core::Domain::ReadOnlySectionRepository>>,
+                                  Core::Domain::ReadOnlySectionRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>>,
               kgr::overrides<ExporterBase> {};
 
         struct BoxRepository
-            : kgr::single_service<bxt::Infrastructure::DispatchingUnitOfWork<
-                                      bxt::Persistence::Box::BoxRepository>,
+            : kgr::single_service<bxt::Persistence::Box::BoxRepository,
                                   kgr::dependency<BoxOptions,
                                                   PackageStoreBase,
                                                   WritebackScheduler,
                                                   ExporterBase>>,
-              kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
-              kgr::autocall<kgr::invoke<
-                  method<&bxt::Infrastructure::DispatchingUnitOfWork<
-                      bxt::Persistence::Box::BoxRepository>::init_dispatcher>,
-                  di::Utilities::EventBusDispatcher>> {};
+              kgr::overrides<di::Core::Domain::PackageRepositoryBase> {};
     } // namespace Box
 } // namespace Persistence
 

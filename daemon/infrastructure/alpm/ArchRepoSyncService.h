@@ -10,6 +10,7 @@
 #include "core/application/services/SyncService.h"
 #include "core/domain/entities/Package.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "utilities/Error.h"
 #include "utilities/eventbus/EventBusDispatcher.h"
 
@@ -47,10 +48,12 @@ public:
 
     ArchRepoSyncService(Utilities::EventBusDispatcher& dispatcher,
                         PackageRepositoryBase& package_repository,
-                        ArchRepoOptions& options)
+                        ArchRepoOptions& options,
+                        UnitOfWorkBaseFactory& uow_factory)
         : m_dispatcher(dispatcher),
           m_package_repository(package_repository),
-          m_options(options) {}
+          m_options(options),
+          m_uow_factory(uow_factory) {}
 
     coro::task<SyncService::Result<void>>
         sync(const PackageSectionDTO section) override;
@@ -78,6 +81,7 @@ protected:
 private:
     Utilities::EventBusDispatcher& m_dispatcher;
     PackageRepositoryBase& m_package_repository;
+    UnitOfWorkBaseFactory& m_uow_factory;
 
     ArchRepoOptions m_options;
     coro::io_scheduler tp {{.pool = {.thread_count = 1}}};

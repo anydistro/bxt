@@ -11,6 +11,7 @@
 #include "core/application/events/SyncEvent.h"
 #include "core/domain/entities/Package.h"
 #include "core/domain/enums/PoolLocation.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/hash_from_file.h"
@@ -44,6 +45,8 @@ coro::task<SyncService::Result<void>>
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
         std::make_shared<SyncStarted>());
 
+    auto uow = co_await m_uow_factory(true);
+
     auto all_packages = co_await sync_section(section);
     if (!all_packages.has_value()) {
         co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
@@ -51,7 +54,7 @@ coro::task<SyncService::Result<void>>
 
         co_return std::unexpected(all_packages.error());
     }
-    co_await m_package_repository.commit_async();
+    co_await uow->commit_async();
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
         std::make_shared<SyncFinished>(std::move(*all_packages)));
@@ -99,8 +102,15 @@ coro::task<SyncService::Result<void>> ArchRepoSyncService::sync_all() {
                              std::make_move_iterator(package_list->begin()),
                              std::make_move_iterator(package_list->end()));
     }
+    auto uow = co_await m_uow_factory(true);
 
-    auto commit_ok = co_await m_package_repository.commit_async();
+    auto added = co_await m_package_repository.add_async(*all_packages, uow);
+    if (!added.has_value()) {
+        co_return bxt::make_error_with_source<SyncError>(
+            std::move(added.error()), SyncError::RepositoryError);
+    }
+
+    auto commit_ok = co_await uow->commit_async();
 
     if (!commit_ok.has_value()) {
         co_return bxt::make_error_with_source<SyncError>(
@@ -147,7 +157,6 @@ coro::task<SyncService::Result<std::vector<Package>>>
                 std::move(package.error()), SyncError::RepositoryError);
         }
 
-        co_await m_package_repository.add_async(*package);
         packages.emplace_back(std::move(*package));
     }
 
@@ -241,6 +250,8 @@ coro::task<
 
     uint64_t packages_size = 0;
 
+    auto uow = co_await m_uow_factory();
+
     for (auto& [header, entry] : reader) {
         std::string pname = archive_entry_pathname(*header);
 
@@ -265,7 +276,7 @@ coro::task<
 
         const auto existing_package =
             co_await m_package_repository.find_by_section_async(
-                SectionDTOMapper::to_entity(section), name);
+                SectionDTOMapper::to_entity(section), name, uow);
         if (existing_package.has_value()) {
             if (existing_package->version() < version) {
                 result.emplace_back(std::move(*parsed_package_info));

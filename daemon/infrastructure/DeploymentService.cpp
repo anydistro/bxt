@@ -38,7 +38,8 @@ coro::task<DeploymentService::Result<void>>
         co_return bxt::make_error<Error>(Error::ErrorType::PackagePushFailed);
     }
 
-    const auto sections = co_await m_section_repository.all_async();
+    const auto sections =
+        co_await m_section_repository.all_async(co_await m_uow_factory());
 
     if (!sections.has_value()) {
         co_return bxt::make_error<Error>(Error::ErrorType::DeploymentFailed);

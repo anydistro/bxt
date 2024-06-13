@@ -21,8 +21,9 @@ namespace bxt::Core::Application {
 class PermissionService {
 public:
     BXT_DECLARE_RESULT(CrudError)
-    PermissionService(Core::Domain::UserRepository& repository)
-        : m_repository(repository) {}
+    PermissionService(Core::Domain::UserRepository& repository,
+                      Domain::UnitOfWorkBaseFactory& uow_factory)
+        : m_repository(repository), m_uow_factory(uow_factory) {}
 
     coro::task<bool> check(const std::string_view target_permission,
                            const std::string user_name);
@@ -32,6 +33,7 @@ public:
 
 private:
     Core::Domain::UserRepository& m_repository;
+    Domain::UnitOfWorkBaseFactory& m_uow_factory;
 };
 
 } // namespace bxt::Core::Application

@@ -75,9 +75,13 @@ std::string
 
 Pool::Pool(BoxOptions& box_options,
            PoolOptions& options,
-           ReadOnlyRepositoryBase<Section>& section_repository)
-    : m_pool_path(box_options.box_path / "pool"), m_options(options) {
-    const auto sections = coro::sync_wait(section_repository.all_async());
+           ReadOnlyRepositoryBase<Section>& section_repository,
+           UnitOfWorkBaseFactory& uow_factory)
+    : m_pool_path(box_options.box_path / "pool"),
+      m_options(options),
+      m_uow_factory(uow_factory) {
+    const auto sections = coro::sync_wait(
+        section_repository.all_async(coro::sync_wait(m_uow_factory())));
 
     if (!sections.has_value()) {
         loge("Pool: Can't get available sections, the reason is \"{}\". "
