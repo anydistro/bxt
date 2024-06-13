@@ -32,13 +32,41 @@ paths:
           description: Invalid request
         "401":
           description: Unauthorized
-  /api/verify:
+  /api/auth/refresh:
     get:
-      summary: Verify JWT token
-      operationId: verify
+      summary: Refresh JWT token
+      operationId: refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: "JWT refresh token"
+
       responses:
         "200":
-          description: Token is valid
+          description: Token refresh successful, new JWT token set in cookie or returned as bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+
+  /api/auth/revoke:
+    post:
+      summary: Revoke refresh token
+      operationId: revoke
+      responses:
+        "200":
+          description: Token successfully revoked
         "400":
           description: Invalid request
         "401":
@@ -282,6 +310,8 @@ components:
       type: object
       properties:
         access_token:
+          type: string
+        refresh_token:
           type: string
         token_type:
           type: string

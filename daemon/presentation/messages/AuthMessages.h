@@ -18,6 +18,7 @@ struct AuthRequest {
 // for CLI usage
 struct AuthResponse {
     std::string access_token;
+    std::string refresh_token;
     std::string token_type;
 };
 } // namespace bxt::Presentation

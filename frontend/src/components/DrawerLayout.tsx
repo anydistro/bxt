@@ -28,6 +28,12 @@ const triggerSync = async () => {
 export default () => {
     let modalRef = useRef<HTMLDialogElement>(null);
     const [userName, setUserName] = useLocalStorage("username", null);
+
+    const revokeToken = async () => {
+        await axios.post("/api/auth/revoke");
+        setUserName(null);
+    };
+
     const syncInProgress = useSyncMessage()?.started;
 
     const handleShow = useCallback(() => {
@@ -96,7 +102,7 @@ export default () => {
                     <div className="h-5 flex flex-col place-content-center">
                         <hr />
                     </div>
-                    <Menu.Item onClick={(e) => setUserName(null)}>
+                    <Menu.Item onClick={(e) => revokeToken()}>
                         <a>
                             <FontAwesomeIcon icon={faRightFromBracket} />
                             Logout

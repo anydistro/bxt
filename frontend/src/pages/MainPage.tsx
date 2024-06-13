@@ -15,6 +15,8 @@ import DrawerLayout from "../components/DrawerLayout";
 import axios, { AxiosError } from "axios";
 import AdminPage from "./AdminPage";
 
+import axiosRetry, { isNetworkOrIdempotentRequestError } from "axios-retry";
+
 declare module "@uidotdev/usehooks" {
     export function useLocalStorage<T>(
         key: string,
@@ -23,13 +25,23 @@ declare module "@uidotdev/usehooks" {
 }
 export default (props: any) => {
     const [userName, setUserName] = useLocalStorage("username", null);
-    axios.interceptors.response.use(
-        (response) => response,
-        (error: AxiosError<any>) => {
-            toast.error(`Response error: ${error.response?.data?.message}`, {
-                autoClose: false
-            });
-            if (error.response?.status === 401) {
+
+    axios.defaults.withCredentials = true;
+    axiosRetry(axios, {
+        retries: 3,
+        retryDelay: axiosRetry.exponentialDelay,
+        retryCondition: (error) =>
+            isNetworkOrIdempotentRequestError(error) ||
+            error.response?.status === 401,
+        onRetry: async (retryCount, error, requestConfig) => {
+            (error.config as any)._retry = true;
+            try {
+                const instance = axios.create();
+                const response = await instance.get("/api/auth/refresh");
+
+                return Promise.resolve();
+            } catch (refreshError) {
+                toast.error("Error " + error);
                 setUserName(null);
 
                 // Dismiss existing toasts to avoid duplicate error messages
@@ -40,10 +52,24 @@ export default (props: any) => {
                         autoClose: false
                     }
                 );
+                return Promise.reject();
+            }
+        }
+    });
+    axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            if (error.response?.status !== 401) {
+                toast.error(
+                    `Response error: ${error.response?.data?.message}`,
+                    {
+                        autoClose: false
+                    }
+                );
+                return Promise.resolve(error);
             }
         }
     );
-
     const router = createBrowserRouter([
         {
             element: <DrawerLayout />,

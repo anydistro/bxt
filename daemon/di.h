@@ -326,7 +326,9 @@ namespace Presentation {
         : kgr::shared_service<
               bxt::Presentation::AuthController,
               kgr::dependency<di::Presentation::JwtOptions,
-                              di::Core::Application::AuthService>> {};
+                              di::Core::Application::AuthService,
+                              di::Utilities::LMDB::Environment,
+                              di::Core::Domain::UnitOfWorkBaseFactory>> {};
 
     struct UserController
         : kgr::shared_service<

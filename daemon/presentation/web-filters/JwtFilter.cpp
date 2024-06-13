@@ -6,6 +6,8 @@
  */
 #include "JwtFilter.h"
 
+#include "jwt-cpp/jwt.h"
+#include "presentation/Names.h"
 #include "utilities/drogon/Helpers.h"
 
 #include <expected>
@@ -26,64 +28,16 @@ void JwtFilter::doFilter(const HttpRequestPtr &request,
                          FilterChainCallback &&fccb) {
     if (request->getMethod() == HttpMethod::Options) return fccb();
 
-    std::string token = request->getCookie("token");
-    std::string provided_storage = "cookie";
-
-    if (token.empty()) {
-        auto auth_header = request->getHeader("Authorization");
-        if (!auth_header.empty() && auth_header.find("Bearer ") == 0) {
-            token = auth_header.substr(7);
-            provided_storage = "bearer";
-        }
+    auto access_token = drogon_helpers::get_access_token(
+        request, m_options.issuer, m_options.secret);
+    if (!access_token.has_value()) {
+        return fcb(drogon_helpers::make_error_response(access_token.error(),
+                                                       k401Unauthorized));
     }
 
-    if (token.empty()) {
-        return fcb(drogon_helpers::make_error_response(
-            "Authentication token is missing", k401Unauthorized));
-    }
+    request->getAttributes()->insert(fmt::format("jwt_{}", Names::UserName),
+                                     access_token->name());
 
-    auto verifier =
-        jwt::verify()
-            .allow_algorithm(jwt::algorithm::hs256 {m_options.secret})
-            .with_issuer("auth0");
-
-    auto decoded = decode_jwt(token);
-
-    if (!decoded.has_value()) {
-        return fcb(drogon_helpers::make_error_response(
-            fmt::format("Error while decoding the token: {}",
-                        decoded.error().what()),
-            k401Unauthorized));
-    }
-
-    std::error_code ec;
-
-    verifier.verify(*decoded, ec);
-
-    if (ec) {
-        return fcb(drogon_helpers::make_error_response(
-            "Authentication token is invalid", k401Unauthorized));
-    }
-
-    if (!decoded->has_payload_claim("storage")) {
-        return fcb(drogon_helpers::make_error_response(
-            "No token storage provided", k401Unauthorized));
-    }
-
-    auto storage = decoded->get_payload_claim("storage").as_string();
-    if (storage != provided_storage) {
-        return fcb(drogon_helpers::make_error_response(
-            fmt::format(
-                R"(Token storage is invalid, expected: "{}", got: "{}")",
-                provided_storage, storage),
-            k401Unauthorized));
-    }
-
-    for (auto &claim : decoded->get_payload_claims())
-        request->getAttributes()->insert("jwt_" + claim.first,
-                                         claim.second.as_string());
-
-    // If everything is right, just move to other endpoint
     return fccb();
 }
 
