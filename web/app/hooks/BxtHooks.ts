@@ -33,9 +33,7 @@ export const usePackageLogs = (): [ILogEntry[], () => void] => {
 
     const updateEntries = useCallback(async () => {
         try {
-            const result = await axios.get(
-                `${process.env.PUBLIC_URL}/api/logs/packages`
-            );
+            const result = await axios.get(`/api/logs/packages`);
 
             const entries = result.data.map((value: any) => {
                 value.time = new Date(value.time);
@@ -66,10 +64,7 @@ export const useCompareResults = (): [
     const updateResults: IGetCompareResults = useCallback(
         async (sections: ISection[]) => {
             try {
-                const result = await axios.post(
-                    `${process.env.PUBLIC_URL}/api/compare`,
-                    sections
-                );
+                const result = await axios.post(`/api/compare`, sections);
 
                 const compareEntries: ICompareEntry[] = [];
 

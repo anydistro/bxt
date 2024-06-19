@@ -9,7 +9,7 @@ import { FullFileBrowser, setChonkyDefaults } from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
-import Dropzone, { useDropzone } from "react-dropzone";
+import { useDropzone } from "react-dropzone-esm";
 import CommitModal, { CommitModalProps } from "../components/CommitModal";
 import { Button, Loading } from "react-daisyui";
 import { useFilesFromSections } from "../hooks/BxtFsHooks";
@@ -28,18 +28,20 @@ import {
 } from "../hooks/FileManagementHooks";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 import { SectionUtils } from "../utils/SectionUtils";
-import { unstable_useBlocker } from "react-router-dom";
+import { ClientOnly } from "remix-utils/client-only";
 
-setChonkyDefaults({ iconComponent: ChonkyIconFA });
+setChonkyDefaults({ iconComponent: ChonkyIconFA as any });
+const AnyFileBrowser = FullFileBrowser as any;
 
 export default (props: any) => {
     const [sections, updateSections] = useSections();
+    const [path, setPath] = useState<string[]>(["root"]);
 
-    const [path, setPath] = useState<string[]>(
-        JSON.parse(localStorage.getItem("path") ?? '["root"]')
-    );
+    // const [path, setPath] = useState<string[]>(
+    //   JSON.parse(localStorage.getItem("path") ?? '["root"]')
+    // );
 
-    useEffect(() => localStorage.setItem("path", JSON.stringify(path)), [path]);
+    // useEffect(() => localStorage.setItem("path", JSON.stringify(path)), [path]);
 
     const [files, updateFiles, packages] = useFilesFromSections(sections, path);
 
@@ -71,12 +73,11 @@ export default (props: any) => {
     };
 
     const [progress, setProgress] = useState<number | undefined>(undefined);
-    unstable_useBlocker(() => !!progress);
-    window.onbeforeunload = () => {
-        if (progress) {
-            return "";
-        }
-    };
+    // window.onbeforeunload = () => {
+    //   if (progress) {
+    //     return "";
+    //   }
+    // };
 
     const commitModalRef = useRef<HTMLDialogElement>(null);
 
@@ -151,45 +152,70 @@ export default (props: any) => {
         },
         [packageModalRef, setPackageModalProps, packageModalProps]
     );
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        noClick: true,
+        onDrop: usePackageDropHandler(
+            SectionUtils.fromPath(path),
+            openModalWithCommitHandler(false)
+        )
+    });
 
     return (
         <div className="flex w-full h-full items-center justify-center font-sans">
-            <CommitModal
-                {...commitModalProps}
-                ref={commitModalRef}
-                isNew={isCommitInModalNew}
-                sections={sections}
-                backdrop={true}
-                onCommitSubmit={(section, commit) => {
-                    setCommits((prevCommit) => {
-                        const newCommit = new Map(prevCommit);
-                        newCommit.set(SectionUtils.toString(section), commit);
-                        return newCommit;
-                    });
+            <ClientOnly fallback={null}>
+                {() => (
+                    <CommitModal
+                        {...commitModalProps}
+                        ref={commitModalRef}
+                        isNew={isCommitInModalNew}
+                        sections={sections}
+                        backdrop={true}
+                        onCommitSubmit={(section, commit) => {
+                            setCommits((prevCommit) => {
+                                const newCommit = new Map(prevCommit);
+                                newCommit.set(
+                                    SectionUtils.toString(section),
+                                    commit
+                                );
+                                return newCommit;
+                            });
 
-                    commitModalRef.current?.close();
-                }}
-                onCommitDelete={(section) => {
-                    if (section) {
-                        setCommits((prevCommit) => {
-                            const newCommit = new Map(prevCommit);
-                            newCommit.delete(SectionUtils.toString(section));
-                            return newCommit;
-                        });
-                    }
-                    commitModalRef.current?.close();
-                }}
-            />
-            <SnapshotModal
-                ref={snapshotModalRef}
-                {...snapshotModalProps}
-                backdrop={true}
-            />
-            <PackageModal
-                ref={packageModalRef}
-                {...packageModalProps}
-                backdrop={true}
-            />
+                            commitModalRef.current?.close();
+                        }}
+                        onCommitDelete={(section) => {
+                            if (section) {
+                                setCommits((prevCommit) => {
+                                    const newCommit = new Map(prevCommit);
+                                    newCommit.delete(
+                                        SectionUtils.toString(section)
+                                    );
+                                    return newCommit;
+                                });
+                            }
+                            commitModalRef.current?.close();
+                        }}
+                    />
+                )}
+            </ClientOnly>
+            <ClientOnly fallback={null}>
+                {() => (
+                    <SnapshotModal
+                        ref={snapshotModalRef}
+                        {...snapshotModalProps}
+                        backdrop={true}
+                    />
+                )}
+            </ClientOnly>
+
+            <ClientOnly fallback={null}>
+                {() => (
+                    <PackageModal
+                        ref={packageModalRef}
+                        {...packageModalProps}
+                        backdrop={true}
+                    />
+                )}
+            </ClientOnly>
 
             <CommitDrawer
                 isOpen={drawerOpened && !progress}
@@ -209,30 +235,20 @@ export default (props: any) => {
                 side={true}
                 onClickOverlay={() => setDrawerOpened(false)}
             >
-                <Dropzone
-                    noClick={true}
-                    onDrop={usePackageDropHandler(
-                        SectionUtils.fromPath(path),
-                        openModalWithCommitHandler(false)
-                    )}
-                >
-                    {({ getRootProps, getInputProps }) => (
-                        <div className="h-full" {...getRootProps()}>
-                            <input {...getInputProps()} />
-                            <FullFileBrowser
-                                fileActions={[SnapshotAction, SnapToAction]}
-                                files={files}
-                                onFileAction={useFileActionHandler(
-                                    setPath,
-                                    openSnapshotModalWithBranchHandler,
-                                    openPackageModal,
-                                    packages ?? []
-                                )}
-                                folderChain={useFolderChainForPath(path)}
-                            />
-                        </div>
-                    )}
-                </Dropzone>
+                <div className="h-full" {...getRootProps()}>
+                    <input className="hidden" {...getInputProps()} />
+                    <AnyFileBrowser
+                        fileActions={[SnapshotAction, SnapToAction]}
+                        files={files}
+                        onFileAction={useFileActionHandler(
+                            setPath,
+                            openSnapshotModalWithBranchHandler,
+                            openPackageModal,
+                            packages ?? []
+                        )}
+                        folderChain={useFolderChainForPath(path)}
+                    />
+                </div>
                 {commits.size > 0 && !progress && (
                     <Button
                         color="accent"

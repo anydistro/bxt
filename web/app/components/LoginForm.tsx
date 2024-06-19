@@ -4,23 +4,24 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-import { useLocalStorage } from "@uidotdev/usehooks";
+import { useNavigate, useRevalidator } from "@remix-run/react";
+
 import axios from "axios";
 import { useCallback, useState } from "react";
 import { Hero, Button, Card, Form, Input } from "react-daisyui";
 import { toast } from "react-toastify";
+import { useLocalStorage } from "~/root";
+
+type LoginFormProps = {
+    setUserName: (userName: string) => void;
+};
 
 export default (props: any) => {
     const [token, setToken] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
 
-    const [userName, setUserName] = useLocalStorage<string | null>(
-        "username",
-        null
-    );
-
-    const authentificateClicked = useCallback(async () => {
+    const authenticateClicked = useCallback(async () => {
         const result = await axios
             .post("/api/auth", {
                 name: name,
@@ -32,11 +33,12 @@ export default (props: any) => {
 
                 return Promise.reject(err);
             });
+
         if (result.status == 200) {
-            setUserName(name);
+            props.setUserName(name);
             toast.done("Login sucessful");
         }
-    }, [name, password, setUserName]);
+    }, [name, password, props.setUserName]);
 
     const [showPassword, setShowPassword] = useState<boolean>(false);
     const switchShowPassword = useCallback(() => {
@@ -46,7 +48,7 @@ export default (props: any) => {
     return (
         <div
             style={{
-                backgroundImage: `url(${process.env.PUBLIC_URL}/background.png)`
+                backgroundImage: `url(background.png)`
             }}
             className="bg-cover flex w-full component-preview p-4 items-center justify-center gap-2 font-sans"
         >
@@ -56,14 +58,14 @@ export default (props: any) => {
                         <Card.Body>
                             <div className="justify-start relative h-12 overflow-hidden pb-2/3">
                                 <img
-                                    src={`${process.env.PUBLIC_URL}/logo-full.png`}
+                                    src={`logo-full.png`}
                                     className="absolute h-full w-full object-contain"
                                 />
                             </div>
                             <Form
                                 onSubmit={(e) => {
                                     e.preventDefault();
-                                    authentificateClicked();
+                                    authenticateClicked();
                                 }}
                             >
                                 <Form.Label title="Login" />

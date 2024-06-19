@@ -9,6 +9,11 @@ import useWebSocket from "react-use-websocket";
 
 export const useSyncMessage = () => {
     const [messages, setMessage] = useState<SyncMessage>();
+
+    if (typeof window === "undefined") {
+        return messages;
+    }
+
     const socketUrl = `${
         window.location.protocol === "https:" ? "wss" : "ws"
     }://${window.location.host.toString()}/api/ws`;

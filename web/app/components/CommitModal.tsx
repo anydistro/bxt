@@ -17,7 +17,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { forwardRef, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import SectionSelect from "./SectionSelect";
-import Dropzone from "react-dropzone";
+import Dropzone from "react-dropzone-esm";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 
 export type CommitModalProps = ModalProps & {

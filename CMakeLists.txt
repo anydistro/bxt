@@ -53,5 +53,5 @@ conan_cmake_run(CONANFILE conanfile.txt
     BUILD missing)
 
 add_subdirectory(daemon)
-add_subdirectory(frontend)
+add_subdirectory(web)
 add_subdirectory(dbcli)
