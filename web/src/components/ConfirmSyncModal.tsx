@@ -6,7 +6,6 @@
  */
 import { forwardRef } from "react";
 import { Button, Modal } from "react-daisyui";
-import { ModalProps } from "react-daisyui/dist/Modal/Modal";
 
 export interface IConfirmSyncModal {
     onConfirm?: () => void;

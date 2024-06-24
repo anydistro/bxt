@@ -33,9 +33,7 @@ export const usePackageLogs = (): [ILogEntry[], () => void] => {
 
     const updateEntries = useCallback(async () => {
         try {
-            const result = await axios.get(
-                `${process.env.PUBLIC_URL}/api/logs/packages`
-            );
+            const result = await axios.get(`/api/logs/packages`);
 
             const entries = result.data.map((value: any) => {
                 value.time = new Date(value.time);
@@ -66,10 +64,7 @@ export const useCompareResults = (): [
     const updateResults: IGetCompareResults = useCallback(
         async (sections: ISection[]) => {
             try {
-                const result = await axios.post(
-                    `${process.env.PUBLIC_URL}/api/compare`,
-                    sections
-                );
+                const result = await axios.post(`/api/compare`, sections);
 
                 const compareEntries: ICompareEntry[] = [];
 
@@ -97,7 +92,7 @@ const formFromCommits = (commits: Commits) => {
     let index = 0;
 
     let formData = new FormData();
-    for (const [section, commit] of Array.from(commits)) {
+    for (const [_, commit] of Array.from(commits)) {
         for (const [name, pkg] of Array.from(commit)) {
             const missingFields = [];
             if (!pkg.file) missingFields.push("package file");
@@ -139,33 +134,28 @@ export const usePushCommitsHandler = (
     onProgress: (progress: number | undefined) => void,
     reload: () => void
 ) => {
-    return useCallback(
-        async (e: any) => {
-            const { form, missingFields, errorPackage } =
-                formFromCommits(commits);
+    return useCallback(async () => {
+        const { form, missingFields, errorPackage } = formFromCommits(commits);
 
-            if (missingFields) {
-                toast.error(
-                    `Missing fields for package ${errorPackage}: ${missingFields.join(
-                        ", "
-                    )}`
-                );
-                return;
+        if (missingFields) {
+            toast.error(
+                `Missing fields for package ${errorPackage}: ${missingFields.join(
+                    ", "
+                )}`
+            );
+            return;
+        }
+
+        const result = await axios.post(`/api/packages/commit`, form, {
+            onUploadProgress: (p) => {
+                const progress = p.loaded / (p.total || 1);
+                onProgress(progress);
             }
+        });
 
-            const result = await axios.post(`/api/packages/commit`, form, {
-                onUploadProgress: (p) => {
-                    const progress = p.loaded / (p.total || 1);
-                    onProgress(progress);
-                }
-            });
-
-            if (result.data["status"] == "ok") {
-                onProgress(undefined);
-                reload();
-            }
-        },
-
-        [commits, reload, onProgress]
-    );
+        if (result.data["status"] == "ok") {
+            onProgress(undefined);
+            reload();
+        }
+    }, [commits, reload, onProgress]);
 };

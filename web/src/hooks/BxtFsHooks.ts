@@ -5,7 +5,7 @@
  *
  */
 import { ChonkyIconName, FileArray, FileData } from "chonky";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SectionUtils } from "../utils/SectionUtils";
 import axios from "axios";
 
@@ -45,8 +45,8 @@ export const useFilesFromSections = (
                     isDir: false,
                     thumbnailUrl: pkg?.preferredLocation
                         ? pkg?.poolEntries[pkg?.preferredLocation].hasSignature
-                            ? `${process.env.PUBLIC_URL}/signature.svg`
-                            : `${process.env.PUBLIC_URL}/package.png`
+                            ? `/signature.svg`
+                            : `/package.png`
                         : "",
                     icon: ChonkyIconName.archive,
                     color: "#8B756B"
@@ -66,7 +66,7 @@ export const useFilesFromSections = (
                                     id: `root/${value}`,
                                     name: value,
                                     isDir: true,
-                                    thumbnailUrl: `${process.env.PUBLIC_URL}/branch.svg`,
+                                    thumbnailUrl: `/branch.svg`,
                                     color: "#8B756B"
                                 };
                             }
@@ -81,7 +81,7 @@ export const useFilesFromSections = (
                                     id: `root/${path[1]}/${value}`,
                                     name: value,
                                     isDir: true,
-                                    thumbnailUrl: `${process.env.PUBLIC_URL}/repository.png`,
+                                    thumbnailUrl: `/repository.png`,
                                     color: "#8B756B"
                                 };
                             }
@@ -99,7 +99,7 @@ export const useFilesFromSections = (
                                 id: `root/${path[1]}/${path[2]}/${value}`,
                                 name: value,
                                 isDir: true,
-                                thumbnailUrl: `${process.env.PUBLIC_URL}/architecture.svg`,
+                                thumbnailUrl: `/architecture.svg`,
                                 color: "#8B756B"
                             };
                         })

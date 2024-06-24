@@ -46,7 +46,7 @@ export default (props: any) => {
     return (
         <div
             style={{
-                backgroundImage: `url(${process.env.PUBLIC_URL}/background.png)`
+                backgroundImage: `url(/background.png)`
             }}
             className="bg-cover flex w-full component-preview p-4 items-center justify-center gap-2 font-sans"
         >
@@ -56,7 +56,7 @@ export default (props: any) => {
                         <Card.Body>
                             <div className="justify-start relative h-12 overflow-hidden pb-2/3">
                                 <img
-                                    src={`${process.env.PUBLIC_URL}/logo-full.png`}
+                                    src={`/logo-full.png`}
                                     className="absolute h-full w-full object-contain"
                                 />
                             </div>

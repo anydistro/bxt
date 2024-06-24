@@ -23,5 +23,5 @@ jobs:
       - name: Run prettier style check
         uses: creyD/prettier_action@v4.3
         with:
-          prettier_options: --check ./frontend/
+          prettier_options: --check ./web/
           dry: true

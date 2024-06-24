@@ -110,7 +110,7 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
                         <Button
                             type="button"
                             color="primary"
-                            onClick={(e) => doSnap()}
+                            onClick={(_e) => doSnap()}
                         >
                             Snap
                         </Button>

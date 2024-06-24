@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Form, Modal, ModalProps, Table } from "react-daisyui";
 import {
     faCube,
-    faRemove,
     faSignature,
     faTrashCan
 } from "@fortawesome/free-solid-svg-icons";
@@ -17,7 +16,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { forwardRef, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import SectionSelect from "./SectionSelect";
-import Dropzone from "react-dropzone";
+import Dropzone from "react-dropzone-esm";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 
 export type CommitModalProps = ModalProps & {
@@ -68,7 +67,7 @@ export default forwardRef<HTMLDialogElement, CommitModalProps>(
                 </Modal.Header>
                 <Dropzone
                     noClick={true}
-                    onDrop={usePackageDropHandler(section, (section, commit) =>
+                    onDrop={usePackageDropHandler(section, (_, commit) =>
                         setCommit((prevCommit) => {
                             const newCommit = new Map(prevCommit);
 

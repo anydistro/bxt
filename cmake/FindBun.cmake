@@ -40,7 +40,7 @@ function(bun_add_vite_project package_name working_dir)
         TARGET "${package_name}_build" POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_CURRENT_BINARY_DIR}
-                ${CMAKE_BINARY_DIR}/bin/frontend)
+                ${CMAKE_BINARY_DIR}/bin/web)
 
   add_custom_target("${package_name}_install"
     COMMAND ${CMAKE_COMMAND} -E env BUILD_PATH='${CMAKE_CURRENT_BINARY_DIR}' ${BUN_EXECUTABLE} install

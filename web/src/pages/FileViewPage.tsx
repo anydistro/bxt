@@ -5,11 +5,16 @@
  *
  */
 
-import { FullFileBrowser, setChonkyDefaults } from "chonky";
+import {
+    FullFileBrowser as F,
+    FileBrowserProps,
+    FileBrowserHandle,
+    setChonkyDefaults
+} from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
-import Dropzone, { useDropzone } from "react-dropzone";
+import Dropzone from "react-dropzone-esm";
 import CommitModal, { CommitModalProps } from "../components/CommitModal";
 import { Button, Loading } from "react-daisyui";
 import { useFilesFromSections } from "../hooks/BxtFsHooks";
@@ -18,7 +23,7 @@ import SnapshotModal, {
 } from "../components/SnapshotModal";
 import { SnapshotAction, SnapToAction } from "../components/SnapshotAction";
 import PackageModal, { PackageModalProps } from "../components/PackageModal";
-import _, { set } from "lodash";
+import _ from "lodash";
 import CommitDrawer from "../components/CommitDrawer";
 import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -28,11 +33,17 @@ import {
 } from "../hooks/FileManagementHooks";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 import { SectionUtils } from "../utils/SectionUtils";
-import { unstable_useBlocker } from "react-router-dom";
+import { useBlocker } from "react-router-dom";
 
-setChonkyDefaults({ iconComponent: ChonkyIconFA });
+setChonkyDefaults({ iconComponent: ChonkyIconFA as never });
 
-export default (props: any) => {
+const FullFileBrowser = F as React.MemoExoticComponent<
+    React.ForwardRefExoticComponent<
+        FileBrowserProps & React.RefAttributes<FileBrowserHandle>
+    >
+>;
+
+export default function FileViewPage(props: any) {
     const [sections, updateSections] = useSections();
 
     const [path, setPath] = useState<string[]>(
@@ -71,7 +82,7 @@ export default (props: any) => {
     };
 
     const [progress, setProgress] = useState<number | undefined>(undefined);
-    unstable_useBlocker(() => !!progress);
+    useBlocker(() => !!progress);
     window.onbeforeunload = () => {
         if (progress) {
             return "";
@@ -257,4 +268,4 @@ export default (props: any) => {
             </CommitDrawer>
         </div>
     );
-};
+}

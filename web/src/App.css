@@ -1,0 +1,8 @@
+#bxt-logo {
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+#bxt-logo:hover {
+    filter: brightness(80%);
+}
