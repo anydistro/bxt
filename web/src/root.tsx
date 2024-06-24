@@ -20,12 +20,6 @@ import "react-toastify/dist/ReactToastify.css";
 import "./root.css";
 import RootDrawerLayout from "./components/RootDrawerLayout";
 
-declare module "@uidotdev/usehooks" {
-    export function useLocalStorage<T>(
-        key: string,
-        initialValue: T
-    ): [T, (v: T) => void];
-}
 export const AppRoot = (props: any) => {
     const [userName, setUserName] = useLocalStorage("username", null);
 
