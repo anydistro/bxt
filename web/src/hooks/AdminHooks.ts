@@ -7,11 +7,11 @@
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 
-export const useUsers = (): [IUser[] | undefined, () => void] => {
-    const [users, setUsers] = useState<IUser[]>();
+export const useUsers = (): [User[] | undefined, () => void] => {
+    const [users, setUsers] = useState<User[]>();
 
     const updateUsers = useCallback(async () => {
-        const users = await axios.get<IUser[]>("/api/users");
+        const users = await axios.get<User[]>("/api/users");
         if (users) setUsers(users.data);
     }, [setUsers]);
 

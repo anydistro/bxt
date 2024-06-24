@@ -25,9 +25,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import SectionLabel from "../components/SectionLabel";
 
-export default (props: any) => {
+export default function Compare(props: any) {
     const [sections, updateSections] = useSections();
-    const [selectedSections, setSelectedSections] = useState<ISection[]>([{}]);
+    const [selectedSections, setSelectedSections] = useState<Section[]>([{}]);
     const [compareResults, getCompareResults, resetCompareResults] =
         useCompareResults();
 
@@ -45,7 +45,7 @@ export default (props: any) => {
         setIsLoading(false);
     }, [compareResults]);
 
-    const columnHelper = createColumnHelper<ICompareEntry>();
+    const columnHelper = createColumnHelper<CompareEntry>();
 
     const columns = [
         columnHelper.accessor("name", {
@@ -54,7 +54,7 @@ export default (props: any) => {
         }),
         ...(compareResults?.sections.map((section, index) =>
             columnHelper.accessor(
-                (compare: ICompareEntry) => {
+                (compare: CompareEntry) => {
                     if (
                         section.branch &&
                         section.repository &&
@@ -84,7 +84,7 @@ export default (props: any) => {
         [compareResults]
     );
 
-    const table = useReactTable<ICompareEntry>({
+    const table = useReactTable<CompareEntry>({
         columns,
         data,
         manualPagination: true,
@@ -236,4 +236,4 @@ export default (props: any) => {
             )}
         </div>
     );
-};
+}

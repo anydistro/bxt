@@ -15,13 +15,13 @@ import { useMemo } from "react";
 import { Card, CardProps } from "react-daisyui";
 
 export type CommitCardProps = CardProps & {
-    section: ISection;
+    section: Section;
     commit: Commit;
-    onActivate?: (section: ISection, commit: Commit) => void;
-    onDeleteRequested?: (section: ISection) => void;
+    onActivate?: (section: Section, commit: Commit) => void;
+    onDeleteRequested?: (section: Section) => void;
 };
 
-export default (props: CommitCardProps) => {
+export default function CommitCard(props: CommitCardProps) {
     const { branch, repository, architecture } = useMemo(
         () => props.section,
         [props.section]
@@ -58,4 +58,4 @@ export default (props: CommitCardProps) => {
             </span>
         </Card>
     );
-};
+}

@@ -16,18 +16,18 @@ import { Button, Form, Modal, ModalProps, Select } from "react-daisyui";
 
 import { createPortal } from "react-dom";
 import axios from "axios";
-import SectionSelect from "./SectionSelect";
+import SectionSelect from "../components/SectionSelect";
 
 export type ISnapshotModalProps = ModalProps & {
-    sections: ISection[];
-    sourceSection?: ISection;
-    targetSection?: ISection;
+    sections: Section[];
+    sourceSection?: Section;
+    targetSection?: Section;
 };
 
-export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
+export const SnapshotModal = forwardRef<HTMLDialogElement, ISnapshotModalProps>(
     (props, ref) => {
         const [sourceSection, setSourceSection] = useState<
-            ISection | undefined
+            Section | undefined
         >();
 
         useEffect(() => {
@@ -38,7 +38,7 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
         }, [props.sourceSection, props.sections]);
 
         const [targetSection, setTargetSection] = useState<
-            ISection | undefined
+            Section | undefined
         >();
 
         useEffect(() => {
@@ -121,3 +121,4 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
         );
     }
 );
+export default SnapshotModal;

@@ -12,8 +12,8 @@ export interface IUpdateSections {
     (): void;
 }
 
-export const useSections = (): [ISection[], IUpdateSections] => {
-    const [sections, setSections] = useState<ISection[]>([]);
+export const useSections = (): [Section[], IUpdateSections] => {
+    const [sections, setSections] = useState<Section[]>([]);
 
     const updateSections: IUpdateSections = useCallback(() => {
         axios.get(`/api/sections`).then((response) => {
@@ -28,8 +28,8 @@ export const useSections = (): [ISection[], IUpdateSections] => {
     return [sections, updateSections];
 };
 
-export const usePackageLogs = (): [ILogEntry[], () => void] => {
-    const [entries, setEntries] = useState<ILogEntry[]>([]);
+export const usePackageLogs = (): [LogEntry[], () => void] => {
+    const [entries, setEntries] = useState<LogEntry[]>([]);
 
     const updateEntries = useCallback(async () => {
         try {
@@ -47,7 +47,7 @@ export const usePackageLogs = (): [ILogEntry[], () => void] => {
 };
 
 export interface IGetCompareResults {
-    (sections: ISection[]): void;
+    (sections: Section[]): void;
 }
 
 export interface IResetCompareResults {
@@ -55,18 +55,18 @@ export interface IResetCompareResults {
 }
 
 export const useCompareResults = (): [
-    ICompareResult | undefined,
+    CompareResult | undefined,
     IGetCompareResults,
     IResetCompareResults
 ] => {
-    const [results, setResults] = useState<ICompareResult>();
+    const [results, setResults] = useState<CompareResult>();
 
     const updateResults: IGetCompareResults = useCallback(
-        async (sections: ISection[]) => {
+        async (sections: Section[]) => {
             try {
                 const result = await axios.post(`/api/compare`, sections);
 
-                const compareEntries: ICompareEntry[] = [];
+                const compareEntries: CompareEntry[] = [];
 
                 Object.keys(result.data["compareTable"]).forEach((value) => {
                     const versions = { ...result.data["compareTable"] }[value];

@@ -4,26 +4,26 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-interface IPackagePoolEntry {
+type PackagePoolEntry = {
     version: string;
     filepath: string;
     signaturePath?: string;
-}
+};
 
-interface IPackage {
-    section: ISection;
+type Package = {
+    section: Section;
     name: string;
     isAnyArchitecture?: boolean;
     preferredLocation?: string;
     poolEntries?: {
-        [key: string]: IPackagePoolEntry;
+        [key: string]: PackagePoolEntry;
     };
-}
+};
 
-interface IPackageUpload {
-    section: ISection;
+type PackageUpload = {
+    section: Section;
     name: string;
     version?: string;
     file: File;
     signatureFile: File;
-}
+};

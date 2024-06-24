@@ -18,7 +18,7 @@ import {
 } from "@tanstack/react-table";
 import SectionLabel from "../components/SectionLabel";
 
-const dateCompare = (a: ILogEntry, b: ILogEntry) => {
+const dateCompare = (a: LogEntry, b: LogEntry) => {
     if (a.time < b.time) {
         return -1;
     }
@@ -28,7 +28,7 @@ const dateCompare = (a: ILogEntry, b: ILogEntry) => {
     return 0;
 };
 
-export default (props: any) => {
+export default function Log(props: any) {
     const [entries, updateEntries] = usePackageLogs();
     const [isLoading, setIsLoading] = useState(false);
     const [sorting, setSorting] = React.useState<SortingState>([
@@ -44,7 +44,7 @@ export default (props: any) => {
         setIsLoading(true);
     }, []);
 
-    const columnHelper = createColumnHelper<ILogEntry>();
+    const columnHelper = createColumnHelper<LogEntry>();
 
     const columns = [
         columnHelper.accessor("type", {
@@ -81,7 +81,7 @@ export default (props: any) => {
         })
     ];
 
-    const table = useReactTable<ILogEntry>({
+    const table = useReactTable<LogEntry>({
         columns,
         data: entries,
         state: {
@@ -145,4 +145,4 @@ export default (props: any) => {
             )}
         </div>
     );
-};
+}

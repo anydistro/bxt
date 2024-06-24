@@ -15,14 +15,12 @@ import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
 import Dropzone from "react-dropzone-esm";
-import CommitModal, { CommitModalProps } from "../components/CommitModal";
+import CommitModal, { CommitModalProps } from "../modals/CommitModal";
 import { Button, Loading } from "react-daisyui";
 import { useFilesFromSections } from "../hooks/BxtFsHooks";
-import SnapshotModal, {
-    ISnapshotModalProps
-} from "../components/SnapshotModal";
+import SnapshotModal, { ISnapshotModalProps } from "../modals/SnapshotModal";
 import { SnapshotAction, SnapToAction } from "../components/SnapshotAction";
-import PackageModal, { PackageModalProps } from "../components/PackageModal";
+import PackageModal, { PackageModalProps } from "../modals/PackageModal";
 import _ from "lodash";
 import CommitDrawer from "../components/CommitDrawer";
 import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
@@ -43,7 +41,7 @@ const FullFileBrowser = F as React.MemoExoticComponent<
     >
 >;
 
-export default function FileViewPage(props: any) {
+export default function Main(props: any) {
     const [sections, updateSections] = useSections();
 
     const [path, setPath] = useState<string[]>(
@@ -63,7 +61,7 @@ export default function FileViewPage(props: any) {
     });
 
     const openModalWithCommitHandler = (isNew: boolean) => {
-        return (section: ISection, commit: Commit) => {
+        return (section: Section, commit: Commit) => {
             setIsCommitInModalNew(isNew);
 
             const currentCommit = commits.get(SectionUtils.toString(section));
@@ -127,7 +125,7 @@ export default function FileViewPage(props: any) {
     const openSnapshotModalWithBranchHandler = useCallback(
         (sourceBranch?: string, targetBranch?: string) => {
             if (sourceBranch) {
-                const sourceSection: ISection = {
+                const sourceSection: Section = {
                     ...snapshotModalProps.sourceSection,
                     branch: sourceBranch
                 };
@@ -138,7 +136,7 @@ export default function FileViewPage(props: any) {
                 });
             }
             if (targetBranch) {
-                const targetSection: ISection = {
+                const targetSection: Section = {
                     ...snapshotModalProps.targetSection,
                     branch: targetBranch
                 };
@@ -155,7 +153,7 @@ export default function FileViewPage(props: any) {
     );
 
     const openPackageModal = useCallback(
-        (pkg?: IPackage) => {
+        (pkg?: Package) => {
             if (!pkg) return;
             setPackageModalProps({ ...packageModalProps, package: pkg });
             packageModalRef.current?.showModal();

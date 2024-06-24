@@ -4,8 +4,8 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-interface SyncMessage {
+type SyncMessage = {
     type: string;
     when: string;
     started: boolean;
-}
+};

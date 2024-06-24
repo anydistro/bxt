@@ -4,8 +4,8 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-interface ISection {
+type Section = {
     branch?: string;
     repository?: string;
     architecture?: string;
-}
+};

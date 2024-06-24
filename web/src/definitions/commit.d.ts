@@ -5,6 +5,6 @@
  *
  */
 
-type Commit = Map<string, Partial<IPackageUpload>>;
+type Commit = Map<string, Partial<PackageUpload>>;
 
 type Commits = Map<string, Commit>;

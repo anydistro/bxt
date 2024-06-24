@@ -37,10 +37,10 @@ export const useFolderChainForPath = (path: string[]): FileArray => {
     return result;
 };
 
-export const packageFromFilePath = (filePath: string, packages: IPackage[]) => {
+export const packageFromFilePath = (filePath: string, packages: Package[]) => {
     const parts = filePath.split("/");
     if (parts.length != 5) return;
-    const section: ISection = {
+    const section: Section = {
         branch: parts[1],
         repository: parts[2],
         architecture: parts[3]
@@ -58,8 +58,8 @@ export const useFileActionHandler = (
         sourceBranch?: string,
         targetBranch?: string
     ) => void,
-    setPackage: (pkg?: IPackage) => void,
-    packages: IPackage[]
+    setPackage: (pkg?: Package) => void,
+    packages: Package[]
 ) => {
     return useCallback(
         (data: ChonkyFileActionData) => {

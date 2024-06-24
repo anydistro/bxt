@@ -6,7 +6,7 @@
  */
 import { Drawer, Menu, Button, Progress } from "react-daisyui";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import ConfirmSyncModal from "./ConfirmSyncModal";
+import ConfirmSyncModal from "../modals/ConfirmSyncModal";
 import { useCallback, useMemo, useRef } from "react";
 import { useLocalStorage } from "@uidotdev/usehooks";
 import axios from "axios";
@@ -25,7 +25,7 @@ const triggerSync = async () => {
     await axios.post("/api/packages/sync");
 };
 
-export default () => {
+export default function RootDrawerLayout() {
     let modalRef = useRef<HTMLDialogElement>(null);
     const [userName, setUserName] = useLocalStorage("username", null);
 
@@ -123,4 +123,4 @@ export default () => {
             <Outlet />
         </Drawer>
     );
-};
+}

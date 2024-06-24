@@ -8,14 +8,14 @@
 import { useCallback } from "react";
 
 export const usePackageDropHandler = (
-    section: ISection | undefined,
-    addCommit: (section: ISection, commit: Commit) => void
+    section: Section | undefined,
+    addCommit: (section: Section, commit: Commit) => void
 ) => {
     return useCallback(
         (acceptedFiles: File[]) => {
             if (!section) return;
             const packages: {
-                [packageName: string]: Partial<IPackageUpload>;
+                [packageName: string]: Partial<PackageUpload>;
             } = {};
             for (const file of acceptedFiles) {
                 if (file.name.endsWith(".sig")) {

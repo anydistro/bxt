@@ -15,24 +15,24 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { forwardRef, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import SectionSelect from "./SectionSelect";
+import SectionSelect from "../components/SectionSelect";
 import Dropzone from "react-dropzone-esm";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
 
 export type CommitModalProps = ModalProps & {
     isNew?: boolean;
     commit?: Commit;
-    section: ISection;
-    sections?: ISection[];
-    onCommitSubmit?: (section: ISection, commit: Commit) => void;
-    onCommitDelete?: (section: ISection | undefined) => void;
+    section: Section;
+    sections?: Section[];
+    onCommitSubmit?: (section: Section, commit: Commit) => void;
+    onCommitDelete?: (section: Section | undefined) => void;
     onPackageDrop?: (files: File[]) => void;
 };
 
-export default forwardRef<HTMLDialogElement, CommitModalProps>(
+export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
     (props: CommitModalProps, ref) => {
         const [commit, setCommit] = useState<Commit>();
-        const [section, setSection] = useState<ISection>();
+        const [section, setSection] = useState<Section>();
 
         useEffect(() => setCommit(props.commit), [props.commit]);
 
@@ -201,3 +201,4 @@ export default forwardRef<HTMLDialogElement, CommitModalProps>(
         );
     }
 );
+export default CommitModal;

@@ -10,7 +10,7 @@ import { useCallback, useState } from "react";
 import { Hero, Button, Card, Form, Input } from "react-daisyui";
 import { toast } from "react-toastify";
 
-export default (props: any) => {
+export const LoginForm = (props: any) => {
     const [token, setToken] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
@@ -100,3 +100,4 @@ export default (props: any) => {
         </div>
     );
 };
+export default LoginForm;

@@ -4,14 +4,14 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-interface ICompareEntry {
+type CompareEntry = {
     name: string;
     [section: string]: {
         [location: string]: string;
     };
-}
+};
 
-interface ICompareResult {
-    sections: ISection[];
-    compareTable: ICompareEntry[];
-}
+type CompareResult = {
+    sections: Section[];
+    compareTable: CompareEntry[];
+};

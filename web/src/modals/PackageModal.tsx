@@ -7,13 +7,13 @@
 import { forwardRef } from "react";
 import { Badge, Modal, ModalProps, Table } from "react-daisyui";
 import { createPortal } from "react-dom";
-import SectionLabel from "./SectionLabel";
+import SectionLabel from "../components/SectionLabel";
 
 export type PackageModalProps = ModalProps & {
-    package?: IPackage;
+    package?: Package;
 };
 
-export default forwardRef<HTMLDialogElement, PackageModalProps>(
+export const PackageModal = forwardRef<HTMLDialogElement, PackageModalProps>(
     (props, ref) => {
         return createPortal(
             <Modal ref={ref} {...props}>
@@ -47,3 +47,4 @@ export default forwardRef<HTMLDialogElement, PackageModalProps>(
         );
     }
 );
+export default PackageModal;

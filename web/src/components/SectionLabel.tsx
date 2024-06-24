@@ -13,10 +13,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 
 export type SectionLabelProps = React.HTMLProps<HTMLSpanElement> & {
-    section?: ISection;
+    section?: Section;
 };
 
-export default (props: SectionLabelProps) => {
+export default function SectionLabel(props: SectionLabelProps) {
     return (
         <span {...props}>
             <FontAwesomeIcon className="px-1" icon={faCodeBranch} />
@@ -27,4 +27,4 @@ export default (props: SectionLabelProps) => {
             {props.section?.architecture}
         </span>
     );
-};
+}

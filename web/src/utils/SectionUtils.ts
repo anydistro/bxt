@@ -7,9 +7,9 @@
 
 export module SectionUtils {
     const filteredValues = (
-        sections: ISection[],
-        filterFunction: (section: ISection) => boolean,
-        valueExtractor: (section: ISection) => string | undefined
+        sections: Section[],
+        filterFunction: (section: Section) => boolean,
+        valueExtractor: (section: Section) => string | undefined
     ): string[] => {
         const valueSet = new Set<string>();
         sections.forEach((section) => {
@@ -22,7 +22,7 @@ export module SectionUtils {
         return Array.from(valueSet);
     };
 
-    export const branches = (sections: ISection[]): string[] => {
+    export const branches = (sections: Section[]): string[] => {
         return filteredValues(
             sections,
             () => true,
@@ -31,7 +31,7 @@ export module SectionUtils {
     };
 
     export const reposForBranch = (
-        sections: ISection[],
+        sections: Section[],
         branchName: string | undefined
     ): string[] => {
         return filteredValues(
@@ -42,7 +42,7 @@ export module SectionUtils {
     };
 
     export const architecturesForBranchAndRepo = (
-        sections: ISection[],
+        sections: Section[],
         branchName: string | undefined,
         repoName: string | undefined
     ): string[] => {
@@ -55,16 +55,16 @@ export module SectionUtils {
         );
     };
 
-    export const toString = (section: ISection): string => {
+    export const toString = (section: Section): string => {
         return `${section.branch}/${section.repository}/${section.architecture}`;
     };
 
-    export const fromString = (sectionString: string): ISection => {
+    export const fromString = (sectionString: string): Section => {
         const [branch, repo, arch] = sectionString.split("/");
         return { branch, repository: repo, architecture: arch };
     };
 
-    export const toPath = (section: ISection): string[] => {
+    export const toPath = (section: Section): string[] => {
         return [
             "root",
             section.branch || "",
@@ -73,7 +73,7 @@ export module SectionUtils {
         ];
     };
 
-    export const fromPath = (path: string[]): ISection | undefined => {
+    export const fromPath = (path: string[]): Section | undefined => {
         if (path.length < 4 && path[0] !== "root") return undefined;
         return {
             branch: path[1],

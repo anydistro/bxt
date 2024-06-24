@@ -4,10 +4,10 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-interface ILogEntry {
+type LogEntry = {
     id: string;
 
     type: string;
-    package: IPackage;
+    package: Package;
     time: Date;
-}
+};

@@ -10,17 +10,17 @@ import { SectionUtils } from "../utils/SectionUtils";
 import axios from "axios";
 
 export interface IUpdateFiles {
-    (sections: ISection[], path: string[]): void;
+    (sections: Section[], path: string[]): void;
 }
 
 export const useFilesFromSections = (
-    sections: ISection[],
+    sections: Section[],
     path: string[]
-): [FileArray, IUpdateFiles, IPackage[] | undefined] => {
+): [FileArray, IUpdateFiles, Package[] | undefined] => {
     const [files, setFiles] = useState<FileArray>([]);
-    const [packages, setPackages] = useState<IPackage[]>();
+    const [packages, setPackages] = useState<Package[]>();
 
-    const getPackages = async (sections: ISection[], path: string[]) => {
+    const getPackages = async (sections: Section[], path: string[]) => {
         const value = await axios.get(`/api/packages`, {
             params: {
                 branch: path[1],
@@ -56,7 +56,7 @@ export const useFilesFromSections = (
     };
 
     const updateFiles = useCallback(
-        (sections: ISection[], path: string[]) => {
+        (sections: Section[], path: string[]) => {
             switch (path.length) {
                 case 1:
                     setFiles(

@@ -4,18 +4,21 @@
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
-import FileViewPage from "./FileViewPage";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import LogPage from "./LogPage";
 import { ToastContainer, toast } from "react-toastify";
 import { useLocalStorage } from "@uidotdev/usehooks";
-import LoginPage from "./LoginPage";
-import ComparePage from "./ComparePage";
-import DrawerLayout from "../components/DrawerLayout";
-import axios, { AxiosError } from "axios";
-import AdminPage from "./AdminPage";
+
+import axios from "axios";
 
 import axiosRetry, { isNetworkOrIdempotentRequestError } from "axios-retry";
+import Log from "./routes/log";
+import Main from "./routes/main";
+import Compare from "./routes/compare";
+import Admin from "./routes/admin";
+import { LoginForm } from "./components/LoginForm";
+import "react-toastify/dist/ReactToastify.css";
+import "./root.css";
+import RootDrawerLayout from "./components/RootDrawerLayout";
 
 declare module "@uidotdev/usehooks" {
     export function useLocalStorage<T>(
@@ -23,7 +26,7 @@ declare module "@uidotdev/usehooks" {
         initialValue: T
     ): [T, (v: T) => void];
 }
-export default (props: any) => {
+export const AppRoot = (props: any) => {
     const [userName, setUserName] = useLocalStorage("username", null);
 
     axios.defaults.withCredentials = true;
@@ -72,23 +75,23 @@ export default (props: any) => {
     );
     const router = createBrowserRouter([
         {
-            element: <DrawerLayout />,
+            element: <RootDrawerLayout />,
             children: [
                 {
                     path: "",
-                    element: <FileViewPage style={{ zIndex: 10 }} />
+                    element: <Main />
                 },
                 {
                     path: "logs",
-                    element: <LogPage />
+                    element: <Log />
                 },
                 {
                     path: "compare",
-                    element: <ComparePage />
+                    element: <Compare />
                 },
                 {
                     path: "admin",
-                    element: <AdminPage />
+                    element: <Admin />
                 }
             ]
         }
@@ -101,7 +104,7 @@ export default (props: any) => {
             {userName != null ? (
                 <RouterProvider router={router} />
             ) : (
-                <LoginPage />
+                <LoginForm />
             )}
         </div>
     );

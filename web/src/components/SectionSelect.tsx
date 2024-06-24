@@ -22,14 +22,14 @@ import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { ClassNamesArg } from "@emotion/react";
 import { SectionUtils } from "../utils/SectionUtils";
 
-type ISectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
-    sections: ISection[];
-    selectedSection?: ISection;
-    onSelected?: (section: ISection) => void;
+type SectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
+    sections: Section[];
+    selectedSection?: Section;
+    onSelected?: (section: Section) => void;
     disabled?: boolean | boolean[];
 };
 
-export default (props: ISectionSelectorProps) => {
+export default function SectionSelect(props: SectionSelectorProps) {
     const updateSection = useCallback(
         (update: any) => {
             if (props.onSelected)
@@ -174,4 +174,4 @@ export default (props: ISectionSelectorProps) => {
             />
         </span>
     );
-};
+}

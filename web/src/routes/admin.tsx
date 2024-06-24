@@ -9,9 +9,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useCallback, useRef, useState } from "react";
 import { Table, Button } from "react-daisyui";
 import { useUsers } from "../hooks/AdminHooks";
-import UserModal, { UserModalProps } from "../components/UserModal";
+import UserModal, { UserModalProps } from "../modals/UserModal";
 import axios from "axios";
-export default () => {
+export default function Admin() {
     const [users, reloadUsers] = useUsers();
 
     const userModalRef = useRef<HTMLDialogElement>(null);
@@ -21,7 +21,7 @@ export default () => {
     });
 
     const openUserModal = useCallback(
-        (user?: IUser) => {
+        (user?: User) => {
             setUserModalProps({ ...userModalProps, user });
 
             userModalRef.current?.showModal();
@@ -30,7 +30,7 @@ export default () => {
     );
 
     const removeUser = useCallback(
-        async (user: IUser) => {
+        async (user: User) => {
             await axios.delete("/api/users/remove/" + user.name);
             reloadUsers();
         },
@@ -38,7 +38,7 @@ export default () => {
     );
 
     const addUser = useCallback(
-        async (user: IUser) => {
+        async (user: User) => {
             await axios.post("/api/users/add", user);
             reloadUsers();
         },
@@ -46,7 +46,7 @@ export default () => {
     );
 
     const updateUser = useCallback(
-        async (user: IUser) => {
+        async (user: User) => {
             await axios.patch("/api/users/update", user);
             reloadUsers();
         },
@@ -100,4 +100,4 @@ export default () => {
             </div>
         </div>
     );
-};
+}

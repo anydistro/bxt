@@ -6,11 +6,11 @@ type CommitDrawerProps = DrawerProps & {
     isOpen: boolean;
     commits: Commits;
     onPush: (commits: Commits) => void;
-    onCardActivate: (section: ISection, commit: Commit) => void;
-    onCardDelete: (section: ISection) => void;
+    onCardActivate: (section: Section, commit: Commit) => void;
+    onCardDelete: (section: Section) => void;
 };
 
-export default (props: CommitDrawerProps) => {
+export default function CommitModal(props: CommitDrawerProps) {
     return (
         <Drawer
             {...props}
@@ -55,4 +55,4 @@ export default (props: CommitDrawerProps) => {
             end={true}
         />
     );
-};
+}
