@@ -5,12 +5,10 @@ RUN apt-get update --yes && apt-get install --yes ca-certificates curl gnupg \
     && echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" > /etc/apt/sources.list.d/llvm.list \
     && curl --silent --location https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
     && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
     && curl --silent --location https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg \
     &&  echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ jammy main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null \
     && apt-get update --yes \
-    && apt-get install --yes build-essential git cmake libssl-dev pip ninja-build lldb-17 clangd-17 clang-format-17 clang-17 libc++-17-dev libc++abi-17-dev nodejs zstd \
+    && apt-get install --yes build-essential git cmake libssl-dev pip ninja-build lldb-17 clangd-17 clang-format-17 clang-17 libc++-17-dev libc++abi-17-dev nodejs zstd unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100 && \
@@ -28,8 +26,9 @@ RUN pip install conan==1.63.0 \
     && conan profile update settings.compiler.version=17 default \
     && conan profile update settings.compiler.libcxx=libc++ default
 
-RUN corepack enable \
-    && corepack prepare yarn@stable --activate
+RUN curl -fsSL https://bun.sh/install | bash
+
+ENV PATH="/root/.bun/bin:${PATH}"
 
 COPY conanfile.txt /conan/
 
