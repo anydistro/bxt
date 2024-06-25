@@ -5,92 +5,51 @@
  *
  */
 
-import {
-    FileArray,
-    ChonkyFileActionData,
-    ChonkyActions,
-    FileHelper,
-    FileData
-} from "chonky";
-import { OpenFilesPayload } from "chonky/dist/types/action-payloads.types";
+import { FileArray, ChonkyFileActionData } from "chonky";
 import _ from "lodash";
-import { useCallback } from "react";
-import { SnapshotActionPayload } from "../components/SnapshotAction";
+import { useCallback, useEffect, useState } from "react";
+import { ActionHandlers } from "../fmActions/ActionHandler";
 
 export const useFolderChainForPath = (path: string[]): FileArray => {
-    const result: FileArray = [];
-
-    result.push({
-        id: "root",
-        name: "root",
-        isDir: true
-    });
-
-    for (let i = 1; i < path.length; i++) {
-        result.push({
-            id: `${result[i - 1]!.id}/${path[i]}`,
-            name: path[i],
+    const [result, setResult] = useState<FileArray>([
+        {
+            id: "root",
+            name: "root",
             isDir: true
-        });
-    }
+        }
+    ]);
+
+    useEffect(() => {
+        const newResult = [
+            {
+                id: "root",
+                name: "root",
+                isDir: true
+            }
+        ];
+        for (let i = 1; i < path.length; i++) {
+            newResult.push({
+                id: `${newResult[i - 1]!.id}/${path[i]}`,
+                name: path[i],
+                isDir: true
+            });
+        }
+        setResult(newResult);
+    }, [path, setResult]);
 
     return result;
 };
 
-export const packageFromFilePath = (filePath: string, packages: Package[]) => {
-    const parts = filePath.split("/");
-    if (parts.length != 5) return;
-    const section: Section = {
-        branch: parts[1],
-        repository: parts[2],
-        architecture: parts[3]
-    };
-    const packageName = parts[4];
-
-    return packages.find((value) => {
-        return _.isEqual(value.section, section) && value.name == packageName;
-    });
-};
-
-export const useFileActionHandler = (
-    setPath: (path: string[]) => void,
-    setSnapshotModalBranches: (
-        sourceBranch?: string,
-        targetBranch?: string
-    ) => void,
-    setPackage: (pkg?: Package) => void,
-    packages: Package[]
-) => {
+export const useFileActionHandler = (actionHandlers: ActionHandlers) => {
     return useCallback(
         (data: ChonkyFileActionData) => {
-            switch (data.id as string) {
-                case ChonkyActions.OpenFiles.id:
-                    const { targetFile, files } =
-                        data.payload as OpenFilesPayload;
-                    const fileToOpen = targetFile ?? files[0];
-                    if (fileToOpen && FileHelper.isDirectory(fileToOpen)) {
-                        const pathToOpen = fileToOpen.id.split("/");
-
-                        setPath(pathToOpen);
-                    } else if (
-                        fileToOpen &&
-                        !FileHelper.isDirectory(fileToOpen)
-                    ) {
-                        setPackage(
-                            packageFromFilePath(
-                                (fileToOpen as FileData).id,
-                                packages
-                            )
-                        );
-                    }
-                    break;
-                case "snap":
-                    const { sourceBranch, targetBranch } =
-                        data.payload as SnapshotActionPayload;
-
-                    setSnapshotModalBranches(sourceBranch, targetBranch);
+            const handler = actionHandlers.find(
+                (value) => value[0] === data.id
+            )?.[1];
+            if (handler) {
+                handler(data);
             }
         },
-        [setPath, setSnapshotModalBranches, setPackage, packages]
+        [actionHandlers]
     );
 };

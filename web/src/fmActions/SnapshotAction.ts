@@ -9,13 +9,16 @@ import {
     defineFileAction,
     FileData,
     thunkRequestFileAction,
-    selectSelectedFiles
+    selectSelectedFiles,
+    ChonkyFileActionData
 } from "chonky";
+import { useCallback } from "react";
+import { ActionHandler } from "./ActionHandler";
 
-export interface SnapshotActionPayload {
+export type SnapshotActionPayload = {
     sourceBranch?: string;
     targetBranch?: string;
-}
+};
 
 export const SnapshotAction = defineFileAction({
     id: "snap",
@@ -48,3 +51,17 @@ export const SnapToAction = defineFileAction(
         );
     }
 );
+
+export const useSnapshotHandler = (
+    snapshotHandler: (sourceBranch?: string, targetBranch?: string) => void
+): [string, ActionHandler] => [
+    "snap",
+    useCallback(
+        (payload: ChonkyFileActionData) => {
+            const { sourceBranch, targetBranch } =
+                payload as SnapshotActionPayload;
+            snapshotHandler(sourceBranch, targetBranch);
+        },
+        [snapshotHandler]
+    )
+];
