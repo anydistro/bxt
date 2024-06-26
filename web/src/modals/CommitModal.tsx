@@ -51,6 +51,21 @@ export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
                 props.onCommitSubmit(section, commit);
         }, [commit, props.onSubmit]);
 
+        const packageDropHandler = usePackageDropHandler(section, (_, commit) =>
+            setCommit((prevCommit) => {
+                const newCommit = new Map(prevCommit);
+
+                commit.forEach((value, key) => {
+                    newCommit.set(key, {
+                        ...commit.get(key),
+                        ...value
+                    });
+                });
+
+                return newCommit;
+            })
+        );
+
         return createPortal(
             <Modal ref={ref} className="w-11/12 max-w-5xl" {...props}>
                 <Modal.Header>
@@ -65,23 +80,7 @@ export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
                         />
                     </div>
                 </Modal.Header>
-                <Dropzone
-                    noClick={true}
-                    onDrop={usePackageDropHandler(section, (_, commit) =>
-                        setCommit((prevCommit) => {
-                            const newCommit = new Map(prevCommit);
-
-                            commit.forEach((value, key) => {
-                                newCommit.set(key, {
-                                    ...value,
-                                    ...commit.get(key)
-                                });
-                            });
-
-                            return newCommit;
-                        })
-                    )}
-                >
+                <Dropzone noClick={true} onDrop={packageDropHandler}>
                     {({ getRootProps, getInputProps }) => (
                         <Modal.Body {...getRootProps()}>
                             <input {...getInputProps()} />
