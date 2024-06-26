@@ -46,7 +46,7 @@ export const useFilesFromSections = (
                     thumbnailUrl: pkg?.preferredLocation
                         ? pkg?.poolEntries[pkg?.preferredLocation].hasSignature
                             ? `/signature.svg`
-                            : `/package.png`
+                            : `/package.svg`
                         : "",
                     icon: ChonkyIconName.archive,
                     color: "#8B756B"
@@ -81,7 +81,7 @@ export const useFilesFromSections = (
                                     id: `root/${path[1]}/${value}`,
                                     name: value,
                                     isDir: true,
-                                    thumbnailUrl: `/repository.png`,
+                                    thumbnailUrl: `/repository.svg`,
                                     color: "#8B756B"
                                 };
                             }

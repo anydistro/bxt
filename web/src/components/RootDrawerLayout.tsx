@@ -64,7 +64,7 @@ export default function RootDrawerLayout() {
                     >
                         <img
                             id="bxt-logo"
-                            src={`/logo-full.png`}
+                            src={`/logo-full.svg`}
                             className="absolute h-full w-40 object-contain"
                         />
                     </Link>
