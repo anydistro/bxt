@@ -72,7 +72,7 @@ export default function RootDrawerLayout() {
                     <div className="h-6"></div>
 
                     {routes.map(({ route, name, icon }) => (
-                        <Menu.Item>
+                        <Menu.Item key={route}>
                             <Link
                                 className={
                                     location.pathname == route ? "active" : ""

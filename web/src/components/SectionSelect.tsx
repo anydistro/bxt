@@ -87,7 +87,7 @@ export default function SectionSelect(props: SectionSelectorProps) {
                 </daisyui.Dropdown.Menu>
             ),
             Option: ({ children, innerProps, isSelected, ...rest }) => (
-                <daisyui.Menu.Item {...rest}>
+                <daisyui.Menu.Item>
                     <div className={isSelected ? "active" : ""} {...innerProps}>
                         {children}
                     </div>

@@ -34,7 +34,7 @@ export const PackageModal = forwardRef<HTMLDialogElement, PackageModalProps>(
                         </Table.Head>
                         {Object.entries(props.package?.poolEntries ?? []).map(
                             ([key, value]) => (
-                                <Table.Row>
+                                <Table.Row key={key}>
                                     <span>{key}</span>
                                     <span>{value.version}</span>
                                 </Table.Row>

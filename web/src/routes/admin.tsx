@@ -77,6 +77,7 @@ export default function Admin() {
                 <Table.Body>
                     {users?.map((value) => (
                         <Table.Row
+                            key={value.name}
                             style={{ userSelect: "none" }}
                             onDoubleClick={() => openUserModal(value)}
                         >

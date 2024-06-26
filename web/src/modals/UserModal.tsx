@@ -21,20 +21,20 @@ export type UserModalProps = ModalProps & {
 };
 
 export const UserModal = forwardRef<HTMLDialogElement, UserModalProps>(
-    (props, ref) => {
+    ({ user: userProp, onSaveClicked, ...props }, ref) => {
         const [user, setUser] = useState<User>();
 
         useEffect(() => {
             setUser(
-                props.user
-                    ? { password: "", permissions: [], ...props.user }
+                userProp
+                    ? { password: "", permissions: [], ...userProp }
                     : {
                           name: "",
                           password: "",
                           permissions: []
                       }
             );
-        }, [props.user]);
+        }, [userProp]);
 
         return createPortal(
             <Modal ref={ref} {...props}>
@@ -43,7 +43,7 @@ export const UserModal = forwardRef<HTMLDialogElement, UserModalProps>(
                     <Form autoComplete="nope">
                         <Form.Label title="User name" />
                         <Input
-                            disabled={props.user != undefined}
+                            disabled={userProp != undefined}
                             autoComplete="nope"
                             size="sm"
                             value={user?.name}
@@ -86,11 +86,11 @@ export const UserModal = forwardRef<HTMLDialogElement, UserModalProps>(
                     <Button
                         size="sm"
                         onClick={() =>
-                            props.onSaveClicked?.(user, props.user == undefined)
+                            onSaveClicked?.(user, userProp == undefined)
                         }
                         color="primary"
                     >
-                        {props.user == undefined ? "Add" : "Save"}
+                        {userProp == undefined ? "Add" : "Save"}
                     </Button>
                 </Modal.Actions>
             </Modal>,
