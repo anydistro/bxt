@@ -76,7 +76,7 @@ export const AppRoot = (props: any) => {
                     element: <Main />
                 },
                 {
-                    path: "logs",
+                    path: "log",
                     element: <Log />
                 },
                 {

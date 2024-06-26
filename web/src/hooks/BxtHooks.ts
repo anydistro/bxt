@@ -28,10 +28,12 @@ export const useSections = (): [Section[], IUpdateSections] => {
     return [sections, updateSections];
 };
 
-export const usePackageLogs = (): [LogEntry[], () => void] => {
-    const [entries, setEntries] = useState<LogEntry[]>([]);
+export const usePackageLogs = (): [LogEntry[] | null, () => void, boolean] => {
+    const [entries, setEntries] = useState<LogEntry[] | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const updateEntries = useCallback(async () => {
+        setIsLoading(true);
         try {
             const result = await axios.get(`/api/logs/packages`);
 
@@ -40,10 +42,13 @@ export const usePackageLogs = (): [LogEntry[], () => void] => {
                 return value;
             });
             setEntries(entries);
-        } catch (error) {}
+        } catch (error) {
+            setEntries(null);
+        }
+        setIsLoading(false);
     }, [setEntries]);
 
-    return [entries, updateEntries];
+    return [entries, updateEntries, isLoading];
 };
 
 export interface IGetCompareResults {

@@ -44,7 +44,7 @@ export default function RootDrawerLayout() {
         () => [
             { route: "/", name: "Packages", icon: faFolderTree },
             { route: "/compare", name: "Compare", icon: faCodeCompare },
-            { route: "/logs", name: "Logs", icon: faListCheck },
+            { route: "/log", name: "Log", icon: faListCheck },
             { route: "/admin", name: "Admin", icon: faToolbox }
         ],
         []
