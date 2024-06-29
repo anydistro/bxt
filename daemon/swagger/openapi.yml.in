@@ -126,6 +126,12 @@ paths:
                   format: binary
                 packageSection:
                   type: string
+                to_delete:
+                  type: string
+                to_move:
+                  type: string
+                to_copy:
+                  type: string
       responses:
         "200":
           description: Transaction committed successfully
