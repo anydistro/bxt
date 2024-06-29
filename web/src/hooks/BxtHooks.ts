@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { SectionUtils } from "../utils/SectionUtils";
 
 export interface IUpdateSections {
     (): void;
@@ -96,9 +97,9 @@ export const useCompareResults = (): [
 const formFromCommits = (commits: Commits) => {
     let index = 0;
 
-    let formData = new FormData();
+    const formData = new FormData();
     for (const [_, commit] of Array.from(commits)) {
-        for (const [name, pkg] of Array.from(commit)) {
+        for (const [name, pkg] of Array.from(commit.toAdd)) {
             const missingFields = [];
             if (!pkg.file) missingFields.push("package file");
             if (!pkg.signatureFile) missingFields.push("signature file");
@@ -127,6 +128,55 @@ const formFromCommits = (commits: Commits) => {
             index++;
         }
     }
+
+    formData.append(
+        "to_delete",
+        JSON.stringify(
+            Array.from(commits.entries())
+                .map(([section, commit]) =>
+                    Array.from(commit.toDelete.entries()).map(([name, _]) => ({
+                        name,
+                        section: SectionUtils.fromString(section)
+                    }))
+                )
+                .flat()
+        )
+    );
+
+    formData.append(
+        "to_copy",
+        JSON.stringify(
+            Array.from(commits.entries())
+                .map(([section, commit]) =>
+                    Array.from(commit.toCopy.entries()).map(
+                        ([name, targetSection]) => ({
+                            name,
+                            from_section: SectionUtils.fromString(section),
+                            to_section: targetSection
+                        })
+                    )
+                )
+                .flat()
+        )
+    );
+
+    formData.append(
+        "to_move",
+        JSON.stringify(
+            Array.from(commits.entries())
+                .map(([section, commit]) =>
+                    Array.from(commit.toMove.entries()).map(
+                        ([name, targetSection]) => ({
+                            name,
+                            from_section: SectionUtils.fromString(section),
+                            to_section: targetSection
+                        })
+                    )
+                )
+                .flat()
+        )
+    );
+
     return {
         form: formData,
         missingFields: undefined,
@@ -150,17 +200,20 @@ export const usePushCommitsHandler = (
             );
             return;
         }
-
-        const result = await axios.post(`/api/packages/commit`, form, {
-            onUploadProgress: (p) => {
-                const progress = p.loaded / (p.total || 1);
-                onProgress(progress);
-            }
-        });
-
-        if (result.data["status"] == "ok") {
+        try {
+            const result = await axios.post(`/api/packages/commit`, form, {
+                onUploadProgress: (p) => {
+                    const progress = p.loaded / (p.total || 1);
+                    onProgress(progress);
+                }
+            });
             onProgress(undefined);
-            reload();
+
+            if (result.data["status"] == "ok") {
+                reload();
+            }
+        } catch {
+            onProgress(undefined);
         }
     }, [commits, reload, onProgress]);
 };

@@ -5,17 +5,15 @@
  *
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    FileArray,
     FileBrowserHandle,
     FileBrowserProps,
     FullFileBrowser as F,
     setChonkyDefaults
 } from "chonky";
-
 import { Button, Loading } from "react-daisyui";
 import Dropzone from "react-dropzone-esm";
 import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
@@ -36,14 +34,27 @@ import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useFilesFromSections } from "../hooks/BxtFsHooks";
 import { CommitsState } from "../hooks/useCommits";
 import { useOpenHandler } from "../fmActions/OpenAction";
+import {
+    CopyAction,
+    CopyActionButton,
+    DeleteAction,
+    DeleteActionButton,
+    MoveAction,
+    MoveActionButton,
+    useHandler
+} from "../fmActions/PackageActions";
+import { createCommit, mergeCommits } from "../utils/CommitUtils";
 
 export type FileManagerProps = {
     path: string[];
     setPath: (path: string[]) => void;
     commitsState: CommitsState;
     openModalWithCommitHandler: (
-        isNew: boolean
-    ) => (section: Section, commit: Commit) => void;
+        section: Section,
+        commit: Commit,
+        defaultCheckedAction?: ActionType
+    ) => void;
+    openSectionSelectModal: (cb: (section?: Section) => void) => void;
     openSnapshotModalWithBranchHandler: () => void;
     openPackageModal: () => void;
 };
@@ -91,12 +102,105 @@ export default function FileManager(props: FileManagerProps) {
         packages ?? []
     );
 
-    const fileAction = useFileActionHandler([snapshotHandler, openHandler]);
-
     const { commits, addCommit, deleteCommit, clearCommits } =
         props.commitsState;
 
+    const handleFileAction = useCallback(
+        (
+            actionType: "copy" | "move" | "delete",
+            path: string[] | undefined
+        ) => {
+            if (!path) {
+                return;
+            }
+
+            const [section, packageName] = [
+                SectionUtils.fromPath(path),
+                path[4]
+            ];
+
+            if (!section || !packageName) {
+                return;
+            }
+
+            const withTargetSection = (targetSection?: Section) => {
+                let action;
+                switch (actionType) {
+                    case "copy":
+                    case "move":
+                        if (!targetSection) {
+                            return;
+                        }
+                        action = new Map<string, Section>().set(
+                            packageName,
+                            targetSection
+                        );
+                        break;
+                    case "delete":
+                        action = new Set<string>([packageName]);
+                        break;
+                }
+
+                const existingCommit = commits.get(
+                    SectionUtils.toString(section)
+                );
+                const commitAction = {
+                    copy: "toCopy",
+                    move: "toMove",
+                    delete: "toDelete"
+                }[actionType];
+
+                const commit = existingCommit
+                    ? mergeCommits(existingCommit, { [commitAction]: action })
+                    : createCommit({ [commitAction]: action });
+
+                openModalWithCommitHandler(section, commit, actionType);
+            };
+
+            if (actionType === "delete") {
+                withTargetSection();
+            } else {
+                props.openSectionSelectModal(withTargetSection);
+            }
+        },
+        [commits, openModalWithCommitHandler, props]
+    );
+
+    const copyHandler = useHandler(CopyAction.id, (path) =>
+        handleFileAction("copy", path)
+    );
+
+    const moveHandler = useHandler(MoveAction.id, (path) =>
+        handleFileAction("move", path)
+    );
+
+    const deleteHandler = useHandler(DeleteAction.id, (path) =>
+        handleFileAction("delete", path)
+    );
+
+    const fileAction = useFileActionHandler([
+        snapshotHandler,
+        openHandler,
+        copyHandler,
+        moveHandler,
+        deleteHandler
+    ]);
+
     const folderChain = useFolderChainForPath(path);
+
+    const fileActions = useMemo(
+        () => [
+            DeleteAction,
+            DeleteActionButton,
+            CopyAction,
+            CopyActionButton,
+            MoveAction,
+            MoveActionButton,
+            SnapToAction,
+            SnapshotAction
+        ],
+        []
+    );
 
     return (
         <CommitDrawer
@@ -106,7 +210,7 @@ export default function FileManager(props: FileManagerProps) {
                 clearCommits();
                 updateSections();
             })}
-            onCardActivate={openModalWithCommitHandler(true)}
+            onCardActivate={openModalWithCommitHandler}
             onCardDelete={(section) => {
                 deleteCommit(section);
             }}
@@ -117,14 +221,29 @@ export default function FileManager(props: FileManagerProps) {
                 noClick={true}
                 onDrop={usePackageDropHandler(
                     SectionUtils.fromPath(path) || sections[0],
-                    openModalWithCommitHandler(false)
+                    (section, addAction) => {
+                        const existingCommit = commits.get(
+                            SectionUtils.toString(section)
+                        );
+                        if (!existingCommit) {
+                            openModalWithCommitHandler(
+                                section,
+                                createCommit({ toAdd: addAction })
+                            );
+                            return;
+                        }
+                        const addCommit = mergeCommits(existingCommit, {
+                            toAdd: addAction
+                        });
+                        openModalWithCommitHandler(section, addCommit);
+                    }
                 )}
             >
                 {({ getRootProps, getInputProps }) => (
                     <div className="h-full" {...getRootProps()}>
                         <input {...getInputProps()} />
                         <FullFileBrowser
-                            fileActions={[SnapToAction, SnapshotAction]}
+                            fileActions={fileActions}
                             files={files}
                             onFileAction={fileAction}
                             folderChain={folderChain}

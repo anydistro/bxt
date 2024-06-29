@@ -9,7 +9,7 @@ import { useCallback } from "react";
 
 export const usePackageDropHandler = (
     section: Section | undefined,
-    addCommit: (section: Section, commit: Commit) => void
+    add: (section: Section, commit: AddAction) => void
 ) => {
     return useCallback(
         (acceptedFiles: File[]) => {
@@ -35,8 +35,8 @@ export const usePackageDropHandler = (
                 };
             }
 
-            addCommit(section, new Map(Object.entries(packages)));
+            add(section, new Map(Object.entries(packages)));
         },
-        [section, addCommit]
+        [section, add]
     );
 };
