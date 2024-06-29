@@ -9,12 +9,14 @@
 
 #include "PoolOptions.h"
 #include "core/domain/enums/PoolLocation.h"
+#include "core/domain/repositories/PackageRepositoryBase.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "persistence/box/BoxOptions.h"
 #include "persistence/box/pool/PoolBase.h"
 
 #include <filesystem>
+#include <parallel_hashmap/phmap.h>
 #include <string>
 
 namespace bxt::Persistence::Box {
@@ -30,16 +32,26 @@ public:
     PoolBase::Result<PackageRecord>
         move_to(const PackageRecord& package) override;
 
+    PoolBase::Result<void> remove(const PackageRecord& package) override;
+
+    PoolBase::Result<PackageRecord>
+        path_for_package(const PackageRecord& package) const override;
+
+    void count_links(PackageRepositoryBase& package_repository);
+
 private:
-    std::string
-        format_target_path(Core::Domain::PoolLocation location,
-                           const std::string& arch,
-                           const std::optional<std::string>& filename = {});
+    std::string format_target_path(
+        Core::Domain::PoolLocation location,
+        const std::string& arch,
+        const std::optional<std::string>& filename = {}) const;
 
     std::filesystem::path m_pool_path;
     std::set<std::string> m_architectures;
     PoolOptions& m_options;
     UnitOfWorkBaseFactory& m_uow_factory;
+
+    phmap::parallel_flat_hash_map<std::filesystem::path, size_t>
+        m_pool_package_link_counts;
 };
 
 } // namespace bxt::Persistence::Box

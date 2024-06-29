@@ -147,6 +147,10 @@ void setup_di_container(kgr::container& container) {
 
     container.service<di::Persistence::Box::BoxRepository>();
 
+    container.invoke<di::Persistence::Box::BoxRepository,
+                     di::Persistence::Box::Pool>(
+        [](auto& box_repo, auto& pool) { pool.count_links(box_repo); });
+
     container.service<di::Core::Application::AuthService>();
     container.service<di::Core::Application::PermissionService>();
 
@@ -185,7 +189,7 @@ void setup_defaults(kgr::container& container) {
     using namespace bxt;
     auto& unit_of_work_factory =
         container.service<di::Core::Domain::UnitOfWorkBaseFactory>();
-    auto uow = coro::sync_wait(unit_of_work_factory());
+    auto uow = coro::sync_wait(unit_of_work_factory(true));
 
     auto& repository = container.service<di::Core::Domain::UserRepository>();
 
@@ -199,12 +203,6 @@ void setup_defaults(kgr::container& container) {
     if (users->empty()) {
         User default_user(Name("default"), "ILoveMacarons");
         default_user.set_permissions({Permission("*")});
-
-        const auto result = coro::sync_wait(uow->begin_async());
-        if (!result.has_value()) {
-            bxt::loge(result.error().what());
-            abort();
-        }
 
         const auto add_result =
             coro::sync_wait(repository.add_async(default_user, uow));

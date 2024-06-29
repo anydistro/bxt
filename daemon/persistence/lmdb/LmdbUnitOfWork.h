@@ -12,6 +12,7 @@
 
 #include <coro/task.hpp>
 #include <memory>
+#include <queue>
 namespace bxt::Persistence {
 
 class LmdbUnitOfWork : public Core::Domain::UnitOfWorkBase {
@@ -22,11 +23,18 @@ public:
     virtual ~LmdbUnitOfWork() = default;
 
     coro::task<Result<void>> commit_async() override {
+        while (!m_hooks.empty()) {
+            m_hooks.front()();
+            m_hooks.pop();
+        }
+
         m_txn->value.commit();
         co_return {};
     }
 
     coro::task<Result<void>> rollback_async() override {
+        m_hooks = {};
+
         m_txn->value.abort();
         co_return {};
     }
@@ -41,9 +49,12 @@ public:
         co_return {};
     }
 
+    void hook(std::function<void()>&& hook) { m_hooks.push(std::move(hook)); }
+
     Utilities::locked<lmdb::txn>& txn() const { return *m_txn; }
 
 private:
+    std::queue<std::function<void()>> m_hooks;
     std::shared_ptr<Utilities::LMDB::Environment> m_env;
     std::unique_ptr<Utilities::locked<lmdb::txn>> m_txn;
 };

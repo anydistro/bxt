@@ -20,5 +20,9 @@ struct PoolBase {
     BXT_DECLARE_RESULT(FsError);
 
     virtual Result<PackageRecord> move_to(const PackageRecord& package) = 0;
+    virtual Result<void> remove(const PackageRecord& package) = 0;
+
+    virtual Result<PackageRecord>
+        path_for_package(const PackageRecord& package) const = 0;
 };
 } // namespace bxt::Persistence::Box
