@@ -31,7 +31,19 @@ public:
 
     struct Transaction {
         std::vector<PackageDTO> to_add;
-        std::vector<std::pair<PackageSectionDTO, std::string>> to_remove;
+        struct PackageAction {
+            PackageSectionDTO section;
+            std::string name;
+        };
+        std::vector<PackageAction> to_delete;
+        struct TransferAction {
+            std::string name;
+            PackageSectionDTO from_section;
+            PackageSectionDTO to_section;
+        };
+
+        std::vector<TransferAction> to_move;
+        std::vector<TransferAction> to_copy;
     };
 
     virtual coro::task<Result<void>>

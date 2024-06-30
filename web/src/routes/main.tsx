@@ -13,6 +13,10 @@ import PackageModal, { PackageModalProps } from "../modals/PackageModal";
 import { SectionUtils } from "../utils/SectionUtils";
 import FileManager from "../components/FileManager";
 import useCommits from "../hooks/useCommits";
+import { mergeCommits } from "../utils/CommitUtils";
+import SectionSelectModal, {
+    SectionSelectModalProps
+} from "../modals/SectionSelectModal";
 
 export default function Main(props: any) {
     const [sections, updateSections] = useSections();
@@ -31,37 +35,22 @@ export default function Main(props: any) {
         section: sections[0],
         sections: sections
     });
-
-    const openModalWithCommitHandler = (isNew: boolean) => {
-        return (section: Section, commit: Commit) => {
-            setIsCommitInModalNew(isNew);
-
-            const currentCommit = commits.get(SectionUtils.toString(section));
-
-            currentCommit?.forEach((value, key) => {
-                commit.set(key, { ...value, ...commit.get(key) });
-            });
-
-            setCommitModalProps((prevCommitProps) => ({
-                ...prevCommitProps,
-                commit,
-                section: section
-            }));
-            commitModalRef.current?.showModal();
-        };
-    };
-
     const commitModalRef = useRef<HTMLDialogElement>(null);
 
     const commitsState = useCommits();
 
     const { commits, addCommit, deleteCommit, clearCommits } = commitsState;
 
+    useEffect(() => {
+        localStorage.setItem("commits", JSON.stringify(commits));
+    }, [commits]);
+
     const [isCommitInModalNew, setIsCommitInModalNew] =
         useState<boolean>(false);
 
     const snapshotModalRef = useRef<HTMLDialogElement>(null);
     const packageModalRef = useRef<HTMLDialogElement>(null);
+    const sectionSelectModalRef = useRef<HTMLDialogElement>(null);
 
     const [snapshotModalProps, setSnapshotModalProps] =
         useState<ISnapshotModalProps>({
@@ -84,6 +73,38 @@ export default function Main(props: any) {
         });
     }, [sections]);
 
+    const openModalWithCommitHandler = useCallback(
+        (
+            section: Section,
+            commit: Commit,
+            defaultCheckedAction?: ActionType
+        ) => {
+            const existingCommit = commits.get(SectionUtils.toString(section));
+            if (!existingCommit) {
+                setIsCommitInModalNew(true);
+                setCommitModalProps((prevCommitProps) => ({
+                    ...prevCommitProps,
+                    commit: commit,
+                    section: section,
+                    defaultCheckedAction: defaultCheckedAction
+                }));
+
+                commitModalRef.current?.showModal();
+                return;
+            }
+
+            setIsCommitInModalNew(false);
+
+            setCommitModalProps((prevCommitProps) => ({
+                ...prevCommitProps,
+                commit: mergeCommits(existingCommit, commit),
+                section: section,
+                defaultCheckedAction: defaultCheckedAction
+            }));
+            commitModalRef.current?.showModal();
+        },
+        [commitModalRef, setCommitModalProps, commits]
+    );
     const openSnapshotModalWithBranchHandler = useCallback(
         (sourceBranch?: string, targetBranch?: string) => {
             if (sourceBranch) {
@@ -123,6 +144,31 @@ export default function Main(props: any) {
         [packageModalRef, setPackageModalProps, packageModalProps]
     );
 
+    const [sectionSelectModalProps, setSectionSelectModalProps] =
+        useState<SectionSelectModalProps>({
+            sections: sections
+        });
+
+    const openSectionSelectModal = useCallback(
+        (cb: (section?: Section) => void) => {
+            setSectionSelectModalProps({
+                ...sectionSelectModalProps,
+                onSectionChange: (section) => {
+                    console.log("section", section);
+                    sectionSelectModalRef.current?.close();
+                    cb(section);
+                }
+            });
+
+            sectionSelectModalRef.current?.showModal();
+        },
+        [
+            sectionSelectModalRef,
+            setSectionSelectModalProps,
+            sectionSelectModalProps
+        ]
+    );
+
     return (
         <div className="flex w-full h-full items-center justify-center font-sans">
             <CommitModal
@@ -152,6 +198,12 @@ export default function Main(props: any) {
                 {...packageModalProps}
                 backdrop={true}
             />
+            <SectionSelectModal
+                ref={sectionSelectModalRef}
+                {...sectionSelectModalProps}
+                sections={sections}
+                backdrop={true}
+            />
             <FileManager
                 path={path}
                 setPath={setPath}
@@ -160,6 +212,7 @@ export default function Main(props: any) {
                 openSnapshotModalWithBranchHandler={
                     openSnapshotModalWithBranchHandler
                 }
+                openSectionSelectModal={openSectionSelectModal}
                 openPackageModal={openPackageModal}
             />
         </div>

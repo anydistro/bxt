@@ -38,6 +38,18 @@ private:
     coro::task<Result<void>> add_package(const PackageDTO package,
                                          std::shared_ptr<UnitOfWorkBase> uow);
 
+    coro::task<PackageService::Result<void>>
+        move_package(const std::string package_name,
+                     const PackageSectionDTO from_section,
+                     const PackageSectionDTO to_section,
+                     std::shared_ptr<UnitOfWorkBase> unitofwork);
+
+    coro::task<PackageService::Result<void>>
+        copy_package(const std::string package_name,
+                     const PackageSectionDTO from_section,
+                     const PackageSectionDTO to_section,
+                     std::shared_ptr<UnitOfWorkBase> unitofwork);
+
     PackageServiceOptions m_options;
     Core::Domain::PackageRepositoryBase& m_repository;
     UnitOfWorkBaseFactory& m_uow_factory;

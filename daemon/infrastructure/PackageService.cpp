@@ -25,40 +25,129 @@ coro::task<PackageService::Result<void>> PackageService::commit_transaction(
 
     packages_to_add.reserve(transaction.to_add.size());
 
-    auto ids_to_remove =
-        transaction.to_remove
+    auto ids_to_delete =
+        transaction.to_delete
         | std::views::transform(
-            [](const std::pair<PackageSectionDTO, std::string> &value) {
-                return Package::TId {SectionDTOMapper::to_entity(value.first),
-                                     Name(value.second)};
+            [](const PackageService::Transaction::PackageAction& action) {
+                return Package::TId {
+                    SectionDTOMapper::to_entity(action.section),
+                    Name(action.name)};
             })
         | std::ranges::to<std::vector>();
 
     auto uow = co_await m_uow_factory(true);
 
     std::vector<coro::task<PackageService::Result<void>>> tasks;
-    for (const auto &package : transaction.to_add) {
+    for (const auto& package : transaction.to_add) {
         tasks.push_back(add_package(package, uow));
     }
 
     auto added = co_await coro::when_all(std::move(tasks));
-    for (auto &added_package : added) {
+    for (auto& added_package : added) {
         if (!added_package.return_value().has_value()) {
             co_return bxt::make_error_with_source<CrudError>(
                 std::move(added_package.return_value().error()),
                 CrudError::ErrorType::InternalError);
         }
     }
-    auto deleted = co_await m_repository.delete_async(ids_to_remove, uow);
+
+    auto deleted = co_await m_repository.delete_async(ids_to_delete, uow);
     if (!deleted.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(deleted.error()), CrudError::ErrorType::InternalError);
+    }
+
+    for (const auto& action : transaction.to_move) {
+        auto move_result = co_await move_package(
+            action.name, action.from_section, action.to_section, uow);
+        if (!move_result.has_value()) {
+            co_return bxt::make_error_with_source<CrudError>(
+                std::move(move_result.error()),
+                CrudError::ErrorType::InternalError);
+        }
+    }
+
+    for (const auto& action : transaction.to_copy) {
+        auto copy_result = co_await copy_package(
+            action.name, action.from_section, action.to_section, uow);
+        if (!copy_result.has_value()) {
+            co_return bxt::make_error_with_source<CrudError>(
+                std::move(copy_result.error()),
+                CrudError::ErrorType::InternalError);
+        }
     }
 
     auto commit_ok = co_await uow->commit_async();
     if (!commit_ok) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(commit_ok.error()), CrudError::ErrorType::InternalError);
+    }
+
+    co_return {};
+}
+coro::task<PackageService::Result<void>>
+    PackageService::move_package(const std::string package_name,
+                                 const PackageSectionDTO from_section,
+                                 const PackageSectionDTO to_section,
+                                 std::shared_ptr<UnitOfWorkBase> unitofwork) {
+    // First, find the package in the from_section
+    auto package_to_move = co_await m_repository.find_by_section_async(
+        SectionDTOMapper::to_entity(from_section), package_name, unitofwork);
+
+    if (!package_to_move.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(package_to_move.error()),
+            CrudError::ErrorType::EntityNotFound);
+    }
+
+    package_to_move->set_section(SectionDTOMapper::to_entity(to_section));
+
+    // Then, add the package to the to_section
+    auto add_result =
+        co_await m_repository.add_async(*package_to_move, unitofwork);
+
+    if (!add_result.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(add_result.error()), CrudError::ErrorType::InternalError);
+    }
+
+    // Finally, remove the package from the from_section
+    auto remove_result =
+        co_await m_repository.delete_async(package_to_move->id(), unitofwork);
+
+    if (!remove_result.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(remove_result.error()),
+            CrudError::ErrorType::InternalError);
+    }
+
+    co_return {};
+}
+
+coro::task<PackageService::Result<void>>
+    PackageService::copy_package(const std::string package_name,
+                                 const PackageSectionDTO from_section,
+                                 const PackageSectionDTO to_section,
+                                 std::shared_ptr<UnitOfWorkBase> unitofwork) {
+    // First, find the package in the from_section
+    auto package_to_copy = co_await m_repository.find_by_section_async(
+        SectionDTOMapper::to_entity(from_section), package_name, unitofwork);
+
+    if (!package_to_copy.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(package_to_copy.error()),
+            CrudError::ErrorType::EntityNotFound);
+    }
+
+    package_to_copy->set_section(SectionDTOMapper::to_entity(to_section));
+
+    // Then, add the package to the to_section
+    auto add_result =
+        co_await m_repository.add_async(*package_to_copy, unitofwork);
+
+    if (!add_result.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(add_result.error()), CrudError::ErrorType::InternalError);
     }
 
     co_return {};
@@ -150,7 +239,7 @@ coro::task<PackageService::Result<void>>
             std::move(deleted.error()), CrudError::ErrorType::InternalError);
     }
 
-    for (auto &source_package : *source_packages) {
+    for (auto& source_package : *source_packages) {
         source_package.set_section(SectionDTOMapper::to_entity(to_section));
     }
 

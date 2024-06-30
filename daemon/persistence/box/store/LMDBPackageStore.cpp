@@ -8,6 +8,7 @@
 
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "persistence/box/pool/PoolBase.h"
+#include "persistence/box/record/PackageRecord.h"
 #include "persistence/lmdb/LmdbUnitOfWork.h"
 
 #include <filesystem>
@@ -32,11 +33,11 @@ coro::task<std::expected<void, DatabaseError>>
             DatabaseError::ErrorType::InvalidArgument);
     }
 
-    auto moved_package = m_pool.move_to(package);
+    auto package_after_move = m_pool.path_for_package(package);
 
-    if (!moved_package.has_value()) {
+    if (!package_after_move.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
-            std::move(moved_package.error()),
+            std::move(package_after_move.error()),
             DatabaseError::ErrorType::InvalidArgument);
     }
 
@@ -48,13 +49,18 @@ coro::task<std::expected<void, DatabaseError>>
             DatabaseError::ErrorType::AlreadyExists);
     }
 
-    auto result = co_await m_db.put(lmdb_uow->txn().value, key, *moved_package);
+    auto result =
+        co_await m_db.put(lmdb_uow->txn().value, key, *package_after_move);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
             std::move(result.error()),
             DatabaseError::ErrorType::InvalidArgument);
     }
+
+    lmdb_uow->hook([this, package = std::move(package)] {
+        m_pool.move_to(std::move(package));
+    });
 
     co_return {};
 }
@@ -68,6 +74,14 @@ coro::task<std::expected<void, DatabaseError>>
             DatabaseError::ErrorType::InvalidArgument);
     }
 
+    auto package_to_delete =
+        co_await m_db.get(lmdb_uow->txn().value, package_id.to_string());
+
+    if (!package_to_delete.has_value()) {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::EntityNotFound);
+    }
+
     auto result =
         co_await m_db.del(lmdb_uow->txn().value, package_id.to_string());
 
@@ -76,6 +90,9 @@ coro::task<std::expected<void, DatabaseError>>
             std::move(result.error()),
             DatabaseError::ErrorType::InvalidArgument);
     }
+    lmdb_uow->hook([this, package_to_delete = std::move(*package_to_delete)] {
+        return m_pool.remove(std::move(package_to_delete)).has_value();
+    });
 
     co_return {};
 }

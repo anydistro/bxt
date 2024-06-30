@@ -5,6 +5,17 @@
  *
  */
 
-type Commit = Map<string, Partial<PackageUpload>>;
+type AddAction = Map<string, Partial<PackageUpload>>;
+type DeleteAction = Set<string>;
+type TransferAction = Map<string, Section>;
+
+type ActionType = "add" | "delete" | "copy" | "move";
+
+type Commit = {
+    toAdd: AddAction;
+    toDelete: DeleteAction;
+    toCopy: TransferAction;
+    toMove: TransferAction;
+};
 
 type Commits = Map<string, Commit>;
