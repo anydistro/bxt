@@ -10,7 +10,7 @@ import Select, {
     StylesConfig,
     components
 } from "react-select";
-import { HTMLAttributes, useCallback, useEffect } from "react";
+import { HTMLAttributes, useCallback } from "react";
 import {
     faCodeBranch,
     faCubes,
@@ -28,23 +28,18 @@ type SectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
     onSelected?: (section: Section) => void;
     disabled?: boolean | boolean[];
 };
-
-export default function SectionSelect(props: SectionSelectorProps) {
+export default function SectionSelect({
+    sections,
+    selectedSection,
+    onSelected,
+    disabled
+}: SectionSelectorProps) {
     const updateSection = useCallback(
         (update: any) => {
-            if (props.onSelected)
-                props.onSelected({ ...props.selectedSection, ...update });
+            if (onSelected) onSelected({ ...selectedSection, ...update });
         },
-        [props.onSelected, props.sections]
+        [onSelected, selectedSection]
     );
-
-    useEffect(() => {
-        if (props.onSelected)
-            props.onSelected({
-                ...props.sections[0],
-                ...props.selectedSection
-            });
-    }, [props.sections]);
 
     interface IOption {
         value?: string;
@@ -121,18 +116,17 @@ export default function SectionSelect(props: SectionSelectorProps) {
 
     const isDisabled = useCallback(
         (n: number) => {
-            if (props.disabled == undefined) {
+            if (disabled == undefined) {
                 return false;
             }
-            if (typeof props.disabled == "boolean") {
-                return props.disabled as boolean;
+            if (typeof disabled == "boolean") {
+                return disabled as boolean;
             }
             return (
-                (props.disabled as boolean[]).length > n &&
-                (props.disabled as boolean[])[n]
+                (disabled as boolean[]).length > n && (disabled as boolean[])[n]
             );
         },
-        [props.disabled]
+        [disabled]
     );
 
     return (
@@ -141,18 +135,18 @@ export default function SectionSelect(props: SectionSelectorProps) {
                 unstyled={true}
                 components={makeComponents(faCodeBranch)}
                 styles={makeStyles(isDisabled(0))}
-                value={makeValue(props.selectedSection?.branch)}
-                options={SectionUtils.branches(props.sections).map(makeValue)}
+                value={makeValue(selectedSection?.branch)}
+                options={SectionUtils.branches(sections).map(makeValue)}
                 onChange={(value) => updateSection({ branch: value?.value })}
             />
             <Select<IOption>
                 unstyled={true}
                 components={makeComponents(faCubes)}
                 styles={makeStyles(isDisabled(1))}
-                value={makeValue(props.selectedSection?.repository)}
+                value={makeValue(selectedSection?.repository)}
                 options={SectionUtils.reposForBranch(
-                    props.sections,
-                    props.selectedSection?.branch
+                    sections,
+                    selectedSection?.branch
                 ).map(makeValue)}
                 onChange={(value) =>
                     updateSection({ repository: value?.value })
@@ -162,11 +156,11 @@ export default function SectionSelect(props: SectionSelectorProps) {
                 unstyled={true}
                 components={makeComponents(faMicrochip)}
                 styles={makeStyles(isDisabled(2))}
-                value={makeValue(props.selectedSection?.architecture)}
+                value={makeValue(selectedSection?.architecture)}
                 options={SectionUtils.architecturesForBranchAndRepo(
-                    props.sections,
-                    props.selectedSection?.branch,
-                    props.selectedSection?.repository
+                    sections,
+                    selectedSection?.branch,
+                    selectedSection?.repository
                 ).map(makeValue)}
                 onChange={(value) =>
                     updateSection({ architecture: value?.value })
