@@ -5,7 +5,7 @@
  *
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card } from "react-daisyui";
 import SectionSelect from "../components/SectionSelect";
 import {
@@ -14,21 +14,41 @@ import {
     faTrash
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import _ from "lodash";
 
 type CompareInputFormProps = {
     sections: Section[];
     onSubmit: (sections: Section[]) => void;
 };
 
-export default function CompareInputForm(props: CompareInputFormProps) {
-    const [selectedSections, setSelectedSections] = useState<Section[]>([{}]);
+export default function CompareInputForm({
+    sections,
+    onSubmit
+}: CompareInputFormProps) {
+    const [selectedSections, setSelectedSections] = useState<Section[]>([]);
+
+    useEffect(() => {
+        setSelectedSections((prevSelectedSections) => {
+            const newSelectedSections = prevSelectedSections.map((section) => {
+                if (_.isEmpty(section)) {
+                    return { ...sections[0] };
+                }
+                return section;
+            });
+            return newSelectedSections;
+        });
+    }, [selectedSections, sections, setSelectedSections]);
 
     const updateSectionAt = (index: number, update: any) => {
-        setSelectedSections((prevSections) => [
-            ...prevSections.slice(0, index),
-            { ...props.sections[0], ...prevSections[index], ...update },
-            ...prevSections.slice(index + 1)
-        ]);
+        setSelectedSections((prevSections) =>
+            prevSections
+                ? [
+                      ...prevSections.slice(0, index),
+                      { ...sections[0], ...prevSections[index], ...update },
+                      ...prevSections.slice(index + 1)
+                  ]
+                : [{ ...sections[0], ...update }]
+        );
     };
 
     return (
@@ -38,13 +58,13 @@ export default function CompareInputForm(props: CompareInputFormProps) {
                     <Card.Title>Compare sections</Card.Title>
                     Choose sections you wish to compare.
                     <span className="pt-2 px-10 space-y-4 flex-col justify-center">
-                        {selectedSections.map((section, index) => (
+                        {selectedSections?.map((section, index) => (
                             <div
                                 className="flex items-end h-fit -mr-14"
                                 key={index}
                             >
                                 <SectionSelect
-                                    sections={props.sections}
+                                    sections={sections}
                                     selectedSection={section}
                                     onSelected={(section) =>
                                         updateSectionAt(index, section)
@@ -88,7 +108,13 @@ export default function CompareInputForm(props: CompareInputFormProps) {
                             size="sm"
                             color="accent"
                             onClick={() => {
-                                props.onSubmit(selectedSections);
+                                if (
+                                    !selectedSections ||
+                                    selectedSections?.length < 2
+                                ) {
+                                    return;
+                                }
+                                onSubmit(selectedSections);
                             }}
                         >
                             <FontAwesomeIcon
