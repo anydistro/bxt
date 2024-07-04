@@ -10,6 +10,7 @@
 #include "presentation/Names.h"
 #include "presentation/Token.h"
 #include "utilities/reflect/PathParser.h"
+#include "utilities/reflect/TimePointParser.h"
 
 #include "json/value.h"
 #include <drogon/HttpRequest.h>
