@@ -7,6 +7,8 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Log } from "../definitions/log";
+import { addAxiosDateTransformer } from "axios-date-transformer";
 import { SectionUtils } from "../utils/SectionUtils";
 
 export interface IUpdateSections {
@@ -29,27 +31,40 @@ export const useSections = (): [Section[], IUpdateSections] => {
     return [sections, updateSections];
 };
 
-export const usePackageLogs = (): [LogEntry[] | null, () => void, boolean] => {
-    const [entries, setEntries] = useState<LogEntry[] | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+export type IUpdateLogs = (since: Date, until: Date, fullText?: string) => void;
 
-    const updateEntries = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const result = await axios.get(`/api/logs/packages`);
+export const useLogs = (
+    initualSince: Date,
+    initualUntil: Date
+): [Log | undefined, IUpdateLogs, boolean] => {
+    const [logs, setLogs] = useState<Log>();
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
-            const entries = result.data.map((value: any) => {
-                value.time = new Date(value.time);
-                return value;
-            });
-            setEntries(entries);
-        } catch (error) {
-            setEntries(null);
-        }
-        setIsLoading(false);
-    }, [setEntries]);
+    const updateLogs: IUpdateLogs = useCallback(
+        async (since, until, fullText) => {
+            setIsLoading(true);
+            const response = await addAxiosDateTransformer(axios).get<Log>(
+                `/api/logs`,
+                {
+                    params: {
+                        since: since.toISOString(),
+                        until: until.toISOString(),
+                        text: fullText
+                    }
+                }
+            );
 
-    return [entries, updateEntries, isLoading];
+            setLogs(response.data);
+            setIsLoading(false);
+        },
+        [setLogs]
+    );
+
+    useEffect(() => {
+        updateLogs(initualSince, initualUntil);
+    }, [updateLogs]);
+
+    return [logs, updateLogs, isLoading];
 };
 
 export interface IGetCompareResults {

@@ -5,117 +5,92 @@
  *
  */
 
-import React from "react";
-import { Table } from "react-daisyui";
+import { CommitRow } from "./logs/rows/CommitRow";
+import { SyncRow } from "./logs/rows/SyncRow";
+import { DeployRow } from "./logs/rows/DeployRow";
 import {
-    useReactTable,
-    flexRender,
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    SortingState,
-    createColumnHelper
-} from "@tanstack/react-table";
-import SectionLabel from "../components/SectionLabel";
+    CommitLogEntry,
+    DeployLogEntry,
+    LogEntry,
+    SyncLogEntry
+} from "../definitions/log";
+import { Card, Divider } from "react-daisyui";
+import { useCallback } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import * as datefns from "date-fns";
 
-interface LogTableProps {
-    entries: LogEntry[];
-    sorting: SortingState;
-    setSorting: React.Dispatch<React.SetStateAction<SortingState>>;
-}
+type LogTableProps = {
+    allEntries: LogEntry[];
+    onRowClick: (entry: LogEntry) => void;
+};
 
-const LogTable = ({ entries, sorting, setSorting }: LogTableProps) => {
-    const columnHelper = createColumnHelper<LogEntry>();
-
-    const columns = [
-        columnHelper.accessor("type", {
-            header: "Type"
-        }),
-        columnHelper.accessor("package.name", {
-            header: "Name"
-        }),
-
-        columnHelper.accessor("package.poolEntries", {
-            header: "Version",
-            cell: (context) => {
-                const value = context.getValue();
-                const preferredLocation =
-                    context?.row?.original?.package?.preferredLocation;
-
-                if (value && preferredLocation && value[preferredLocation]) {
-                    return value[preferredLocation].version;
-                } else {
-                    return "Unknown Version";
-                }
+const LogTable = ({ allEntries, onRowClick }: LogTableProps) => {
+    const renderContent = useCallback(
+        (entry: (typeof allEntries)[0], index: number) => {
+            switch (entry.type) {
+                case "Commit":
+                    return (
+                        <CommitRow
+                            key={index}
+                            entry={entry as CommitLogEntry}
+                        />
+                    );
+                case "Sync":
+                    return (
+                        <SyncRow key={index} entry={entry as SyncLogEntry} />
+                    );
+                case "Deploy":
+                    return (
+                        <DeployRow
+                            key={index}
+                            entry={entry as DeployLogEntry}
+                        />
+                    );
             }
-        }),
-
-        columnHelper.accessor("package.section", {
-            header: "Section",
-            cell: (context) => <SectionLabel section={context.getValue()} />
-        }),
-
-        columnHelper.accessor((entry) => entry.time, {
-            header: "Time",
-            enableSorting: true,
-            sortingFn: "datetime"
-        })
-    ];
-
-    const table = useReactTable<LogEntry>({
-        columns,
-        data: entries,
-        state: {
-            sorting
         },
-        manualPagination: true,
-        sortDescFirst: true,
-        enableSorting: true,
-        onSortingChange: setSorting,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        initialState: {}
-    });
+        []
+    );
 
     return (
-        <Table size="xs" zebra={true} className="w-full">
-            <Table.Head>
-                {table
-                    .getHeaderGroups()
-                    .flatMap((headerGroup) =>
-                        headerGroup.headers.map((header) => (
-                            <span key={header.id}>
-                                {header.isPlaceholder
-                                    ? null
-                                    : flexRender(
-                                          header.column.columnDef.header,
-                                          header.getContext()
-                                      )}
+        <>
+            {allEntries.map((entry, index) => (
+                <Card
+                    className={`text-sm transition bg-base-100 shadow-sm my-1 mx-10 cursor-pointer duration-150 hover:bg-base-300 hover:shadow-none ${entry.type === "Sync" ? "bg-secondary text-accent-content" : ""}`}
+                    key={index}
+                    onClick={() => {
+                        onRowClick(entry);
+                    }}
+                >
+                    <Card.Body className="p-4">
+                        <div className="flex justify-between items-center gap-3">
+                            <span
+                                className={`flex text-sm w-44 ${entry.type === "Sync" ? "text-accent-content" : "text-gray-500"}`}
+                            >
+                                <time className="text-center">
+                                    {datefns.format(
+                                        entry.time,
+                                        "yyyy-MM-dd HH:mm:ss"
+                                    )}
+                                </time>
+                                <div className="grow" />
                             </span>
-                        ))
-                    )}
-            </Table.Head>
-
-            <Table.Body>
-                {table.getRowModel().rows.map((row) => {
-                    return (
-                        <Table.Row key={row.id}>
-                            {row.getVisibleCells().map((cell) => {
-                                return (
-                                    <span key={cell.id}>
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                        )}
-                                    </span>
-                                );
-                            })}
-                        </Table.Row>
-                    );
-                })}
-            </Table.Body>
-        </Table>
+                            <Divider horizontal className="mx-1" />
+                            <span className="flex items-center w-24">
+                                <FontAwesomeIcon
+                                    className="w-5"
+                                    icon={entry.icon}
+                                />
+                                <h2 className="w-16 text-center align-middle">
+                                    {entry.type}
+                                </h2>
+                            </span>
+                            <Divider horizontal className="mx-1" />
+                            {renderContent(entry, index)}
+                        </div>
+                    </Card.Body>
+                </Card>
+            ))}
+        </>
     );
 };
 
