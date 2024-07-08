@@ -6,8 +6,10 @@
  */
 #pragma once
 
-namespace bxt::Core::Domain {
+namespace bxt::EventLog::Domain {
 
 enum class LogEntryType { Add, Remove, Update };
 
-} // namespace bxt::Core::Domain
+enum class EventLogEntryType { Commit, Deploy, Sync };
+
+} // namespace bxt::EventLog::Domain

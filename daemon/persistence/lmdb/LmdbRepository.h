@@ -7,8 +7,6 @@
 #pragma once
 
 #include "core/application/dtos/UserDTO.h"
-#include "core/domain/entities/PackageLogEntry.h"
-#include "core/domain/entities/PackageUpdateLogEntry.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/task.hpp"

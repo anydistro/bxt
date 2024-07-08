@@ -6,64 +6,80 @@
  */
 #include "LogController.h"
 
-#include "core/application/dtos/PackageLogEntryDTO.h"
-#include "core/domain/enums/LogEntryType.h"
-#include "core/domain/enums/PoolLocation.h"
-#include "drogon/HttpTypes.h"
 #include "presentation/messages/LogMessages.h"
-#include "presentation/messages/PackageMessages.h"
 #include "utilities/drogon/Helpers.h"
-#include "utilities/log/Logging.h"
-#include "utilities/reflect/PathParser.h"
+#include "utilities/reflect/TimePointParser.h"
 
-#include <filesystem>
+#include <optional>
 #include <rfl.hpp>
 
 namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
-    LogController::get_package_logs(drogon::HttpRequestPtr req) {
+    LogController::get_package_logs(drogon::HttpRequestPtr req,
+                                    const std::string& from_str,
+                                    const std::string& to_str,
+                                    const std::string& text) {
     BXT_JWT_CHECK_PERMISSIONS("logs", req)
 
-    const auto dtos = co_await m_service.events();
-
-    if (dtos.empty()) {
-        co_return drogon_helpers::make_error_response("No events found");
+    if (from_str.empty() || to_str.empty()) {
+        co_return drogon_helpers::make_error_response(
+            "Missing 'since' or 'until' parameters");
     }
 
-    constexpr auto package_mapping = [](const auto& e) {
-        auto&& [location, entry] = e;
-        return std::make_pair(
-            bxt::to_string(location),
-            PoolEntryResponse {entry.version,
-                               entry.signature_path.has_value()});
+    const auto from_result = Iso8601TimePoint::from_string(from_str);
+    if (!from_result) {
+        co_return drogon_helpers::make_error_response(fmt::format(
+            "Invalid 'since' time format: {}", from_result.error()->what()));
+    }
+
+    const auto from = (*from_result).to_class();
+
+    const auto to_result = Iso8601TimePoint::from_string(to_str);
+    if (!to_result) {
+        co_return drogon_helpers::make_error_response(fmt::format(
+            "Invalid 'until' time format: {}", to_result.error()->what()));
+    }
+    const auto to = (*to_result).to_class();
+
+    const auto dto = co_await m_service.events(
+        {.since = from,
+         .until = to,
+         .full_text = text.empty() ? std::nullopt : std::make_optional(text)});
+
+    if (dto.commits.empty() && dto.syncs.empty() && dto.deploys.empty()) {
+        drogon_helpers::make_json_response(LogResponse {});
+    }
+
+    static constexpr auto package_mapping = [](const auto& dto) {
+        PackageLogEntryResponse response;
+        response.type = dto.type;
+        response.section = dto.section;
+        response.name = dto.name;
+        response.location = bxt::to_string(dto.location);
+        response.version = dto.version;
+        return response;
     };
-
-    co_return drogon_helpers::make_json_response(
-        dtos
-        | std::views::transform(
-            [package_mapping](const PackageLogEntryDTO& dto) {
-                auto&& [id, time, type, package] = dto;
-                LogEntryReponse result {
-                    id, time, type,
-                    PackageResponse {
-                        package.name, package.section,
-                        package.pool_entries
-                            | std::views::transform(package_mapping)
-                            | std::ranges::to<std::unordered_map>()}};
-
-                if (const auto preferred_location =
-                        Core::Domain::select_preferred_pool_location(
-                            package.pool_entries)) {
-                    result.package.preferred_location =
-                        bxt::to_string(*preferred_location);
-                } else {
-                    logd("Package {} has no pool entries, skipping preferred "
-                         "one selection",
-                         package.name);
-                }
-                return result;
-            })
-        | std::ranges::to<std::vector>());
+    co_return drogon_helpers::make_json_response(LogResponse {
+        .syncs = Utilities::map_entries(
+            dto.syncs, ([](const auto& dto) {
+                return SyncLogEntryResponse {
+                    dto.time, dto.sync_trigger_username,
+                    Utilities::map_entries(dto.added, package_mapping),
+                    Utilities::map_entries(dto.deleted, package_mapping)};
+            })),
+        .commits = Utilities::map_entries(
+            dto.commits, ([](const auto& dto) {
+                return CommitLogEntryResponse {
+                    dto.time, dto.commiter_username,
+                    Utilities::map_entries(dto.added, package_mapping),
+                    Utilities::map_entries(dto.deleted, package_mapping)};
+            })),
+        .deploys = Utilities::map_entries(
+            dto.deploys, ([](const auto& dto) {
+                return DeployLogEntryResponse {
+                    dto.time, dto.runner_url,
+                    Utilities::map_entries(dto.added, package_mapping)};
+            }))});
 }
 
 } // namespace bxt::Presentation

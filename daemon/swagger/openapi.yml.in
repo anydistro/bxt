@@ -71,10 +71,28 @@ paths:
           description: Invalid request
         "401":
           description: Unauthorized
-  /api/logs/packages:
+  /api/logs:
     get:
       summary: Get package logs
       operationId: getPackageLogs
+      parameters:
+        - name: since
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: text
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: List of package log entries
@@ -342,29 +360,101 @@ components:
               type: object
               additionalProperties:
                 type: string
-
     LogResponse:
-      type: array
-      items:
-        $ref: "#/components/schemas/LogEntryResponse"
-
-    LogEntryResponse:
       type: object
       properties:
-        id:
-          type: string
+        commits:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommitLogEntryResponse"
+        syncs:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncLogEntryResponse"
+        deploys:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeployLogEntryResponse"
+
+    CommitLogEntryResponse:
+      type: object
+      properties:
         time:
-          type: integer
-          format: int64
+          type: string
+          format: date-time
+        commiterUsername:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+        deleted:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+        moved:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+              to:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+        copied:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+              to:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+
+    SyncLogEntryResponse:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        syncTriggerUsername:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+        deleted:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+
+    DeployLogEntryResponse:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        runnerUrl:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+
+    PackageLogEntryResponse:
+      type: object
+      properties:
         type:
           $ref: "#/components/schemas/LogEntryType"
-        package:
-          $ref: "#/components/schemas/PackageResponse"
-      required:
-        - id
-        - time
-        - type
-        - package
+        section:
+          $ref: "#/components/schemas/PackageSection"
+        name:
+          type: string
+        location:
+          type: string
+        version:
+          type: string
+          nullable: true
 
     LogEntryType:
       type: string
@@ -372,6 +462,8 @@ components:
         - Add
         - Remove
         - Update
+        - Move
+        - Copy
 
     PackageResponse:
       type: object

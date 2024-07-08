@@ -135,8 +135,14 @@ void setup_di_container(kgr::container& container) {
     container.service<di::Persistence::SectionRepository>();
     container.emplace<di::Persistence::UserRepository>(
         std::string("bxt::Users"));
-    container.emplace<di::Persistence::PackageLogEntryRepository>(
-        std::string("bxt::PackageLogs"));
+    container.emplace<di::Persistence::SyncLogEntryRepository>(
+        std::string("bxt::SyncLogEntries"));
+
+    container.emplace<di::Persistence::CommitLogEntryRepository>(
+        std::string("bxt::CommitLogEntries"));
+
+    container.emplace<di::Persistence::DeployLogEntryRepository>(
+        std::string("bxt::DeployLogEntries"));
 
     container.emplace<di::Persistence::UnitOfWorkFactory>();
 

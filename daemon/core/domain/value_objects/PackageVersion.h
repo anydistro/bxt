@@ -8,6 +8,7 @@
 
 #include "core/domain/value_objects/Name.h"
 #include "utilities/Error.h"
+#include "utilities/to_string.h"
 
 #include <expected>
 #include <fmt/format.h>
@@ -58,3 +59,23 @@ struct PackageVersion {
 };
 
 } // namespace bxt::Core::Domain
+
+namespace bxt {
+template<>
+inline std::string to_string<Core::Domain::PackageVersion>(
+    const Core::Domain::PackageVersion& pv) {
+    if (std::string(pv.epoch) != "0" && pv.release) {
+        return fmt::format("{}:{}-{}", std::string(pv.epoch),
+                           std::string(pv.version),
+                           pv.release.value_or(Core::Domain::Name("0")));
+    } else if (std::string(pv.epoch) != "0") {
+        return fmt::format("{}:{}", std::string(pv.epoch),
+                           std::string(pv.version));
+    } else if (pv.release) {
+        return fmt::format("{}-{}", std::string(pv.version),
+                           pv.release.value_or(Core::Domain::Name("0")));
+    } else {
+        return fmt::format("{}", std::string(pv.version));
+    }
+}
+} // namespace bxt

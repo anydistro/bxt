@@ -155,14 +155,7 @@ PackageVersion::ParseResult
 }
 
 std::string PackageVersion::string() const {
-    std::string format = "{1}";
-
-    if (std::string(epoch) != "0") { format = "{0}:" + format; }
-
-    if (release) { format = format + "-{2}"; }
-
-    return fmt::format(fmt::runtime(format), std::string(epoch),
-                       std::string(version), release.value_or(Name("0")));
+    return bxt::to_string(*this);
 }
 
 } // namespace bxt::Core::Domain

@@ -8,14 +8,16 @@
 
 #include "core/application/services/AuthService.h"
 #include "core/application/services/CompareService.h"
-#include "core/application/services/PackageLogEntryService.h"
 #include "core/application/services/PackageService.h"
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/SectionService.h"
 #include "core/application/services/UserService.h"
-#include "core/domain/entities/PackageLogEntry.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/io_scheduler.hpp"
+#include "event_log/application/services/LogService.h"
+#include "event_log/domain/entities/CommitLogEntry.h"
+#include "event_log/domain/entities/DeployLogEntry.h"
+#include "event_log/domain/entities/SyncLogEntry.h"
 #include "infrastructure/DeploymentService.h"
 #include "infrastructure/PackageService.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
@@ -23,7 +25,6 @@
 #include "infrastructure/ws/WSController.h"
 #include "kangaru/autowire.hpp"
 #include "kangaru/detail/single.hpp"
-#include "kangaru/operator_service.hpp"
 #include "kangaru/service.hpp"
 #include "persistence/box/BoxRepository.h"
 #include "persistence/box/export/AlpmDBExporter.h"
@@ -36,7 +37,7 @@
 #include "persistence/box/writeback/WritebackScheduler.h"
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/LmdbUnitOfWork.h"
-#include "persistence/lmdb/PackageLogEntryRepository.h"
+#include "persistence/lmdb/LogEntryRepositories.h"
 #include "persistence/lmdb/UserRepository.h"
 #include "presentation/JwtOptions.h"
 #include "presentation/cli-controllers/DeploymentController.h"
@@ -54,8 +55,10 @@
 #include "utilities/repo-schema/Parser.h"
 
 #include <infrastructure/EventLogger.h>
+#include <kangaru/autocall.hpp>
 #include <kangaru/debug.hpp>
 #include <kangaru/kangaru.hpp>
+#include <kangaru/operator_service.hpp>
 
 template<auto m> using method = kgr::method<decltype(m), m>;
 
@@ -110,11 +113,6 @@ namespace Core {
             : kgr::abstract_service<
                   bxt::Core::Domain::ReadOnlyRepositoryBase<Section>> {};
 
-        struct PackageLogEntryRepository
-            : kgr::abstract_service<
-                  bxt::Core::Domain::ReadWriteRepositoryBase<PackageLogEntry>> {
-        };
-
         struct UnitOfWorkBaseFactory
             : kgr::abstract_service<bxt::Core::Domain::UnitOfWorkBaseFactory> {
         };
@@ -151,15 +149,6 @@ namespace Core {
                   kgr::dependency<di::Core::Domain::UserRepository,
                                   di::Core::Domain::UnitOfWorkBaseFactory>> {};
 
-        struct PackageLogEntryService
-            : kgr::single_service<
-                  bxt::Core::Application::PackageLogEntryService,
-                  kgr::dependency<di::Utilities::EventBus,
-                                  di::Core::Domain::PackageLogEntryRepository,
-                                  di::Core::Domain::UnitOfWorkBaseFactory>>,
-              kgr::autocall<kgr::invoke<method<
-                  &bxt::Core::Application::PackageLogEntryService::init>>> {};
-
         struct SectionService
             : kgr::single_service<
                   bxt::Core::Application::SectionService,
@@ -175,6 +164,37 @@ namespace Core {
 
 } // namespace Core
 
+namespace EventLog {
+
+    namespace Domain {
+
+        struct SyncLogEntryRepository
+            : kgr::abstract_service<bxt::Core::Domain::ReadWriteRepositoryBase<
+                  bxt::EventLog::Domain::SyncLogEntry>> {};
+        struct CommitLogEntryRepository
+            : kgr::abstract_service<bxt::Core::Domain::ReadWriteRepositoryBase<
+                  bxt::EventLog::Domain::CommitLogEntry>> {};
+        struct DeployLogEntryRepository
+            : kgr::abstract_service<bxt::Core::Domain::ReadWriteRepositoryBase<
+                  bxt::EventLog::Domain::DeployLogEntry>> {};
+
+    } // namespace Domain
+    namespace Application {
+
+        struct PackageLogEntryService
+            : kgr::single_service<
+                  bxt::EventLog::Application::LogService,
+                  kgr::dependency<di::Utilities::EventBus,
+                                  Domain::SyncLogEntryRepository,
+                                  Domain::CommitLogEntryRepository,
+                                  Domain::DeployLogEntryRepository,
+                                  di::Core::Domain::UnitOfWorkBaseFactory>>,
+              kgr::autocall<kgr::invoke<
+                  method<&bxt::EventLog::Application::LogService::init>>> {};
+
+    } // namespace Application
+
+} // namespace EventLog
 namespace Infrastructure {
     struct EventLogger
         : kgr::single_service<bxt::Infrastructure::EventLogger,
@@ -229,11 +249,23 @@ namespace Persistence {
               kgr::dependency<di::Utilities::LMDB::Environment>>,
           kgr::overrides<di::Core::Domain::UserRepository> {};
 
-    struct PackageLogEntryRepository
+    struct SyncLogEntryRepository
         : kgr::single_service<
-              bxt::Persistence::LMDB::PackageLogEntryRepository,
+              bxt::Persistence::LMDB::SyncLogEntryRepository,
               kgr::dependency<di::Utilities::LMDB::Environment>>,
-          kgr::overrides<di::Core::Domain::PackageLogEntryRepository> {};
+          kgr::overrides<di::EventLog::Domain::SyncLogEntryRepository> {};
+
+    struct DeployLogEntryRepository
+        : kgr::single_service<
+              bxt::Persistence::LMDB::DeployLogEntryRepository,
+              kgr::dependency<di::Utilities::LMDB::Environment>>,
+          kgr::overrides<di::EventLog::Domain::DeployLogEntryRepository> {};
+
+    struct CommitLogEntryRepository
+        : kgr::single_service<
+              bxt::Persistence::LMDB::CommitLogEntryRepository,
+              kgr::dependency<di::Utilities::LMDB::Environment>>,
+          kgr::overrides<di::EventLog::Domain::CommitLogEntryRepository> {};
 
     struct SectionRepository
         : kgr::single_service<
@@ -341,7 +373,7 @@ namespace Presentation {
     struct LogController
         : kgr::shared_service<
               bxt::Presentation::LogController,
-              kgr::dependency<di::Core::Application::PackageLogEntryService,
+              kgr::dependency<di::EventLog::Application::PackageLogEntryService,
                               di::Core::Application::PermissionService>> {};
 
     struct SectionController
