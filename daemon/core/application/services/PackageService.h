@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/errors/CrudError.h"
@@ -48,6 +49,9 @@ public:
 
     virtual coro::task<Result<void>>
         commit_transaction(const Transaction transaction) = 0;
+
+    virtual coro::task<Result<void>> push(const Transaction transaction,
+                                          const RequestContext context) = 0;
 
     virtual coro::task<Result<std::vector<PackageDTO>>>
         get_packages(const PackageSectionDTO section_dto) const = 0;

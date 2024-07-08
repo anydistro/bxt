@@ -11,7 +11,9 @@
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/PackageService.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
+#include "dexode/EventBus.hpp"
 #include "utilities/StaticDTOMapper.h"
+#include "utilities/eventbus/EventBusDispatcher.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -23,15 +25,18 @@ namespace bxt::Infrastructure {
 class DeploymentService : public bxt::Core::Application::DeploymentService {
 public:
     DeploymentService(
+        Utilities::EventBusDispatcher& dispatcher,
         bxt::Core::Application::PackageService& service,
         bxt::Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section>&
             section_repository,
         UnitOfWorkBaseFactory& uow_factory)
-        : m_package_service(service),
+        : m_dispatcher(dispatcher),
+          m_package_service(service),
           m_section_repository(section_repository),
           m_uow_factory(uow_factory) {}
 
-    virtual coro::task<Result<uint64_t>> deploy_start() override;
+    virtual coro::task<Result<uint64_t>>
+        deploy_start(const RequestContext context) override;
     virtual coro::task<Result<void>> deploy_push(PackageDTO package,
                                                  uint64_t session_id) override;
     virtual coro::task<Result<void>> deploy_end(uint64_t session_id) override;
@@ -40,8 +45,13 @@ public:
         verify_session(uint64_t session_id) override;
 
 private:
-    phmap::parallel_node_hash_map<uint64_t, std::vector<PackageDTO>>
-        m_session_packages;
+    struct Session {
+        std::vector<PackageDTO> packages;
+        std::string run_id;
+    };
+
+    phmap::parallel_node_hash_map<uint64_t, Session> m_session_packages;
+    Utilities::EventBusDispatcher& m_dispatcher;
     bxt::Core::Application::PackageService& m_package_service;
     bxt::Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section>&
         m_section_repository;

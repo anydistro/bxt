@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
@@ -42,8 +43,9 @@ public:
     BXT_DECLARE_RESULT(SyncError)
     virtual ~SyncService() = default;
 
-    virtual coro::task<Result<void>> sync(const PackageSectionDTO section) = 0;
-    virtual coro::task<Result<void>> sync_all() = 0;
+    virtual coro::task<Result<void>> sync(const PackageSectionDTO section,
+                                          const RequestContext context) = 0;
+    virtual coro::task<Result<void>> sync_all(const RequestContext context) = 0;
 };
 
 } // namespace bxt::Core::Application

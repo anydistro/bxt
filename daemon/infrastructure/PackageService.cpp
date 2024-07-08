@@ -6,12 +6,16 @@
  */
 #include "PackageService.h"
 
+#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/errors/CrudError.h"
+#include "core/application/events/CommitEvent.h"
+#include "core/application/events/IntegrationEventBase.h"
 #include "coro/task.hpp"
 #include "coro/when_all.hpp"
 #include "utilities/Error.h"
+#include "utilities/StaticDTOMapper.h"
 
 #include <algorithm>
 #include <iterator>
@@ -256,6 +260,39 @@ coro::task<PackageService::Result<void>>
             std::move(commit_ok.error()), CrudError::ErrorType::InternalError);
     }
 
+    co_return {};
+}
+
+coro::task<PackageService::Result<void>>
+    PackageService::push(const Transaction transaction,
+                         const RequestContext context) {
+    auto packages_to_add =
+        Utilities::map_entries(transaction.to_add, PackageDTOMapper::to_entity);
+
+    auto ids_to_remove =
+        transaction.to_delete
+        | std::views::transform([](const Transaction::PackageAction& value) {
+              return Package::TId {SectionDTOMapper::to_entity(value.section),
+                                   Name(value.name)};
+          })
+        | std::ranges::to<std::vector>();
+
+    auto result = co_await commit_transaction(transaction);
+
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(result.error()), CrudError::ErrorType::InternalError);
+    }
+
+    auto to_copy = transaction.to_copy;
+    auto to_move = transaction.to_move;
+
+    co_await m_dispatcher
+        .dispatch_single_async<Core::Application::Events::IntegrationEventPtr>(
+            std::make_shared<Core::Application::Events::Commited>(
+                context.user_name, std::move(packages_to_add),
+                std::move(ids_to_remove), std::move(to_move),
+                std::move(to_copy)));
     co_return {};
 }
 } // namespace bxt::Infrastructure

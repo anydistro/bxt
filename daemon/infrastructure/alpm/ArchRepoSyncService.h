@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ArchRepoOptions.h"
+#include "core/application/RequestContext.h"
 #include "core/application/services/SyncService.h"
 #include "core/domain/entities/Package.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
@@ -55,8 +56,10 @@ public:
           m_uow_factory(uow_factory) {}
 
     coro::task<SyncService::Result<void>>
-        sync(const PackageSectionDTO section) override;
-    coro::task<SyncService::Result<void>> sync_all() override;
+        sync(const PackageSectionDTO section,
+             const RequestContext context) override;
+    coro::task<SyncService::Result<void>>
+        sync_all(const RequestContext context) override;
 
 protected:
     coro::task<SyncService::Result<std::vector<Package>>>

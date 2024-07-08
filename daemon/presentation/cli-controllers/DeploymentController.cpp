@@ -6,6 +6,7 @@
  */
 #include "DeploymentController.h"
 
+#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/services/DeploymentService.h"
 #include "drogon/HttpTypes.h"
@@ -33,7 +34,18 @@ drogon::Task<drogon::HttpResponsePtr>
         co_return result;
     }
 
-    const auto start_ok = co_await m_service.deploy_start();
+    const auto job_url_it = req->headers().find("job-url");
+
+    if (job_url_it == req->headers().cend()) {
+        result->setBody("No job URL");
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
+    const auto job_url = job_url_it->second;
+
+    const auto start_ok = co_await m_service.deploy_start(RequestContext {
+        .user_name = job_url,
+    });
 
     if (!start_ok.has_value()) {
         result->setBody(start_ok.error().message);

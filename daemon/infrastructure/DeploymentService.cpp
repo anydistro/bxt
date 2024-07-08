@@ -6,9 +6,13 @@
  */
 #include "DeploymentService.h"
 
+#include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/application/events/DeployEvent.h"
+#include "core/application/events/IntegrationEventBase.h"
 #include "infrastructure/PackageService.h"
 #include "utilities/Error.h"
+#include "utilities/StaticDTOMapper.h"
 
 #include <filesystem>
 #include <fmt/format.h>
@@ -20,12 +24,13 @@
 namespace bxt::Infrastructure {
 
 coro::task<DeploymentService::Result<uint64_t>>
-    DeploymentService::deploy_start() {
+    DeploymentService::deploy_start(const RequestContext context) {
     std::mt19937_64 engine(std::random_device {}());
     std::uniform_int_distribution<uint64_t> distribution;
     auto session_id = distribution(engine);
 
-    m_session_packages.try_emplace(session_id, std::vector<PackageDTO>());
+    m_session_packages.try_emplace(
+        session_id, Session {std::vector<PackageDTO>(), context.user_name});
 
     co_return session_id;
 }
@@ -66,7 +71,7 @@ coro::task<DeploymentService::Result<void>>
         }
     }
 
-    m_session_packages.at(session_id).emplace_back(package);
+    m_session_packages.at(session_id).packages.emplace_back(package);
 
     co_return {};
 }
@@ -80,9 +85,9 @@ coro::task<DeploymentService::Result<void>>
 
 coro::task<DeploymentService::Result<void>>
     DeploymentService::deploy_end(uint64_t session_id) {
-    const auto &packages = m_session_packages.at(session_id);
+    const auto &session = m_session_packages.at(session_id);
     PackageService::Transaction transaction;
-    transaction.to_add = packages;
+    transaction.to_add = session.packages;
 
     auto commit_result =
         co_await m_package_service.commit_transaction(transaction);
@@ -92,6 +97,13 @@ coro::task<DeploymentService::Result<void>>
             std::move(commit_result.error()),
             Error::ErrorType::DeploymentFailed);
     }
+
+    co_await m_dispatcher
+        .dispatch_single_async<Core::Application::Events::IntegrationEventPtr>(
+            std::make_shared<Core::Application::Events::DeploySuccess>(
+                session.run_id,
+                std::move(Utilities::map_entries(
+                    session.packages, PackageDTOMapper::to_entity))));
 
     m_session_packages.erase(session_id);
 

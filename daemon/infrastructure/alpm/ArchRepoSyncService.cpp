@@ -38,7 +38,8 @@
 namespace bxt::Infrastructure {
 
 coro::task<SyncService::Result<void>>
-    ArchRepoSyncService::sync(const PackageSectionDTO section) {
+    ArchRepoSyncService::sync(const PackageSectionDTO section,
+                              const RequestContext context) {
     using namespace Core::Application::Events;
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
@@ -49,19 +50,26 @@ coro::task<SyncService::Result<void>>
     auto all_packages = co_await sync_section(section);
     if (!all_packages.has_value()) {
         co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-            std::make_shared<SyncFinished>(std::move(*all_packages)));
+            std::make_shared<SyncFinished>(
+                std::move(*all_packages),
+                std::vector<bxt::Core::Domain::Package::TId> {},
+                context.user_name));
 
         co_return std::unexpected(all_packages.error());
     }
     co_await uow->commit_async();
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-        std::make_shared<SyncFinished>(std::move(*all_packages)));
+        std::make_shared<SyncFinished>(
+            std::move(*all_packages),
+            std::vector<bxt::Core::Domain::Package::TId> {},
+            context.user_name));
 
     co_return {};
 }
 
-coro::task<SyncService::Result<void>> ArchRepoSyncService::sync_all() {
+coro::task<SyncService::Result<void>>
+    ArchRepoSyncService::sync_all(const RequestContext context) {
     using namespace Core::Application::Events;
 
     auto tasks = m_options.sources
@@ -117,7 +125,10 @@ coro::task<SyncService::Result<void>> ArchRepoSyncService::sync_all() {
     }
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-        std::make_shared<SyncFinished>(std::move(*all_packages)));
+        std::make_shared<SyncFinished>(
+            std::move(*all_packages),
+            std::vector<bxt::Core::Domain::Package::TId> {},
+            context.user_name));
     guard.release();
     co_return {};
 }

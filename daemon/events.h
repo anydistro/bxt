@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "core/application/events/CommitEvent.h"
+#include "core/application/events/DeployEvent.h"
 #include "core/application/events/IntegrationEventBase.h"
 #include "core/application/events/SyncEvent.h"
 #include "core/domain/events/EventBase.h"
@@ -38,6 +40,10 @@ static inline std::unordered_map<std::type_index, eventbus_visitor> event_map {
     to_eventbus_visitor<PackageRemoved, EventBase>(),
     to_eventbus_visitor<PackageUpdated, EventBase>(),
     to_eventbus_visitor<SyncStarted, IntegrationEventBase>(),
-    to_eventbus_visitor<SyncFinished, IntegrationEventBase>()};
+    to_eventbus_visitor<SyncFinished, IntegrationEventBase>(),
+    to_eventbus_visitor<Commited, IntegrationEventBase>(),
+    to_eventbus_visitor<DeploySuccess, IntegrationEventBase>(),
+
+};
 
 } // namespace bxt::events

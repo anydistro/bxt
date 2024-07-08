@@ -10,6 +10,7 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/PackageService.h"
 #include "core/domain/enums/PoolLocation.h"
+#include "presentation/Names.h"
 #include "presentation/messages/PackageMessages.h"
 #include "utilities/drogon/Helpers.h"
 #include "utilities/drogon/Macro.h"
@@ -36,8 +37,10 @@ using namespace drogon;
 drogon::Task<HttpResponsePtr>
     PackageController::sync(drogon::HttpRequestPtr req) {
     BXT_JWT_CHECK_PERMISSIONS("packages.sync", req)
-    drogon::async_run([this]() -> drogon::Task<void> {
-        co_await m_sync_service.sync_all();
+    drogon::async_run([this, req]() -> drogon::Task<void> {
+        co_await m_sync_service.sync_all(
+            {.user_name = req->attributes()->get<std::string>(
+                 fmt::format("jwt_{}", Names::UserName))});
         co_return;
     });
 
@@ -172,7 +175,9 @@ drogon::Task<drogon::HttpResponsePtr>
         }
     }
 
-    auto result = co_await m_package_service.commit_transaction(transaction);
+    auto result = co_await m_package_service.push(
+        transaction, {.user_name = req->attributes()->get<std::string>(
+                          fmt::format("jwt_{}", Names::UserName))});
 
     if (!result.has_value()) {
         co_return drogon_helpers::make_error_response(result.error().what());

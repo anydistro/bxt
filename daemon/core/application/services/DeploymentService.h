@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
@@ -44,7 +45,8 @@ public:
 
     virtual ~DeploymentService() = default;
 
-    virtual coro::task<Result<uint64_t>> deploy_start() = 0;
+    virtual coro::task<Result<uint64_t>>
+        deploy_start(const RequestContext context) = 0;
     virtual coro::task<Result<void>> deploy_push(PackageDTO package,
                                                  uint64_t session_id) = 0;
     virtual coro::task<Result<void>> deploy_end(uint64_t session_id) = 0;

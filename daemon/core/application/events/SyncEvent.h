@@ -8,6 +8,7 @@
 
 #include "core/application/events/IntegrationEventBase.h"
 #include "core/domain/entities/Package.h"
+#include "core/domain/events/PackageEvents.h"
 
 #include <fmt/format.h>
 #include <vector>
@@ -17,17 +18,34 @@ namespace bxt::Core::Application::Events {
 struct SyncStarted : public IntegrationEventBase {
     SyncStarted() = default;
 
-    virtual std::string message() const { return "Sync started"; }
+    std::string user_name;
+
+    std::string message() const override {
+        return fmt::format("Sync started by {}", user_name);
+    }
 };
 
 struct SyncFinished : public IntegrationEventBase {
     SyncFinished() = default;
-    SyncFinished(std::vector<bxt::Core::Domain::Package>&& packages)
-        : packages_synced(std::move(packages)) {}
+    SyncFinished(std::vector<Core::Domain::Package>&& packages,
+                 std::vector<Core::Domain::Package::TId>&& deleted_package_ids,
+                 std::string user_name)
+        : added_packages(std::move(packages)),
+          deleted_package_ids(std::move(deleted_package_ids)),
+          user_name(std::move(user_name)) {}
 
-    std::vector<bxt::Core::Domain::Package> packages_synced;
+    std::vector<Core::Domain::Package> added_packages;
 
-    virtual std::string message() const { return "Sync finished"; }
+    std::vector<Core::Domain::Package::TId> deleted_package_ids;
+
+    std::string user_name;
+
+    std::string message() const override {
+        return fmt::format("Sync started by {} was finished: {} packages "
+                           "added, {} packages deleted",
+                           user_name, added_packages.size(),
+                           deleted_package_ids.size());
+    }
 };
 
 } // namespace bxt::Core::Application::Events

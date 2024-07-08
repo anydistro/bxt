@@ -187,14 +187,16 @@ namespace Infrastructure {
     struct PackageService
         : kgr::single_service<
               bxt::Infrastructure::PackageService,
-              kgr::dependency<di::Core::Domain::PackageRepositoryBase,
+              kgr::dependency<di::Utilities::EventBusDispatcher,
+                              di::Core::Domain::PackageRepositoryBase,
                               di::Core::Domain::UnitOfWorkBaseFactory>>,
           kgr::overrides<di::Core::Application::PackageService> {};
 
     struct DeploymentService
         : kgr::single_service<
               bxt::Infrastructure::DeploymentService,
-              kgr::dependency<di::Core::Application::PackageService,
+              kgr::dependency<di::Utilities::EventBusDispatcher,
+                              di::Core::Application::PackageService,
                               di::Core::Domain::ReadOnlySectionRepository,
                               di::Core::Domain::UnitOfWorkBaseFactory>>,
           kgr::overrides<di::Core::Application::DeploymentService> {};
