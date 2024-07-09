@@ -1,6 +1,8 @@
 [requires]
 openssl/1.1.1s
 boost/1.81.0
+# Use until LLVM libc++ gets chrono::from_stream and chrono::to_stream support
+date/3.0.1
 fmt/8.1.1
 mailio/0.21.0
 frozen/1.1.1
