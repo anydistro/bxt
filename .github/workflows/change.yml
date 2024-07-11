@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2024 Roman Gilg <romangg@manjaro.org>
+# SPDX-License-Identifier: MIT
+name: CI
+on:
+  - push
+  - pull_request
+jobs:
+  check-format:
+    uses: ./.github/workflows/check-format.yml
+  build:
+    uses: ./.github/workflows/build.yml

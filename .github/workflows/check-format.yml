@@ -1,5 +1,5 @@
 name: Format with clang-format and prettier
-on: [push, pull_request]
+on: workflow_call
 
 jobs:
   clang-format:

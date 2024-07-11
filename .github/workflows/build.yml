@@ -1,5 +1,5 @@
 name: Build and deploy to testing server
-on: [push, pull_request]
+on: workflow_call
 
 jobs:
   build-docker:
