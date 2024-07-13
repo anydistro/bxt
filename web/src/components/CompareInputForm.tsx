@@ -25,17 +25,19 @@ export default function CompareInputForm({
     sections,
     onSubmit
 }: CompareInputFormProps) {
-    const [selectedSections, setSelectedSections] = useState<Section[]>([]);
+    const [selectedSections, setSelectedSections] = useState<Section[]>([{}]);
 
     useEffect(() => {
         setSelectedSections((prevSelectedSections) => {
+            let isNew = false;
             const newSelectedSections = prevSelectedSections.map((section) => {
                 if (_.isEmpty(section)) {
+                    isNew = true;
                     return { ...sections[0] };
                 }
                 return section;
             });
-            return newSelectedSections;
+            return isNew ? newSelectedSections : prevSelectedSections;
         });
     }, [selectedSections, sections, setSelectedSections]);
 
