@@ -13,7 +13,7 @@ add_custom_target(
     deploy_swagger
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${swagger-ui_SOURCE_DIR}/dist/
-            ${CMAKE_BINARY_DIR}/bin/frontend/swagger/
+            ${CMAKE_BINARY_DIR}/bin/web/swagger/
     COMMAND ${CMAKE_COMMAND} 
             -DLIST_DIR=${CMAKE_CURRENT_LIST_DIR} 
             -DBINARY_DIR=${CMAKE_BINARY_DIR} 
