@@ -6,10 +6,12 @@
  */
 #include "LMDBPackageStore.h"
 
+#include "core/domain/repositories/ReadOnlyRepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "persistence/box/pool/PoolBase.h"
 #include "persistence/box/record/PackageRecord.h"
 #include "persistence/lmdb/LmdbUnitOfWork.h"
+#include "utilities/to_string.h"
 
 #include <filesystem>
 #include <memory>
@@ -21,12 +23,26 @@ LMDBPackageStore::LMDBPackageStore(
     BoxOptions& box_options,
     std::shared_ptr<Utilities::LMDB::Environment> env,
     PoolBase& pool,
+    ReadOnlyRepositoryBase<Section>& section_repository,
     const std::string_view name)
-    : m_root_path(box_options.box_path), m_pool(pool), m_db(env, name) {
+    : m_root_path(box_options.box_path),
+      m_pool(pool),
+      m_db(env, name),
+      m_section_repository(section_repository) {
 }
+
 coro::task<std::expected<void, DatabaseError>>
     LMDBPackageStore::add(const PackageRecord package,
                           std::shared_ptr<UnitOfWorkBase> uow) {
+    auto section = co_await m_section_repository.find_by_id_async(
+        bxt::to_string(package.id.section), uow);
+
+    if (!section.has_value()) {
+        co_return bxt::make_error_with_source<DatabaseError>(
+            std::move(section.error()),
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
     auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
     if (!lmdb_uow) {
         co_return bxt::make_error<DatabaseError>(
@@ -68,6 +84,15 @@ coro::task<std::expected<void, DatabaseError>>
 coro::task<std::expected<void, DatabaseError>>
     LMDBPackageStore::delete_by_id(const PackageRecord::Id package_id,
                                    std::shared_ptr<UnitOfWorkBase> uow) {
+    auto section = co_await m_section_repository.find_by_id_async(
+        bxt::to_string(package_id.section), uow);
+
+    if (!section.has_value()) {
+        co_return bxt::make_error_with_source<DatabaseError>(
+            std::move(section.error()),
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
     auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
     if (!lmdb_uow) {
         co_return bxt::make_error<DatabaseError>(
@@ -100,6 +125,15 @@ coro::task<std::expected<void, DatabaseError>>
 coro::task<std::expected<void, DatabaseError>>
     LMDBPackageStore::update(const PackageRecord package,
                              std::shared_ptr<UnitOfWorkBase> uow) {
+    auto section = co_await m_section_repository.find_by_id_async(
+        bxt::to_string(package.id.section), uow);
+
+    if (!section.has_value()) {
+        co_return bxt::make_error_with_source<DatabaseError>(
+            std::move(section.error()),
+            DatabaseError::ErrorType::InvalidArgument);
+    }
+
     auto lmdb_uow = std::dynamic_pointer_cast<LmdbUnitOfWork>(uow);
     if (!lmdb_uow) {
         co_return bxt::make_error<DatabaseError>(

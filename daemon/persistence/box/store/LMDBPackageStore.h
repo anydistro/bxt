@@ -8,6 +8,8 @@
 #pragma once
 
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/domain/entities/Section.h"
+#include "core/domain/repositories/ReadOnlyRepositoryBase.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "persistence/box/export/AlpmDBExporter.h"
 #include "persistence/box/pool/PoolBase.h"
@@ -30,6 +32,7 @@ public:
     LMDBPackageStore(BoxOptions& box_options,
                      std::shared_ptr<Utilities::LMDB::Environment> env,
                      PoolBase& pool,
+                     ReadOnlyRepositoryBase<Section>& section_repository,
                      const std::string_view name);
 
     ~LMDBPackageStore() override = default;
@@ -65,6 +68,7 @@ private:
     std::filesystem::path m_root_path;
     PoolBase& m_pool;
     Utilities::LMDB::Database<PackageRecord> m_db;
+    ReadOnlyRepositoryBase<Section>& m_section_repository;
 };
 
 } // namespace bxt::Persistence::Box

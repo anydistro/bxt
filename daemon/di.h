@@ -300,7 +300,8 @@ namespace Persistence {
                   bxt::Persistence::Box::LMDBPackageStore,
                   kgr::dependency<di::Persistence::Box::BoxOptions,
                                   di::Utilities::LMDB::Environment,
-                                  di::Persistence::Box::PoolBase>>,
+                                  di::Persistence::Box::PoolBase,
+                                  di::Core::Domain::ReadOnlySectionRepository>>,
               kgr::overrides<PackageStoreBase> {};
 
         struct WritebackScheduler

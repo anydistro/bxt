@@ -14,7 +14,7 @@
 
 namespace bxt::Core::Domain {
 
-class Section : public AggregateRoot<> {
+class Section {
 public:
     Section(const Name& branch,
             const Name& repository,
@@ -22,6 +22,10 @@ public:
         : m_branch(branch),
           m_repository(repository),
           m_architecture(architecture) {}
+
+    using TId = std::string;
+
+    TId id() const { return this->string(); }
 
     Name branch() const { return m_branch; }
     void set_branch(const Name& new_branch) { m_branch = new_branch; }
