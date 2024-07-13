@@ -128,28 +128,49 @@ paths:
   /api/packages/commit:
     post:
       summary: Commit package transaction
+      description: |
+        Commit a package transaction. This operation allows adding, deleting, moving, and copying packages.
+        Each package is identified by a number in the form data (e.g., package1, package1.signature, package1.section).
       operationId: commitTransaction
       requestBody:
         required: true
         content:
           multipart/form-data:
+            encoding:
+              package{n}.section:
+                contentType: application/json
+              to_delete:
+                contentType: application/json
+              to_move:
+                contentType: application/json
+              to_copy:
+                contentType: application/json
+
             schema:
               type: object
               properties:
-                packageFile:
+                package{n}:
                   type: string
                   format: binary
-                packageSignature:
+                  description: "Package file"
+                package{n}.signature:
                   type: string
                   format: binary
-                packageSection:
-                  type: string
+                  description: "Package signature"
+                package{n}.section:
+                  $ref: "#/components/schemas/PackageSection"
                 to_delete:
-                  type: string
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PackageAction"
                 to_move:
-                  type: string
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TransferAction"
                 to_copy:
-                  type: string
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TransferAction"
       responses:
         "200":
           description: Transaction committed successfully
@@ -464,6 +485,26 @@ components:
         - Update
         - Move
         - Copy
+
+    PackageAction:
+      type: object
+      properties:
+        section:
+          $ref: "#/components/schemas/PackageSection"
+        name:
+          type: string
+          description: Name of the package (not the filename e.g. for arch-install-scripts-28-1-any.pkg.tar.zst it will be arch-install-scripts)
+
+    TransferAction:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the package (not the filename e.g. for arch-install-scripts-28-1-any.pkg.tar.zst it will be arch-install-scripts)
+        from_section:
+          $ref: "#/components/schemas/PackageSection"
+        to_section:
+          $ref: "#/components/schemas/PackageSection"
 
     PackageResponse:
       type: object
