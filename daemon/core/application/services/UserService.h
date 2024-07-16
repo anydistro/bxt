@@ -23,6 +23,8 @@ public:
     virtual coro::task<Result<void>> remove_user(const std::string name);
     virtual coro::task<Result<void>> update_user(const UserDTO user);
     virtual coro::task<Result<std::vector<UserDTO>>> get_users() const;
+    virtual coro::task<Result<UserDTO>>
+        get_user(const std::string user_name) const;
 
 private:
     bxt::Core::Domain::UserRepository& m_repository;

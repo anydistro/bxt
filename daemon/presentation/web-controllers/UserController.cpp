@@ -101,4 +101,19 @@ drogon::Task<drogon::HttpResponsePtr>
         | std::ranges::to<std::vector>());
 }
 
+drogon::Task<drogon::HttpResponsePtr>
+    UserController::get_user(drogon::HttpRequestPtr req,
+                             std::string user_name) {
+    BXT_JWT_CHECK_PERMISSIONS("users.get", req)
+
+    const auto user = co_await m_service.get_user(user_name);
+
+    if (!user.has_value()) {
+        co_return drogon_helpers::make_error_response(user.error().what());
+    }
+
+    co_return drogon_helpers::make_json_response(UserResponse {
+        user->name, user->permissions.value_or(std::set<std::string> {})});
+}
+
 } // namespace bxt::Presentation

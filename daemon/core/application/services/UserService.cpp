@@ -6,6 +6,7 @@
  */
 #include "UserService.h"
 
+#include "core/application/dtos/UserDTO.h"
 #include "core/application/errors/CrudError.h"
 #include "utilities/Error.h"
 
@@ -116,5 +117,17 @@ coro::task<UserService::Result<std::vector<UserDTO>>>
                            UserDTOMapper::to_dto);
 
     co_return result;
+}
+
+coro::task<UserService::Result<UserDTO>>
+    UserService::get_user(std::string user_name) const {
+    auto value = co_await m_repository.find_by_id_async(
+        user_name, co_await m_uow_factory());
+    if (!value.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(value.error()), CrudError::ErrorType::InternalError);
+    }
+
+    co_return UserDTOMapper::to_dto(*value);
 }
 } // namespace bxt::Core::Application

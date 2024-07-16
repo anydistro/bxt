@@ -8,6 +8,7 @@
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/UserService.h"
 #include "drogon/HttpTypes.h"
+#include "drogon/drogon_callbacks.h"
 #include "utilities/drogon/Macro.h"
 
 #include <drogon/HttpController.h>
@@ -38,6 +39,10 @@ public:
 
     BXT_JWT_ADD_METHOD_TO(UserController::get_users, "/api/users", drogon::Get);
 
+    BXT_JWT_ADD_METHOD_TO(UserController::get_user,
+                          "/api/users/{1}",
+                          drogon::Get);
+
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> add_user(drogon::HttpRequestPtr req);
@@ -49,6 +54,9 @@ public:
         remove_user(drogon::HttpRequestPtr req, std::string user_name);
 
     drogon::Task<drogon::HttpResponsePtr> get_users(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr> get_user(drogon::HttpRequestPtr req,
+                                                   std::string user_name);
 
 private:
     Core::Application::UserService& m_service;
