@@ -211,7 +211,7 @@ void setup_defaults(kgr::container& container) {
         default_user.set_permissions({Permission("*")});
 
         const auto add_result =
-            coro::sync_wait(repository.add_async(default_user, uow));
+            coro::sync_wait(repository.save_async(default_user, uow));
         if (!add_result.has_value()) {
             bxt::loge(add_result.error().what());
             coro::sync_wait(uow->rollback_async());

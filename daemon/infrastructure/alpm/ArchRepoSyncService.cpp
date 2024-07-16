@@ -111,10 +111,10 @@ coro::task<SyncService::Result<void>>
     }
     auto uow = co_await m_uow_factory(true);
 
-    auto added = co_await m_package_repository.add_async(*all_packages, uow);
-    if (!added.has_value()) {
+    auto saved = co_await m_package_repository.save_async(*all_packages, uow);
+    if (!saved.has_value()) {
         co_return bxt::make_error_with_source<SyncError>(
-            std::move(added.error()), SyncError::RepositoryError);
+            std::move(saved.error()), SyncError::RepositoryError);
     }
 
     auto commit_ok = co_await uow->commit_async();

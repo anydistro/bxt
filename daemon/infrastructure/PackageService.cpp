@@ -107,12 +107,11 @@ coro::task<PackageService::Result<void>>
     package_to_move->set_section(SectionDTOMapper::to_entity(to_section));
 
     // Then, add the package to the to_section
-    auto add_result =
-        co_await m_repository.add_async(*package_to_move, unitofwork);
+    auto saved = co_await m_repository.save_async(*package_to_move, unitofwork);
 
-    if (!add_result.has_value()) {
+    if (!saved.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
-            std::move(add_result.error()), CrudError::ErrorType::InternalError);
+            std::move(saved.error()), CrudError::ErrorType::InternalError);
     }
 
     // Finally, remove the package from the from_section
@@ -146,12 +145,11 @@ coro::task<PackageService::Result<void>>
     package_to_copy->set_section(SectionDTOMapper::to_entity(to_section));
 
     // Then, add the package to the to_section
-    auto add_result =
-        co_await m_repository.add_async(*package_to_copy, unitofwork);
+    auto saved = co_await m_repository.save_async(*package_to_copy, unitofwork);
 
-    if (!add_result.has_value()) {
+    if (!saved.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
-            std::move(add_result.error()), CrudError::ErrorType::InternalError);
+            std::move(saved.error()), CrudError::ErrorType::InternalError);
     }
 
     co_return {};
@@ -179,12 +177,12 @@ coro::task<PackageService::Result<void>>
             CrudError::ErrorType::EntityAlreadyExists);
     }
 
-    auto add_ok = co_await m_repository.add_async(
+    auto saved = co_await m_repository.save_async(
         PackageDTOMapper::to_entity(package), unitofwork);
 
-    if (!add_ok.has_value()) {
+    if (!saved.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
-            std::move(add_ok.error()), CrudError::ErrorType::InternalError);
+            std::move(saved.error()), CrudError::ErrorType::InternalError);
     }
 
     co_return {};
@@ -247,10 +245,10 @@ coro::task<PackageService::Result<void>>
         source_package.set_section(SectionDTOMapper::to_entity(to_section));
     }
 
-    auto added = co_await m_repository.add_async(*source_packages, uow);
-    if (!added.has_value()) {
+    auto saved = co_await m_repository.save_async(*source_packages, uow);
+    if (!saved.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
-            std::move(added.error()), CrudError::ErrorType::InternalError);
+            std::move(saved.error()), CrudError::ErrorType::InternalError);
     }
 
     auto commit_ok = co_await uow->commit_async();

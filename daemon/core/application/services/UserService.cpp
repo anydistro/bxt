@@ -17,7 +17,7 @@ coro::task<UserService::Result<void>>
 
     auto uow = co_await m_uow_factory(true);
 
-    auto result = co_await m_repository.add_async(user_entity, uow);
+    auto result = co_await m_repository.save_async(user_entity, uow);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
@@ -85,7 +85,7 @@ coro::task<UserService::Result<void>>
         existing_user_entity->set_permissions(permission_entities);
     }
 
-    auto result = co_await m_repository.add_async(*existing_user_entity, uow);
+    auto result = co_await m_repository.save_async(*existing_user_entity, uow);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(

@@ -67,8 +67,8 @@ void LogService::init() {
         coro::sync_wait([this, sync_log_entry = std::move(
                                    sync_log_entry)]() -> coro::task<void> {
             auto uow = co_await m_uow_factory(true);
-            auto added =
-                co_await m_sync_repository.add_async(sync_log_entry, uow);
+            auto saved =
+                co_await m_sync_repository.save_async(sync_log_entry, uow);
 
             auto commited = co_await uow->commit_async();
 
@@ -97,8 +97,8 @@ void LogService::init() {
         coro::sync_wait([this, commit_log_entry = std::move(
                                    commit_log_entry)]() -> coro::task<void> {
             auto uow = co_await m_uow_factory(true);
-            auto added =
-                co_await m_commit_repository.add_async(commit_log_entry, uow);
+            auto saved =
+                co_await m_commit_repository.save_async(commit_log_entry, uow);
 
             auto committed = co_await uow->commit_async();
 
@@ -114,8 +114,8 @@ void LogService::init() {
         coro::sync_wait([this, deploy_log_entry = std::move(
                                    deploy_log_entry)]() -> coro::task<void> {
             auto uow = co_await m_uow_factory(true);
-            auto added =
-                co_await m_deploy_repository.add_async(deploy_log_entry, uow);
+            auto saved =
+                co_await m_deploy_repository.save_async(deploy_log_entry, uow);
             auto committed = co_await uow->commit_async();
             co_return;
         }());
