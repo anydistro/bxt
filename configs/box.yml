@@ -1,6 +1,7 @@
 branches: [unstable, testing, stable]
 (alpm.sync):
   sync-branches: [unstable]
+  download-path: "/app/persistence/cache/sync"
 repositories:
   [core, extra, multilib]:
     architecture: x86_64
