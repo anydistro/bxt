@@ -164,6 +164,24 @@ drogon::Task<drogon::HttpResponsePtr>
     co_return response;
 }
 
+drogon::Task<drogon::HttpResponsePtr>
+    AuthController::verify(drogon::HttpRequestPtr req) {
+    auto accesss_token = drogon_helpers::get_access_token(req, m_options.issuer,
+                                                          m_options.secret);
+    if (!accesss_token.has_value()) {
+        co_return drogon_helpers::make_error_response(accesss_token.error(),
+                                                      drogon::k401Unauthorized);
+    }
+
+    auto user_permissions = co_await m_service.verify_user(*accesss_token);
+    if (!user_permissions.has_value()) {
+        co_return drogon_helpers::make_error_response(
+            user_permissions.error().what());
+    }
+
+    co_return drogon_helpers::make_json_response(*user_permissions);
+}
+
 auto time_point_to_trantor_date(
     const std::chrono::system_clock::time_point& time) {
     auto microseconds_since_epoch =
