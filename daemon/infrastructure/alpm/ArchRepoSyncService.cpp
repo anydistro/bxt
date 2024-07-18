@@ -303,8 +303,7 @@ coro::task<ArchRepoSyncService::Result<Package>>
         fmt::arg("architecture", section.architecture),
         fmt::arg("pkgfname", package_filename));
 
-    const auto filepath =
-        m_options.sources[section].download_path / bxt::to_string(section);
+    const auto filepath = m_options.download_path / bxt::to_string(section);
 
     std::error_code ec;
     if (std::filesystem::create_directories(filepath, ec); ec) {

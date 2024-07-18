@@ -29,8 +29,6 @@ struct ArchRepoSource {
         result.repo_url = get_if_defined("repo-url", result.repo_url);
         result.repo_structure_template = get_if_defined(
             "repo-structure-template", result.repo_structure_template);
-        result.download_path = get_if_defined.operator()<std::string>(
-            "pool-path", result.download_path);
         const auto exclude_list_path = get_if_defined.operator()<std::string>(
             "exclude-list-path", "exclude_list");
         std::ifstream file(exclude_list_path);
@@ -48,7 +46,6 @@ struct ArchRepoSource {
     std::string repo_url = "cloudflaremirrors.com";
     std::string repo_structure_template =
         "/archlinux/{repository}/os/{architecture}";
-    std::filesystem::path download_path = "/var/tmp/bxt/";
     phmap::parallel_flat_hash_set<std::string> exclude_list;
 
     std::optional<std::string> repo_name;

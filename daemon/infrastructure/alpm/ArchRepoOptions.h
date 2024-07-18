@@ -11,6 +11,7 @@
 #include "infrastructure/alpm/ArchRepoSource.h"
 #include "utilities/repo-schema/SchemaExtension.h"
 
+#include <filesystem>
 #include <parallel_hashmap/phmap.h>
 #include <yaml-cpp/yaml.h>
 
@@ -20,12 +21,17 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
     phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,
                                   ArchRepoSource>
         sources;
+    std::filesystem::path download_path = "/var/cache/bxt/packages";
 
     virtual void parse(const YAML::Node& root_node) override {
         constexpr char Tag[] = "(alpm.sync)";
 
         const auto& options_node = root_node[Tag];
 
+        if (options_node["download-path"].IsDefined()
+            && options_node["download-path"].IsScalar()) {
+            download_path = options_node["download-path"].as<std::string>();
+        }
         for (const auto& branch :
              options_node["sync-branches"].as<std::vector<std::string>>()) {
             for (const auto& repo : root_node["repositories"]) {
