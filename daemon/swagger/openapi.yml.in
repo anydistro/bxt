@@ -1,594 +1,1743 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: b[x]t API
   description: API for the b[x]t repository management service.
-  version: "MVP"
+  version: 1.0.0
+  contact: {}
 servers:
-  - url: "/"
-
-security:
-  - cookieAuth: []
-  - bearerAuth: []
-
+  - url: /
 paths:
-  /api/auth:
-    post:
-      summary: Authenticate user
-      operationId: auth
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AuthRequest"
-      responses:
-        "200":
-          description: Authentication successful, JWT token set in cookie or returned as bearer token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Invalid request
-        "401":
-          description: Unauthorized
-  /api/auth/refresh:
-    get:
-      summary: Refresh JWT token
-      operationId: refresh
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - token
-              properties:
-                token:
-                  type: string
-                  description: "JWT refresh token"
-
-      responses:
-        "200":
-          description: Token refresh successful, new JWT token set in cookie or returned as bearer token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Invalid request
-        "401":
-          description: Unauthorized
-
-  /api/auth/revoke:
-    post:
-      summary: Revoke refresh token
-      operationId: revoke
-      responses:
-        "200":
-          description: Token successfully revoked
-        "400":
-          description: Invalid request
-        "401":
-          description: Unauthorized
   /api/logs:
     get:
+      tags:
+        - api
+        - logs
       summary: Get package logs
+      description: >
+
+        ### GET /api/logs
+
+
+        This endpoint retrieves logs based on the specified time range and text
+        filter.
+
+
+        #### Request
+
+        - Method: GET
+
+        - Base URL: {{baseUrl}}
+
+        - Path: /api/logs
+
+        - Query Parameters:
+          - since (string, required): The start date for the log retrieval.
+          - until (string, required): The end date for the log retrieval.
+          - text (string, optional): The text filter for log retrieval.
+
+        #### Response
+
+        The response for this request can be represented by the following JSON
+        schema:
+
+        ```json
+
+        {
+          "type": "object",
+          "properties": {
+            "commits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": {"type": "string"},
+                  "commiterUsername": {"type": "string"},
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {"type": "string"},
+                        "section": {
+                          "type": "object",
+                          "properties": {
+                            "branch": {"type": "string"},
+                            "repository": {"type": "string"},
+                            "architecture": {"type": "string"}
+                          }
+                        },
+                        "name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "version": {"type": "string"}
+                      }
+                    }
+                  },
+                  "deleted": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {"type": "string"},
+                        "section": {
+                          "type": "object",
+                          "properties": {
+                            "branch": {"type": "string"},
+                            "repository": {"type": "string"},
+                            "architecture": {"type": "string"}
+                          }
+                        },
+                        "name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "version": {"type": "string"}
+                      }
+                    }
+                  },
+                  "moved": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "object",
+                          "properties": {
+                            "type": {"type": "string"},
+                            "section": {
+                              "type": "object",
+                              "properties": {
+                                "branch": {"type": "string"},
+                                "repository": {"type": "string"},
+                                "architecture": {"type": "string"}
+                              }
+                            },
+                            "name": {"type": "string"},
+                            "location": {"type": "string"},
+                            "version": {"type": "string"}
+                          }
+                        },
+                        "to": {
+                          "type": "object",
+                          "properties": {
+                            "type": {"type": "string"},
+                            "section": {
+                              "type": "object",
+                              "properties": {
+                                "branch": {"type": "string"},
+                                "repository": {"type": "string"},
+                                "architecture": {"type": "string"}
+                              }
+                            },
+                            "name": {"type": "string"},
+                            "location": {"type": "string"},
+                            "version": {"type": "string"}
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "copied": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "object",
+                          "properties": {
+                            "type": {"type": "string"},
+                            "section": {
+                              "type": "object",
+                              "properties": {
+                                "branch": {"type": "string"},
+                                "repository": {"type": "string"},
+                                "architecture": {"type": "string"}
+                              }
+                            },
+                            "name": {"type": "string"},
+                            "location": {"type": "string"},
+                            "version": {"type": "string"}
+                          }
+                        },
+                        "to": {
+                          "type": "object",
+                          "properties": {
+                            "type": {"type": "string"},
+                            "section": {
+                              "type": "object",
+                              "properties": {
+                                "branch": {"type": "string"},
+                                "repository": {"type": "string"},
+                                "architecture": {"type": "string"}
+                              }
+                            },
+                            "name": {"type": "string"},
+                            "location": {"type": "string"},
+                            "version": {"type": "string"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "syncs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": {"type": "string"},
+                  "syncTriggerUsername": {"type": "string"},
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {"type": "string"},
+                        "section": {
+                          "type": "object",
+                          "properties": {
+                            "branch": {"type": "string"},
+                            "repository": {"type": "string"},
+                            "architecture": {"type": "string"}
+                          }
+                        },
+                        "name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "version": {"type": "string"}
+                      }
+                    }
+                  },
+                  "deleted": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {"type": "string"},
+                        "section": {
+                          "type": "object",
+                          "properties": {
+                            "branch": {"type": "string"},
+                            "repository": {"type": "string"},
+                            "architecture": {"type": "string"}
+                          }
+                        },
+                        "name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "version": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "deploys": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": {"type": "string"},
+                  "runnerUrl": {"type": "string"},
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {"type": "string"},
+                        "section": {
+                          "type": "object",
+                          "properties": {
+                            "branch": {"type": "string"},
+                            "repository": {"type": "string"},
+                            "architecture": {"type": "string"}
+                          }
+                        },
+                        "name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "version": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        ```
+
+        The response for this request includes arrays of commits, syncs, and
+        deploys, each containing specific details related to the log retrieval.
+        The response may also include related tokens when called from other
+        endpoints.
+
+
+        #### Example
+
+        - Request:
+          - `GET {{baseUrl}}/api/logs?since=2024-07-01&until=2024-07-16&text=`
+        - Response:
+          - Status: 200 OK
+          - Body:
+            ```json
+            {
+              "commits": [],
+              "syncs": [],
+              "deploys": []
+            }
+            ```
       operationId: getPackageLogs
       parameters:
         - name: since
           in: query
-          required: true
           schema:
             type: string
-            format: date-time
+            example: '2024-07-01T00:00:00Z'
+          description: (Required) Full ISO8601 '2024-07-01T00:00:00Z'
         - name: until
           in: query
-          required: true
           schema:
             type: string
-            format: date-time
+            example: '2024-07-14T00:00:00Z'
+          description: (Required) Full ISO8601 '2024-07-14T00:00:00Z'
         - name: text
           in: query
-          required: false
           schema:
             type: string
+            example: arch
       responses:
-        "200":
+        '200':
           description: List of package log entries
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LogResponse"
-        "400":
+                type: object
+                properties:
+                  commits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        added:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              location:
+                                type: string
+                                example: <string>
+                              name:
+                                type: string
+                                example: <string>
+                              section:
+                                type: object
+                                properties:
+                                  architecture:
+                                    type: string
+                                    example: <string>
+                                  branch:
+                                    type: string
+                                    example: <string>
+                                  repository:
+                                    type: string
+                                    example: <string>
+                              type:
+                                type: string
+                                example: Add
+                              version:
+                                type: string
+                                example: <string>
+                          example:
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        commiterUsername:
+                          type: string
+                          example: <string>
+                        copied:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              from:
+                                type: object
+                                properties:
+                                  location:
+                                    type: string
+                                    example: <string>
+                                  name:
+                                    type: string
+                                    example: <string>
+                                  section:
+                                    type: object
+                                    properties:
+                                      architecture:
+                                        type: string
+                                        example: <string>
+                                      branch:
+                                        type: string
+                                        example: <string>
+                                      repository:
+                                        type: string
+                                        example: <string>
+                                  type:
+                                    type: string
+                                    example: Update
+                                  version:
+                                    type: string
+                                    example: <string>
+                              to:
+                                type: object
+                                properties:
+                                  location:
+                                    type: string
+                                    example: <string>
+                                  name:
+                                    type: string
+                                    example: <string>
+                                  section:
+                                    type: object
+                                    properties:
+                                      architecture:
+                                        type: string
+                                        example: <string>
+                                      branch:
+                                        type: string
+                                        example: <string>
+                                      repository:
+                                        type: string
+                                        example: <string>
+                                  type:
+                                    type: string
+                                    example: Copy
+                                  version:
+                                    type: string
+                                    example: <string>
+                          example:
+                            - from:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Update
+                                version: <string>
+                              to:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Copy
+                                version: <string>
+                            - from:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Move
+                                version: <string>
+                              to:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Remove
+                                version: <string>
+                        deleted:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              location:
+                                type: string
+                                example: <string>
+                              name:
+                                type: string
+                                example: <string>
+                              section:
+                                type: object
+                                properties:
+                                  architecture:
+                                    type: string
+                                    example: <string>
+                                  branch:
+                                    type: string
+                                    example: <string>
+                                  repository:
+                                    type: string
+                                    example: <string>
+                              type:
+                                type: string
+                                example: Add
+                              version:
+                                type: string
+                                example: <string>
+                          example:
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        moved:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              from:
+                                type: object
+                                properties:
+                                  location:
+                                    type: string
+                                    example: <string>
+                                  name:
+                                    type: string
+                                    example: <string>
+                                  section:
+                                    type: object
+                                    properties:
+                                      architecture:
+                                        type: string
+                                        example: <string>
+                                      branch:
+                                        type: string
+                                        example: <string>
+                                      repository:
+                                        type: string
+                                        example: <string>
+                                  type:
+                                    type: string
+                                    example: Add
+                                  version:
+                                    type: string
+                                    example: <string>
+                              to:
+                                type: object
+                                properties:
+                                  location:
+                                    type: string
+                                    example: <string>
+                                  name:
+                                    type: string
+                                    example: <string>
+                                  section:
+                                    type: object
+                                    properties:
+                                      architecture:
+                                        type: string
+                                        example: <string>
+                                      branch:
+                                        type: string
+                                        example: <string>
+                                      repository:
+                                        type: string
+                                        example: <string>
+                                  type:
+                                    type: string
+                                    example: Remove
+                                  version:
+                                    type: string
+                                    example: <string>
+                          example:
+                            - from:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Add
+                                version: <string>
+                              to:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Remove
+                                version: <string>
+                            - from:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Remove
+                                version: <string>
+                              to:
+                                location: <string>
+                                name: <string>
+                                section:
+                                  architecture: <string>
+                                  branch: <string>
+                                  repository: <string>
+                                type: Add
+                                version: <string>
+                        time:
+                          type: string
+                          example: <dateTime>
+                    example:
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        commiterUsername: <string>
+                        copied:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Copy
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Move
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        moved:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                        time: <dateTime>
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Copy
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        commiterUsername: <string>
+                        copied:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Move
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                        moved:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        time: <dateTime>
+                  deploys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        added:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              location:
+                                type: string
+                                example: <string>
+                              name:
+                                type: string
+                                example: <string>
+                              section:
+                                type: object
+                                properties:
+                                  architecture:
+                                    type: string
+                                    example: <string>
+                                  branch:
+                                    type: string
+                                    example: <string>
+                                  repository:
+                                    type: string
+                                    example: <string>
+                              type:
+                                type: string
+                                example: Copy
+                              version:
+                                type: string
+                                example: <string>
+                          example:
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Copy
+                              version: <string>
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        runnerUrl:
+                          type: string
+                          example: <string>
+                        time:
+                          type: string
+                          example: <dateTime>
+                    example:
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Copy
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        runnerUrl: <string>
+                        time: <dateTime>
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Copy
+                            version: <string>
+                        runnerUrl: <string>
+                        time: <dateTime>
+                  syncs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        added:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              location:
+                                type: string
+                                example: <string>
+                              name:
+                                type: string
+                                example: <string>
+                              section:
+                                type: object
+                                properties:
+                                  architecture:
+                                    type: string
+                                    example: <string>
+                                  branch:
+                                    type: string
+                                    example: <string>
+                                  repository:
+                                    type: string
+                                    example: <string>
+                              type:
+                                type: string
+                                example: Remove
+                              version:
+                                type: string
+                                example: <string>
+                          example:
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        deleted:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              location:
+                                type: string
+                                example: <string>
+                              name:
+                                type: string
+                                example: <string>
+                              section:
+                                type: object
+                                properties:
+                                  architecture:
+                                    type: string
+                                    example: <string>
+                                  branch:
+                                    type: string
+                                    example: <string>
+                                  repository:
+                                    type: string
+                                    example: <string>
+                              type:
+                                type: string
+                                example: Add
+                              version:
+                                type: string
+                                example: <string>
+                          example:
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            - location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        syncTriggerUsername:
+                          type: string
+                          example: <string>
+                        time:
+                          type: string
+                          example: <dateTime>
+                    example:
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        syncTriggerUsername: <string>
+                        time: <dateTime>
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                        syncTriggerUsername: <string>
+                        time: <dateTime>
+              examples:
+                List of package log entries:
+                  value:
+                    commits:
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        commiterUsername: <string>
+                        copied:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Copy
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Move
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        moved:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                        time: <dateTime>
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Copy
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        commiterUsername: <string>
+                        copied:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Move
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                        moved:
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Remove
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Add
+                              version: <string>
+                          - from:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                            to:
+                              location: <string>
+                              name: <string>
+                              section:
+                                architecture: <string>
+                                branch: <string>
+                                repository: <string>
+                              type: Update
+                              version: <string>
+                        time: <dateTime>
+                    deploys:
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Copy
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        runnerUrl: <string>
+                        time: <dateTime>
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Copy
+                            version: <string>
+                        runnerUrl: <string>
+                        time: <dateTime>
+                    syncs:
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Update
+                            version: <string>
+                        syncTriggerUsername: <string>
+                        time: <dateTime>
+                      - added:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Add
+                            version: <string>
+                        deleted:
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                          - location: <string>
+                            name: <string>
+                            section:
+                              architecture: <string>
+                              branch: <string>
+                              repository: <string>
+                            type: Remove
+                            version: <string>
+                        syncTriggerUsername: <string>
+                        time: <dateTime>
+        '400':
           description: Invalid request
-        "403":
-          description: No permissions
-  /api/compare:
-    post:
-      summary: Compare sections
-      operationId: compare
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CompareRequest"
-      responses:
-        "200":
-          description: Comparison result
+          content:
+            text/plain:
+              examples:
+                Invalid request:
+                  value: ''
+        '401':
+          description: Invalid token / Token expired
+          headers:
+            Alt-Svc:
+              schema:
+                type: string
+                example: h3=":443"; ma=2592000
+            Content-Length:
+              schema:
+                type: string
+                example: '80'
+            Date:
+              schema:
+                type: string
+                example: Tue, 16 Jul 2024 10:26:52 GMT
+            Server:
+              schema:
+                type: string
+                example: drogon/1.8.2
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CompareResponse"
-        "400":
-          description: Invalid request
-        "403":
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Token is invalid, the error is: "token expired"'
+                  status:
+                    type: string
+                    example: error
+              examples:
+                Invalid token:
+                  value:
+                    message: 'Token is invalid, the error is: "token expired"'
+                    status: error
+                Token expired:
+                  value:
+                    message: 'Token is invalid, the error is: "token expired"'
+                    status: error
+        '403':
           description: No permissions
-  /api/packages/commit:
-    post:
-      summary: Commit package transaction
-      description: |
-        Commit a package transaction. This operation allows adding, deleting, moving, and copying packages.
-        Each package is identified by a number in the form data (e.g., package1, package1.signature, package1.section).
-      operationId: commitTransaction
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            encoding:
-              package{n}.section:
-                contentType: application/json
-              to_delete:
-                contentType: application/json
-              to_move:
-                contentType: application/json
-              to_copy:
-                contentType: application/json
-
-            schema:
-              type: object
-              properties:
-                package{n}:
-                  type: string
-                  format: binary
-                  description: "Package file"
-                package{n}.signature:
-                  type: string
-                  format: binary
-                  description: "Package signature"
-                package{n}.section:
-                  $ref: "#/components/schemas/PackageSection"
-                to_delete:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/PackageAction"
-                to_move:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/TransferAction"
-                to_copy:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/TransferAction"
-      responses:
-        "200":
-          description: Transaction committed successfully
-        "400":
-          description: Invalid request
-        "403":
-          description: No permissions
+          content:
+            text/plain:
+              examples:
+                No permissions:
+                  value: ''
+      security:
+        - bearerAuth: []
   /api/packages:
     get:
+      tags:
+        - api
+        - packages
       summary: Get packages by section
-      operationId: getPackages
+      description: >-
+        The endpoint makes an HTTP GET request to retrieve packages based on the
+        provided branch, repository, and architecture parameters. The response
+        is a JSON object with an array of package objects. Each package object
+        includes the name, section, poolEntries, and preferredLocation
+        properties.
+
+
+        The package object has the following properties:
+
+
+        - "name": (string) The name of the package.
+            
+        - "section": (string) The section to which the package belongs.
+            
+        - "poolEntries": (object) An object containing pool entries for the
+        package, with each entry having a version and hasSignature property.
+            - "culpa_fd": (object) An example pool entry object with version and hasSignature properties.
+                - "version": (string) The version of the package.
+                    
+                - "hasSignature": (string) Indicates whether the package has a signature.
+                    
+        - "preferredLocation": (string) The preferred location for the package.
+      operationId: getPackagesBySection
       parameters:
         - name: branch
           in: query
-          required: true
           schema:
             type: string
+            example: ''
+          description: '(Required) '
         - name: repository
           in: query
-          required: true
           schema:
             type: string
+            example: ''
+          description: '(Required) '
         - name: architecture
           in: query
-          required: true
           schema:
             type: string
+            example: ''
+          description: '(Required) '
       responses:
-        "200":
-          description: List of packages
+        '200':
+          description: Package list / Get packages by section
+          headers:
+            Alt-Svc:
+              schema:
+                type: string
+                example: h3=":443"; ma=2592000
+            Content-Length:
+              schema:
+                type: string
+                example: '413'
+            Date:
+              schema:
+                type: string
+                example: Tue, 16 Jul 2024 08:56:37 GMT
+            Server:
+              schema:
+                type: string
+                example: drogon/1.8.2
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/PackageResponse"
-        "400":
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: <string>
+                    poolEntries:
+                      type: object
+                      properties:
+                        culpa_fd:
+                          type: object
+                          properties:
+                            hasSignature:
+                              type: string
+                              example: <boolean>
+                            version:
+                              type: string
+                              example: <string>
+                        laborume3d:
+                          type: object
+                          properties:
+                            hasSignature:
+                              type: string
+                              example: <boolean>
+                            version:
+                              type: string
+                              example: <string>
+                    preferredLocation:
+                      type: string
+                      example: <string>
+                    section:
+                      type: string
+                      example: <string>
+                example:
+                  - name: <string>
+                    poolEntries:
+                      culpa_fd:
+                        hasSignature: <boolean>
+                        version: <string>
+                    preferredLocation: <string>
+                    section: <string>
+                  - name: <string>
+                    poolEntries:
+                      laborume3d:
+                        hasSignature: <boolean>
+                        version: <string>
+                    preferredLocation: <string>
+                    section: <string>
+              examples:
+                Get packages by section:
+                  value:
+                    - name: abseil-cpp
+                      poolEntries:
+                        overlay:
+                          hasSignature: true
+                          version: 20240116.2-2
+                      preferredLocation: overlay
+                      section:
+                        architecture: x86_64
+                        branch: unstable
+                        repository: multilib
+                    - name: arch-install-scripts
+                      poolEntries:
+                        overlay:
+                          hasSignature: true
+                          version: 28-1
+                      preferredLocation: overlay
+                      section:
+                        architecture: x86_64
+                        branch: unstable
+                        repository: multilib
+                Package list:
+                  value:
+                    - name: <string>
+                      poolEntries:
+                        culpa_fd:
+                          hasSignature: <boolean>
+                          version: <string>
+                      preferredLocation: <string>
+                      section: <string>
+                    - name: <string>
+                      poolEntries:
+                        laborume3d:
+                          hasSignature: <boolean>
+                          version: <string>
+                      preferredLocation: <string>
+                      section: <string>
+        '400':
           description: Invalid request
-        "403":
-          description: No permissions
-  /api/packages/sync:
-    post:
-      summary: Synchronize packages
-      operationId: sync
-      responses:
-        "200":
-          description: Packages synchronized successfully
-        "400":
-          description: Invalid request
-        "403":
-          description: No permissions
-  /api/packages/snap:
-    post:
-      summary: Snap packages between branches
-      operationId: snap
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SnapRequest"
-      responses:
-        "200":
-          description: Packages snapped successfully
-        "400":
-          description: Invalid request
-        "403":
-          description: No permissions
-  /api/sections:
-    get:
-      summary: Get sections
-      operationId: getSections
-      responses:
-        "200":
-          description: List of sections
           content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/SectionResponse"
-        "400":
-          description: Invalid request
-        "403":
+            text/plain:
+              examples:
+                Invalid request:
+                  value: ''
+        '403':
           description: No permissions
-  /api/users/add:
-    post:
-      summary: Add a new user
-      operationId: addUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AddUserRequest"
-      responses:
-        "200":
-          description: User added successfully
-        "400":
-          description: Invalid request
-        "403":
-          description: No permissions
-  /api/users/update:
-    patch:
-      summary: Update an existing user
-      operationId: updateUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateUserRequest"
-      responses:
-        "200":
-          description: User updated successfully
-        "400":
-          description: Invalid request
-        "403":
-          description: No permissions
+          content:
+            text/plain:
+              examples:
+                No permissions:
+                  value: ''
+      security:
+        - bearerAuth: []
   /api/users/remove/{user_name}:
     delete:
+      tags:
+        - api
+        - users
+        - remove
+        - '{user_name}'
       summary: Remove a user
-      operationId: removeUser
-      parameters:
-        - name: user_name
-          in: path
-          required: true
-          schema:
-            type: string
+      description: Remove a user
+      operationId: removeAUser
       responses:
-        "200":
+        '200':
           description: User removed successfully
-        "400":
-          description: Invalid request
-        "403":
-          description: No permissions
-  /api/users:
-    get:
-      summary: Get list of users
-      operationId: getUsers
-      responses:
-        "200":
-          description: List of users
           content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UserResponse"
-        "400":
+            text/plain:
+              examples:
+                User removed successfully:
+                  value: ''
+        '400':
           description: Invalid request
-        "403":
+          content:
+            text/plain:
+              examples:
+                Invalid request:
+                  value: ''
+        '403':
           description: No permissions
-
+          content:
+            text/plain:
+              examples:
+                No permissions:
+                  value: ''
+    parameters:
+      - name: user_name
+        in: path
+        required: true
+        schema:
+          type: string
+          example: <string>
+        description: '(Required) '
 components:
   securitySchemes:
-    cookieAuth:
+    apiKey:
       type: apiKey
-      in: cookie
-      name: token
+      name: Authorization
+      in: header
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-
-  schemas:
-    AuthRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        password:
-          type: string
-        response_type:
-          type: string
-      required:
-        - name
-        - password
-        - response_type
-
-    AuthResponse:
-      type: object
-      properties:
-        access_token:
-          type: string
-        refresh_token:
-          type: string
-        token_type:
-          type: string
-
-    CompareRequest:
-      type: array
-      items:
-        $ref: "#/components/schemas/SectionRequest"
-
-    CompareResponse:
-      type: object
-      properties:
-        sections:
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageSection"
-        compareTable:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: object
-              additionalProperties:
-                type: string
-    LogResponse:
-      type: object
-      properties:
-        commits:
-          type: array
-          items:
-            $ref: "#/components/schemas/CommitLogEntryResponse"
-        syncs:
-          type: array
-          items:
-            $ref: "#/components/schemas/SyncLogEntryResponse"
-        deploys:
-          type: array
-          items:
-            $ref: "#/components/schemas/DeployLogEntryResponse"
-
-    CommitLogEntryResponse:
-      type: object
-      properties:
-        time:
-          type: string
-          format: date-time
-        commiterUsername:
-          type: string
-        added:
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageLogEntryResponse"
-        deleted:
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageLogEntryResponse"
-        moved:
-          type: array
-          items:
-            type: object
-            properties:
-              from:
-                $ref: "#/components/schemas/PackageLogEntryResponse"
-              to:
-                $ref: "#/components/schemas/PackageLogEntryResponse"
-        copied:
-          type: array
-          items:
-            type: object
-            properties:
-              from:
-                $ref: "#/components/schemas/PackageLogEntryResponse"
-              to:
-                $ref: "#/components/schemas/PackageLogEntryResponse"
-
-    SyncLogEntryResponse:
-      type: object
-      properties:
-        time:
-          type: string
-          format: date-time
-        syncTriggerUsername:
-          type: string
-        added:
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageLogEntryResponse"
-        deleted:
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageLogEntryResponse"
-
-    DeployLogEntryResponse:
-      type: object
-      properties:
-        time:
-          type: string
-          format: date-time
-        runnerUrl:
-          type: string
-        added:
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageLogEntryResponse"
-
-    PackageLogEntryResponse:
-      type: object
-      properties:
-        type:
-          $ref: "#/components/schemas/LogEntryType"
-        section:
-          $ref: "#/components/schemas/PackageSection"
-        name:
-          type: string
-        location:
-          type: string
-        version:
-          type: string
-          nullable: true
-
-    LogEntryType:
-      type: string
-      enum:
-        - Add
-        - Remove
-        - Update
-        - Move
-        - Copy
-
-    PackageAction:
-      type: object
-      properties:
-        section:
-          $ref: "#/components/schemas/PackageSection"
-        name:
-          type: string
-          description: Name of the package (not the filename e.g. for arch-install-scripts-28-1-any.pkg.tar.zst it will be arch-install-scripts)
-
-    TransferAction:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Name of the package (not the filename e.g. for arch-install-scripts-28-1-any.pkg.tar.zst it will be arch-install-scripts)
-        from_section:
-          $ref: "#/components/schemas/PackageSection"
-        to_section:
-          $ref: "#/components/schemas/PackageSection"
-
-    PackageResponse:
-      type: object
-      properties:
-        name:
-          type: string
-        section:
-          type: string
-        poolEntries:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/PoolEntryResponse"
-        preferredLocation:
-          type: string
-
-    PoolEntryResponse:
-      type: object
-      properties:
-        version:
-          type: string
-        hasSignature:
-          type: boolean
-
-    PackageSection:
-      type: object
-      properties:
-        branch:
-          type: string
-        repository:
-          type: string
-        architecture:
-          type: string
-      required:
-        - branch
-        - repository
-        - architecture
-
-    SectionRequest:
-      $ref: "#/components/schemas/PackageSection"
-
-    SectionResponse:
-      $ref: "#/components/schemas/PackageSection"
-
-    SnapRequest:
-      type: object
-      properties:
-        source:
-          $ref: "#/components/schemas/SectionRequest"
-        target:
-          $ref: "#/components/schemas/SectionRequest"
-      required:
-        - source
-        - target
-
-    AddUserRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        password:
-          type: string
-        permissions:
-          type: array
-          items:
-            type: string
-
-    UpdateUserRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        password:
-          type: string
-        permissions:
-          type: array
-          items:
-            type: string
-
-    UserResponse:
-      type: object
-      properties:
-        name:
-          type: string
-        permissions:
-          type: array
-          items:
-            type: string
+security:
+  - apiKey: []
+tags:
+  - name: api
+    description: api entry point
+  - name: auth
+    description: User authentication endpoint
+  - name: refresh
+    description: Request updated credentials providing a valid `refresh_token`
+  - name: revoke
+    description: >-
+      Request the service to invalidate current credentials using previously
+      issued `refresh_token`
+  - name: logs
+    description: Read bxt transaction logs
+  - name: compare
+  - name: packages
+  - name: commit
+  - name: sync
+  - name: snap
+  - name: sections
+  - name: users
+  - name: add
+  - name: update
+  - name: remove
+  - name: '{user_name}'
