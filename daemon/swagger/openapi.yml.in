@@ -71,6 +71,25 @@ paths:
           description: Invalid request
         "401":
           description: Unauthorized
+  /api/auth/verify:
+    get:
+      summary: Get current user permissions based on token provided
+      operationId: verify
+      responses:
+        "200":
+          description: List of user permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal error
   /api/logs:
     get:
       summary: Get package logs
@@ -324,6 +343,27 @@ paths:
           description: Invalid request
         "403":
           description: No permissions
+  /api/users/{user_name}:
+    get:
+      summary: Get user info
+      operationId: getUser
+      parameters:
+        - name: user_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal error
 
 components:
   securitySchemes:
