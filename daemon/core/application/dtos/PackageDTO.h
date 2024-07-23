@@ -12,6 +12,7 @@
 #include "core/domain/value_objects/PackageVersion.h"
 #include "parallel_hashmap/phmap.h"
 #include "utilities/StaticDTOMapper.h"
+#include "utilities/log/Logging.h"
 
 #include <cereal/types/optional.hpp>
 #include <filesystem>
@@ -82,23 +83,15 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
             from.is_any_architecture);
 
         for (const auto& entry : from.pool_entries) {
-            auto version = PackageVersion::from_string(entry.second.version);
+            auto entity = PackagePoolEntry::parse_file_path(
+                entry.second.filepath, entry.second.signature_path);
 
-            if (!version.has_value()) {
-                auto entity = PackagePoolEntry::parse_file_path(
-                    entry.second.filepath, entry.second.signature_path);
-
-                if (entity.has_value()) {
-                    package.pool_entries().emplace(entry.first, *entity);
-                }
-
+            if (!entity.has_value()) {
+                loge("Failed to parse package pool entry: {}",
+                     entry.second.filepath.string());
                 continue;
             }
-
-            package.pool_entries().emplace(
-                entry.first,
-                PackagePoolEntry(entry.second.filepath,
-                                 entry.second.signature_path, *version));
+            package.pool_entries().emplace(entry.first, *entity);
         }
         return package;
     }
