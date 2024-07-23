@@ -111,8 +111,8 @@ int validate_and_rebuild(lmdb::txn& transaction,
 int main(int argc, char** argv) {
     auto lmdbenv = lmdb::env::create();
 
-    lmdbenv.set_mapsize(1UL * 1024UL * 1024UL * 1024UL);
-    lmdbenv.set_max_dbs(10);
+    lmdbenv.set_mapsize(50UL * 1024UL * 1024UL * 1024UL);
+    lmdbenv.set_max_dbs(128);
     std::error_code ec;
 
     if (!std::filesystem::exists("./bxtd.lmdb", ec) || ec) {
