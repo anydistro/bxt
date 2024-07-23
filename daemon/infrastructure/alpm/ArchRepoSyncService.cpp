@@ -95,6 +95,7 @@ coro::task<SyncService::Result<void>>
 
     auto& all_packages = package_lists[0].return_value();
     if (!all_packages.has_value()) {
+        loge("Failed to sync packages: {}", all_packages.error().what());
         co_return std::unexpected(all_packages.error());
     }
 
@@ -102,6 +103,8 @@ coro::task<SyncService::Result<void>>
         auto& package_list = it->return_value();
 
         if (!package_list.has_value()) {
+            loge("Failed to sync packages: {}", all_packages.error().what());
+
             co_return std::unexpected(package_list.error());
         }
 
@@ -109,10 +112,14 @@ coro::task<SyncService::Result<void>>
                              std::make_move_iterator(package_list->begin()),
                              std::make_move_iterator(package_list->end()));
     }
+
+    logi("Downloaded {} packages, saving to database...", all_packages->size());
+
     auto uow = co_await m_uow_factory(true);
 
     auto saved = co_await m_package_repository.save_async(*all_packages, uow);
     if (!saved.has_value()) {
+        loge("Failed to save packages: {}", saved.error().what());
         co_return bxt::make_error_with_source<SyncError>(
             std::move(saved.error()), SyncError::RepositoryError);
     }
@@ -120,9 +127,12 @@ coro::task<SyncService::Result<void>>
     auto commit_ok = co_await uow->commit_async();
 
     if (!commit_ok.has_value()) {
+        loge("Failed to save packages: {}", saved.error().what());
         co_return bxt::make_error_with_source<SyncError>(
             std::move(commit_ok.error()), SyncError::RepositoryError);
     }
+
+    logi("Saved {} packages to database", all_packages->size());
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
         std::make_shared<SyncFinished>(
