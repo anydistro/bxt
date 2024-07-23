@@ -335,17 +335,16 @@ coro::task<ArchRepoSyncService::Result<Package>>
         fmt::format("{}/{}", filepath.string(), package_filename);
 
     if (std::filesystem::exists(full_filename)) {
-        logi("Found package file in local cache: {}", full_filename);
-        auto package = Package::from_file_path(
-            SectionDTOMapper::to_entity(section),
-            Core::Domain::PoolLocation::Sync, full_filename);
+        logi("Found package file in local cache: {}, checking the hash... ",
+             full_filename);
 
-        if (package.has_value()
-            && bxt::hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(full_filename)
-                   == sha256_hash) {
-            logi("Using local cache package file: {}", full_filename);
+        if (bxt::hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(full_filename)
+            == sha256_hash) {
+            logi("Hash is ok. Using local cache package file: {}",
+                 full_filename);
         } else {
-            logw("Invalid package file: {}, removing it", full_filename);
+            logw("Hash is wrong. Invalid package file: {}, removing it",
+                 full_filename);
             std::filesystem::remove(full_filename);
         }
     }
