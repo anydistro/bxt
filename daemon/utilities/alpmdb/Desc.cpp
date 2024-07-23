@@ -20,22 +20,27 @@
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 
-constexpr static frozen::unordered_map<frozen::string, frozen::string, 14>
-    m_desc_to_info_mapping {
-        {"NAME", "pkgname"},        {"BASE", "pkgbase"},
-        {"VERSION", "pkgver"},      {"DESC", "pkgdesc"},
-        {"ISIZE", "size"},          {"URL", "url"},
-        {"LICENSE", "license"},     {"ARCH", "arch"},
-        {"BUILDDATE", "builddate"}, {"PACKAGER", "packager"},
-        {"REPLACES", "replaces"},   {"CONFLICTS", "conflict"},
-        {"PROVIDES", "provides"},   {"DEPENDS", "depend"}};
-
-constexpr static frozen::set<frozen::string, 19> desc_keys {
-    "FILENAME", "NAME",      "VERSION",   "CSIZE",   "ISIZE",
-    "MD5SUM",   "SHA256SUM", "PGPSIG",    "LICENSE", "BUILDDATE",
-    "REPLACES", "PROVIDES",  "BASE",      "DESC",    "URL",
-    "ARCH",     "PACKAGER",  "CONFLICTS", "DEPENDS",
-};
+constexpr static frozen::unordered_map<frozen::string, frozen::string, 20>
+    m_desc_to_info_mapping {{"NAME", "pkgname"},
+                            {"BASE", "pkgbase"},
+                            {"VERSION", "pkgver"},
+                            {"DESC", "pkgdesc"},
+                            {"ISIZE", "size"},
+                            {"URL", "url"},
+                            {"LICENSE", "license"},
+                            {"ARCH", "arch"},
+                            {"BUILDDATE", "builddate"},
+                            {"PACKAGER", "packager"},
+                            {"REPLACES", "replaces"},
+                            {"CONFLICTS", "conflict"},
+                            {"PROVIDES", "provides"},
+                            {"DEPENDS", "depend"},
+                            {"MAKEDEPENDS", "makedepend"},
+                            {"CHECKDEPENDS", "checkdepend"},
+                            {"OPTDEPENDS", "optdepend"},
+                            {"GROUPS", "groups"},
+                            {"BACKUP", "backup"},
+                            {"INSTALL", "install"}};
 
 namespace bxt::Utilities::AlpmDb {
 std::optional<std::string> Desc::get(const std::string &key) const {
@@ -134,7 +139,7 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
         desc << fmt::format(
             format_string,
             std::string {mapping.first.data(), mapping.first.size()},
-            boost::join(values, " "));
+            boost::join(values, "\n"));
     }
 
     return Desc {.desc = desc.str(), .files = files.str()};
