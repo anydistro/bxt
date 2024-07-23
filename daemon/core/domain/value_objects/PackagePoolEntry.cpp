@@ -40,6 +40,13 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
 
     PackagePoolEntry result(file_path, {}, *version);
 
+    auto desc = bxt::Utilities::AlpmDb::Desc::parse_package(file_path);
+    if (!desc.has_value()) {
+        return bxt::make_error_with_source<ParsingError>(
+            std::move(desc.error()), ParsingError::ErrorCode::InvalidPackage);
+    }
+    result.m_desc = std::move(desc.value());
+
     if (signature_path.has_value()) {
         result.m_signature_path = signature_path;
         return result;
@@ -51,13 +58,6 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
     if (std::filesystem::exists(deduced_signature_path)) {
         result.m_signature_path = deduced_signature_path;
     }
-
-    auto desc = bxt::Utilities::AlpmDb::Desc::parse_package(file_path);
-    if (!desc.has_value()) {
-        return bxt::make_error_with_source<ParsingError>(
-            std::move(desc.error()), ParsingError::ErrorCode::InvalidPackage);
-    }
-    result.m_desc = std::move(desc.value());
 
     return result;
 }
