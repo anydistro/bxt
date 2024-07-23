@@ -136,38 +136,58 @@ coro::task<SyncService::Result<void>>
 coro::task<SyncService::Result<std::vector<Package>>>
     ArchRepoSyncService::sync_section(const PackageSectionDTO section) {
     if (!m_options.sources.contains(section)) { co_return {}; }
-    auto remote_packages = co_await get_available_packages(section);
-
-    if (!remote_packages.has_value()) {
-        co_return bxt::make_error_with_source<SyncError>(
-            std::move(remote_packages.error()), SyncError::NetworkError);
-    }
-
-    auto task = [this, section](
-                    const PackageInfo pkginfo) -> coro::task<Result<Package>> {
-        co_return co_await download_package(section, pkginfo.filename,
-                                            pkginfo.hash);
-    };
-
-    auto tasks = *remote_packages | std::views::transform(task)
-                 | std::ranges::to<std::vector>();
-
-    const auto package_results = co_await coro::when_all(std::move(tasks));
+    constexpr int max_retries = 5;
     std::vector<Package> packages;
-    packages.reserve(package_results.size());
-    for (const auto& package_result : package_results) {
-        auto& package = package_result.return_value();
 
-        if (!package.has_value()) {
-            loge("Download of {} has failed. The reason is \"{}\". Aborting "
-                 "sync.",
-                 package.error().package_filename, package.error().what());
+    for (int attempt = 0; attempt < max_retries; ++attempt) {
+        auto remote_packages = co_await get_available_packages(section);
 
-            co_return bxt::make_error_with_source<SyncError>(
-                std::move(package.error()), SyncError::RepositoryError);
+        if (!remote_packages.has_value()) {
+            if (attempt == max_retries - 1) {
+                co_return bxt::make_error_with_source<SyncError>(
+                    std::move(remote_packages.error()),
+                    SyncError::NetworkError);
+            }
+            continue;
         }
 
-        packages.emplace_back(std::move(*package));
+        auto task =
+            [this, section](
+                const PackageInfo pkginfo) -> coro::task<Result<Package>> {
+            co_return co_await download_package(section, pkginfo.filename,
+                                                pkginfo.hash);
+        };
+
+        auto tasks = *remote_packages | std::views::transform(task)
+                     | std::ranges::to<std::vector>();
+
+        const auto package_results = co_await coro::when_all(std::move(tasks));
+        bool all_downloads_successful = true;
+        packages.clear();
+        packages.reserve(package_results.size());
+
+        for (const auto& package_result : package_results) {
+            auto& package = package_result.return_value();
+
+            if (!package.has_value()) {
+                loge("Download of {} has failed. The reason is \"{}\". "
+                     "Retrying...",
+                     package.error().package_filename, package.error().what());
+                all_downloads_successful = false;
+                break;
+            }
+
+            packages.emplace_back(std::move(*package));
+        }
+
+        if (all_downloads_successful) { break; }
+
+        if (attempt == max_retries - 1) {
+            loge("Max retries reached. Some package downloads failed.");
+            co_return bxt::make_error<SyncError>(SyncError::NetworkError);
+        }
+
+        logi("Retrying to sync packages, attempt {}", attempt + 1);
     }
 
     co_return packages;
