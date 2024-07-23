@@ -8,6 +8,7 @@
 
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/domain/entities/Package.h"
+#include "core/domain/value_objects/PackageVersion.h"
 #include "persistence/box/record/PackageRecord.h"
 
 namespace bxt::Persistence::Box::RecordMapper {
@@ -31,12 +32,16 @@ static Core::Domain::Package to_entity(const PackageRecord &from) {
                                  from.id.name, from.is_any_architecture);
 
     for (const auto &[location, entry] : from.descriptions) {
-        auto pool_entry = Core::Domain::PackagePoolEntry::parse_file_path(
-            entry.filepath, entry.signature_path);
+        auto version_str = entry.descfile.get("VERSION");
+        if (!version_str) { continue; }
+        auto version_result = PackageVersion::from_string(*version_str);
 
-        if (!pool_entry.has_value()) { continue; }
+        if (!version_result) { continue; }
 
-        result.pool_entries().emplace(location, *pool_entry);
+        Core::Domain::PackagePoolEntry pool_entry(
+            entry.filepath, entry.signature_path, *version_result);
+
+        result.pool_entries().emplace(location, pool_entry);
     }
 
     return result;
