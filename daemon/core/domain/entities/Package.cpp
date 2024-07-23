@@ -29,12 +29,18 @@ bool check_valid_name(std::string_view name) {
     if (name.empty()) { return false; }
 
     static constexpr std::string_view valid = "@._+-";
-    return name[0] != '-' && name[0] != '.'
-           && std::ranges::all_of(name, [](const char& ch) {
-                  return (std::isalpha(ch) && std::islower(ch))
-                         || std::isdigit(ch)
-                         || (valid.find(ch) != std::string::npos);
-              });
+
+    return name[0] != '-' && name[0] != '.';
+
+    /// TODO: This code should be uncommented when we will be sure every our
+    /// package follows the
+    /// https://wiki.archlinux.org/title/Arch_package_guidelines#Package_naming
+    /// convention
+    //    && std::ranges::all_of(name, [](const char& ch) {
+    //           return ((std::isalpha(ch)) && std::islower(ch))
+    //                  || std::isdigit(ch)
+    //                  || (valid.find(ch) != std::string::npos);
+    //       });
 }
 
 namespace bxt::Core::Domain {
