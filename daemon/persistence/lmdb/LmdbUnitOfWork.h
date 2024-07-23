@@ -23,10 +23,10 @@ public:
     virtual ~LmdbUnitOfWork() = default;
 
     coro::task<Result<void>> commit_async() override {
-        while (!m_hooks.empty()) {
-            m_hooks.front()();
-            m_hooks.pop();
+        for (const auto& [name, hook] : m_hooks) {
+            hook();
         }
+        m_hooks.clear();
 
         m_txn->value.commit();
         co_return {};
@@ -49,12 +49,16 @@ public:
         co_return {};
     }
 
-    void hook(std::function<void()>&& hook) { m_hooks.push(std::move(hook)); }
+    void hook(std::function<void()>&& hook,
+              const std::string& name = "") override {
+        auto key = name.empty() ? std::to_string(m_hooks.size()) : name;
+        m_hooks.emplace(key, std::move(hook));
+    }
 
     Utilities::locked<lmdb::txn>& txn() const { return *m_txn; }
 
 private:
-    std::queue<std::function<void()>> m_hooks;
+    std::map<std::string, std::function<void()>> m_hooks;
     std::shared_ptr<Utilities::LMDB::Environment> m_env;
     std::unique_ptr<Utilities::locked<lmdb::txn>> m_txn;
 };

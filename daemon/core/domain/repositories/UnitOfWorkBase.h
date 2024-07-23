@@ -42,6 +42,9 @@ struct UnitOfWorkBase {
     virtual coro::task<Result<void>> begin_async() = 0;
 
     virtual coro::task<Result<void>> begin_ro_async() = 0;
+
+    virtual void hook(std::function<void()>&& hook,
+                      const std::string& name = "") = 0;
 };
 
 struct UnitOfWorkBaseFactory {
