@@ -149,20 +149,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * operation.
      */
     inline virtual coro::task<Result<void>>
-        save_async(const TEntity& entity, std::shared_ptr<UnitOfWorkBase> uow) {
-        auto find_result = co_await this->find_by_id_async(entity.id(), uow);
-
-        if (!find_result.has_value()) {
-            if (find_result.error().error_type
-                == ReadError::Type::EntityNotFound) {
-                co_return co_await add_async(entity, uow);
-            } else {
-                co_return bxt::make_error_with_source<WriteError>(
-                    std::move(find_result.error()), WriteError::OperationError);
-            }
-        }
-
-        co_return co_await update_async(entity, uow);
+        save_async(const TEntity entity, std::shared_ptr<UnitOfWorkBase> uow) {
+        return save_async(std::vector {entity}, uow);
     }
 
     /**
@@ -176,18 +164,29 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * operation.
      */
     inline virtual coro::task<Result<void>>
-        save_async(const TEntities& entities,
+        save_async(const TEntities entities,
                    std::shared_ptr<UnitOfWorkBase> uow) {
-        auto tasks = entities
-                     | std::views::transform([&](const TEntity& entity) {
-                           return save_async(entity, uow);
-                       })
-                     | std::ranges::to<std::vector>();
+        for (const auto& entity : entities) {
+            auto find_result =
+                co_await this->find_by_id_async(entity.id(), uow);
 
-        auto results = co_await coro::when_all(std::move(tasks));
-        for (const auto& result : results) {
-            if (!result.return_value().has_value()) {
-                co_return std::unexpected(result.return_value().error());
+            if (!find_result.has_value()) {
+                if (find_result.error().error_type
+                    == ReadError::Type::EntityNotFound) {
+                    auto add_result = co_await add_async(entity, uow);
+                    if (!add_result.has_value()) {
+                        co_return std::unexpected(add_result.error());
+                    }
+                } else {
+                    co_return bxt::make_error_with_source<WriteError>(
+                        std::move(find_result.error()),
+                        WriteError::OperationError);
+                }
+            } else {
+                auto update_result = co_await update_async(entity, uow);
+                if (!update_result.has_value()) {
+                    co_return std::unexpected(update_result.error());
+                }
             }
         }
         co_return {};
