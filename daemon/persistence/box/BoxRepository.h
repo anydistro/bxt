@@ -79,6 +79,8 @@ public:
                               std::shared_ptr<UnitOfWorkBase> uow) override;
 
 private:
+    void make_writeback_hook(const Section section,
+                             std::shared_ptr<UnitOfWorkBase> uow);
     BoxOptions m_options;
 
     PackageStoreBase &m_package_store;

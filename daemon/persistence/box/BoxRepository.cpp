@@ -21,6 +21,7 @@
 #include "utilities/StaticDTOMapper.h"
 #include "utilities/alpmdb/Database.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/to_string.h"
 
 #include <coro/sync_wait.hpp>
 #include <expected>
@@ -42,6 +43,22 @@ BoxRepository::BoxRepository(BoxOptions options,
       m_package_store(package_store),
       m_scheduler(writeback_sceduler),
       m_exporter(exporter) {};
+
+void BoxRepository::make_writeback_hook(const Section section,
+                                        std::shared_ptr<UnitOfWorkBase> uow) {
+    m_exporter.add_dirty_sections({SectionDTOMapper::to_dto(section)});
+
+    uow->hook(
+        [this, section = SectionDTOMapper::to_dto(section)] {
+            coro::sync_wait(m_scheduler.schedule(
+                [](auto self, auto section) -> coro::task<void> {
+                    co_await self->m_exporter.export_to_disk();
+                    co_return;
+                }(this, section)));
+        },
+        "Box::Exporter::WriteBack");
+}
+
 coro::task<BoxRepository::TResult>
     BoxRepository::find_by_id_async(TId id,
                                     std::shared_ptr<UnitOfWorkBase> uow) {
@@ -150,6 +167,14 @@ coro::task<BoxRepository::WriteResult<void>>
                 std::move(added_result.error()), WriteError::OperationError);
         }
     }
+
+    for (const auto section :
+         entity | std::views::transform([](const auto &pkg) {
+             return pkg.section();
+         })) {
+        make_writeback_hook(section, uow);
+    }
+
     co_return {};
 }
 coro::task<BoxRepository::WriteResult<void>>
@@ -162,6 +187,8 @@ coro::task<BoxRepository::WriteResult<void>>
         co_return bxt::make_error_with_source<WriteError>(
             std::move(result.error()), WriteError::OperationError);
     }
+
+    make_writeback_hook(entity.section(), uow);
 
     co_return {};
 }
@@ -186,6 +213,13 @@ coro::task<BoxRepository::WriteResult<void>>
                 std::move(deleted_result.error()), WriteError::OperationError);
         }
     }
+
+    for (const auto section : ids | std::views::transform([](const auto &id) {
+                                  return id.section;
+                              })) {
+        make_writeback_hook(section, uow);
+    }
+
     co_return {};
 }
 
@@ -201,6 +235,8 @@ coro::task<BoxRepository::WriteResult<void>>
         co_return bxt::make_error_with_source<WriteError>(
             std::move(result.error()), WriteError::OperationError);
     }
+
+    make_writeback_hook(id.section, uow);
     co_return {};
 }
 
@@ -221,6 +257,12 @@ coro::task<BoxRepository::WriteResult<void>>
                 std::move(updated_result.error()), WriteError::OperationError);
         }
     }
+
+    for (const auto section : entity | std::views::transform([](const auto &e) {
+                                  return e.section();
+                              })) {
+        make_writeback_hook(section, uow);
+    }
     co_return {};
 }
 
@@ -233,6 +275,9 @@ coro::task<BoxRepository::WriteResult<void>>
         co_return bxt::make_error_with_source<WriteError>(
             std::move(result.error()), WriteError::OperationError);
     }
+
+    make_writeback_hook(entity.section(), uow);
+
     co_return {};
 }
 
