@@ -12,7 +12,7 @@ services:
       - SYS_PTRACE
 
   production:
-    image: bxt_production:latest
+    image: anydistro/bxt:latest
     build:
       context: .
       target: production
