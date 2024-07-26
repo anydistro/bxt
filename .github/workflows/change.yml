@@ -5,6 +5,10 @@ on:
   - push
   - pull_request
 jobs:
+  message-lint:
+    uses: ./.github/workflows/commit-lint.yml
+    with:
+      upstream-repo: https://github.com/anydistro/bxt.git
   check-format:
     uses: ./.github/workflows/check-format.yml
   build:
