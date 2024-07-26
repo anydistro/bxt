@@ -2,20 +2,14 @@
   "recommendations": [
     "esbenp.prettier-vscode",
     "llvm-vs-code-extensions.vscode-clangd",
-    "ms-azuretools.vscode-docker",
     "ms-vscode.cmake-tools",
     "ms-vscode.cpptools",
     "ms-vscode.cpptools-extension-pack",
     "ms-vscode.cpptools-themes",
     "tamasfe.even-better-toml",
-    "tdennis4496.cmantic",
     "twxs.cmake",
-    "xaver.clang-format",
     "vadimcn.vscode-lldb",
     "42crunch.vscode-openapi",
-    "eamodio.gitlens",
     "redhat.vscode-yaml",
-    "cheshirekow.cmake-format",
-    "GitHub.vscode-pull-request-github"
   ]
 }
