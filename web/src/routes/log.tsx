@@ -5,7 +5,14 @@
  *
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loading, Card, Divider, Button, Pagination } from "react-daisyui";
+import {
+    Loading,
+    Card,
+    Divider,
+    Button,
+    Pagination,
+    Checkbox
+} from "react-daisyui";
 import { useLogs } from "../hooks/BxtHooks";
 import LogTable from "../components/LogTable";
 import {
@@ -41,28 +48,48 @@ export default function Log(props: any) {
     const [selectedPage, setSelectedPage] = useState(1);
     const [numOfPages, setNumOfPages] = useState(1);
 
+    const [showEmptyEntries, setShowEmptyEntries] = useState(false);
+
     const allEntries = useMemo(() => {
         if (entries) {
             return [
-                ...entries.commits.map((e) => ({
-                    ...e,
-                    type: "Commit",
-                    icon: faCodeCommit
-                })),
-                ...entries.syncs.map((e) => ({
-                    ...e,
-                    type: "Sync",
-                    icon: faArrowsRotate
-                })),
-                ...entries.deploys.map((e) => ({
-                    ...e,
-                    type: "Deploy",
-                    icon: faRocket
-                }))
+                ...entries.commits
+                    .map((e) => ({
+                        ...e,
+                        type: "Commit",
+                        icon: faCodeCommit
+                    }))
+                    .filter(
+                        (e) =>
+                            showEmptyEntries ||
+                            e.added.length > 0 ||
+                            e.deleted.length > 0 ||
+                            e.moved.length > 0 ||
+                            e.copied.length > 0
+                    ),
+                ...entries.syncs
+                    .map((e) => ({
+                        ...e,
+                        type: "Sync",
+                        icon: faArrowsRotate
+                    }))
+                    .filter(
+                        (e) =>
+                            showEmptyEntries ||
+                            e.added.length > 0 ||
+                            e.deleted.length > 0
+                    ),
+                ...entries.deploys
+                    .map((e) => ({
+                        ...e,
+                        type: "Deploy",
+                        icon: faRocket
+                    }))
+                    .filter((e) => showEmptyEntries || e.added.length > 0)
             ].sort((a, b) => b.time.getTime() - a.time.getTime());
         }
         return [];
-    }, [entries]);
+    }, [entries, showEmptyEntries]);
 
     useEffect(() => {
         if (!entries) {
@@ -190,7 +217,7 @@ export default function Log(props: any) {
             <div className="grow" />
             <div className="flex justify-between items-center gap-3 sticky height-10 bottom-0 mx-10">
                 <Card className="bg-base-100 shadow-sm overflow-clip rounded-b-none">
-                    <Card.Body className="p-0">
+                    <Card.Body className="p-0 flex flex-row gap-3 items-center align-middle">
                         <DateRangeInput
                             className="mx-1"
                             since={subDays(new Date(), 7)}
@@ -207,6 +234,21 @@ export default function Log(props: any) {
                                 );
                             }}
                         />
+                        <div
+                            className="flex items-center gap-1 px-3 select-none"
+                            onClick={() =>
+                                setShowEmptyEntries(!showEmptyEntries)
+                            }
+                        >
+                            <Checkbox
+                                size="sm"
+                                onChange={(e) =>
+                                    setShowEmptyEntries(e.target.checked)
+                                }
+                                checked={showEmptyEntries}
+                            />
+                            Show empty entries
+                        </div>
                     </Card.Body>
                 </Card>
                 <Card className="bg-base-100 shadow-sm overflow-clip rounded-b-none">
