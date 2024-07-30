@@ -19,7 +19,8 @@ import {
     faCirclePlus,
     faCopy,
     faTrashAlt,
-    faTrashCan
+    faTrashCan,
+    faUpload
 } from "@fortawesome/free-solid-svg-icons";
 import "react-toastify/dist/ReactToastify.css";
 import { forwardRef, useCallback, useEffect, useState } from "react";
@@ -33,6 +34,7 @@ import TransferTable from "../components/commit/TransferTable";
 import _ from "lodash";
 import { createCommit, mergeCommits } from "../utils/CommitUtils";
 import SectionLabel from "../components/SectionLabel";
+import { useFilePicker } from "use-file-picker";
 
 export type CommitModalProps = ModalProps & {
     isNew?: boolean;
@@ -73,6 +75,13 @@ export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
             })
         );
 
+        const { openFilePicker } = useFilePicker({
+            multiple: true,
+            onFilesSelected: ({ plainFiles }) => {
+                packageDropHandler(plainFiles);
+            }
+        });
+
         const { getRootProps, getInputProps } = useDropzone({
             onDrop: packageDropHandler,
             noClick: true
@@ -82,6 +91,7 @@ export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
             <Modal ref={ref} className="w-11/12 max-w-5xl" {...props}>
                 <Modal.Header>
                     <span>Commit</span>
+
                     <div className="float-right">
                         {props.isNew ? (
                             <SectionSelect
@@ -224,6 +234,17 @@ export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
                 </Modal.Body>
                 <Form className="mt-6">
                     <span className="flex space-x-4 justify-end">
+                        <Button
+                            color="accent"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                openFilePicker();
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faUpload} />
+                            Upload
+                        </Button>
+                        <div className="grow" />
                         {!props.isNew && (
                             <Button
                                 startIcon={

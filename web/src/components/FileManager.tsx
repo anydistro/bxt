@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
+import { faCodeCommit, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     FileBrowserHandle,
@@ -44,6 +44,7 @@ import {
     useHandler
 } from "../fmActions/PackageActions";
 import { createCommit, mergeCommits } from "../utils/CommitUtils";
+import { useFilePicker } from "use-file-picker";
 
 export type FileManagerProps = {
     path: string[];
@@ -178,6 +179,31 @@ export default function FileManager(props: FileManagerProps) {
         handleFileAction("delete", path)
     );
 
+    const packageDropHandler = usePackageDropHandler(
+        SectionUtils.fromPath(path) || sections[0],
+        (section, addAction) => {
+            const existingCommit = commits.get(SectionUtils.toString(section));
+            if (!existingCommit) {
+                openModalWithCommitHandler(
+                    section,
+                    createCommit({ toAdd: addAction })
+                );
+                return;
+            }
+            const addCommit = mergeCommits(existingCommit, {
+                toAdd: addAction
+            });
+            openModalWithCommitHandler(section, addCommit);
+        }
+    );
+
+    const { openFilePicker } = useFilePicker({
+        multiple: true,
+        onFilesSelected: ({ plainFiles }) => {
+            packageDropHandler(plainFiles);
+        }
+    });
+
     const fileAction = useFileActionHandler([
         snapshotHandler,
         openHandler,
@@ -217,28 +243,7 @@ export default function FileManager(props: FileManagerProps) {
             side={true}
             onClickOverlay={() => setDrawerOpened(false)}
         >
-            <Dropzone
-                noClick={true}
-                onDrop={usePackageDropHandler(
-                    SectionUtils.fromPath(path) || sections[0],
-                    (section, addAction) => {
-                        const existingCommit = commits.get(
-                            SectionUtils.toString(section)
-                        );
-                        if (!existingCommit) {
-                            openModalWithCommitHandler(
-                                section,
-                                createCommit({ toAdd: addAction })
-                            );
-                            return;
-                        }
-                        const addCommit = mergeCommits(existingCommit, {
-                            toAdd: addAction
-                        });
-                        openModalWithCommitHandler(section, addCommit);
-                    }
-                )}
-            >
+            <Dropzone noClick={true} onDrop={packageDropHandler}>
                 {({ getRootProps, getInputProps }) => (
                     <div className="h-full" {...getRootProps()}>
                         <input {...getInputProps()} />
@@ -251,26 +256,31 @@ export default function FileManager(props: FileManagerProps) {
                     </div>
                 )}
             </Dropzone>
-            {commits.size > 0 && !progress && (
-                <Button
-                    color="accent"
-                    className="fixed bottom-6 right-6"
-                    onClick={() => setDrawerOpened(true)}
-                >
-                    <FontAwesomeIcon icon={faCodeCommit} />
-                    {commits.size} commit{commits.size == 1 ? "" : "s"} pending
-                </Button>
-            )}
-            {progress && (
-                <Button
-                    disabled={true}
-                    color="accent"
-                    className="fixed bottom-6 right-6"
-                >
-                    <Loading />
-                    Upload in progress...
-                </Button>
-            )}
+            <div className="fixed bottom-6 right-6 flex gap-2">
+                {!progress && (
+                    <Button color="accent" onClick={openFilePicker}>
+                        <FontAwesomeIcon icon={faUpload} />
+                        Upload
+                    </Button>
+                )}
+                {commits.size > 0 && !progress && (
+                    <Button
+                        color="primary"
+                        onClick={() => setDrawerOpened(true)}
+                    >
+                        <FontAwesomeIcon icon={faCodeCommit} />
+                        {commits.size} commit{commits.size === 1 ? "" : "s"}{" "}
+                        pending
+                    </Button>
+                )}
+
+                {progress && (
+                    <Button disabled={true} color="accent">
+                        <Loading />
+                        Upload in progress...
+                    </Button>
+                )}
+            </div>
         </CommitDrawer>
     );
 }
