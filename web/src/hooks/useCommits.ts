@@ -15,8 +15,12 @@ export type CommitsState = {
     clearCommits: () => void;
 };
 
-export default function useCommits(): CommitsState {
-    const [commits, setCommits] = useState(new Map<string, Commit>());
+export default function useCommits(
+    initialState: Commits | (() => Commits) = new Map<string, Commit>()
+): CommitsState {
+    const [commits, setCommits] = useState(
+        initialState instanceof Function ? initialState() : initialState
+    );
 
     const addCommit = useCallback(
         (section: Section, commit: Commit) => {

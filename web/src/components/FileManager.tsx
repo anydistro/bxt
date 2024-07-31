@@ -5,14 +5,16 @@
  *
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { faCodeCommit, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     FileBrowserHandle,
     FileBrowserProps,
     FullFileBrowser as F,
-    setChonkyDefaults
+    setChonkyDefaults,
+    ChonkyActions,
+    ChonkyFileActionData
 } from "chonky";
 import { Button, Loading } from "react-daisyui";
 import Dropzone from "react-dropzone-esm";
@@ -204,7 +206,46 @@ export default function FileManager(props: FileManagerProps) {
         }
     });
 
+    const fileBrowserRef = useRef<FileBrowserHandle>(null);
+    const [selectionApplied, setSelectionApplied] = useState(false);
+
+    useEffect(() => {
+        if (!fileBrowserRef.current) {
+            return;
+        }
+        const fileSelection: Set<string> = JSON.parse(
+            localStorage.getItem("fileSelection") || "[]",
+            (_, value) => {
+                if (value.dataType === "Set") {
+                    return new Set(value.value);
+                }
+                return value;
+            }
+        );
+        fileBrowserRef.current.setFileSelection(fileSelection);
+        setSelectionApplied(true);
+    }, [files]);
+
+    const onFileSelectAction = ({ payload }: ChonkyFileActionData) => {
+        if (!selectionApplied) {
+            return;
+        }
+        localStorage.setItem(
+            "fileSelection",
+            JSON.stringify((payload as any).selection, (_, value) => {
+                if (value instanceof Set) {
+                    return {
+                        dataType: "Set",
+                        value: [...value.keys()]
+                    };
+                }
+                return value;
+            })
+        );
+    };
+
     const fileAction = useFileActionHandler([
+        [ChonkyActions.ChangeSelection.id, onFileSelectAction],
         snapshotHandler,
         openHandler,
         copyHandler,
@@ -248,6 +289,7 @@ export default function FileManager(props: FileManagerProps) {
                     <div className="h-full" {...getRootProps()}>
                         <input {...getInputProps()} />
                         <FullFileBrowser
+                            ref={fileBrowserRef}
                             fileActions={fileActions}
                             files={files}
                             onFileAction={fileAction}

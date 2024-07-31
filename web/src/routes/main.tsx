@@ -17,18 +17,61 @@ import { mergeCommits } from "../utils/CommitUtils";
 import SectionSelectModal, {
     SectionSelectModalProps
 } from "../modals/SectionSelectModal";
+import useLocalStorage from "../hooks/useLocalStorage";
+
+const useLocalStoredCommits = () => {
+    const reviver = (key: string, value: any) => {
+        if (value.dataType === "Map") {
+            return new Map(value.value);
+        }
+        if (value.dataType === "Set") {
+            return new Set(value.value);
+        }
+        return value;
+    };
+
+    const replacer = (key: string, value: any) => {
+        if (value instanceof Map) {
+            return {
+                dataType: "Map",
+                value: [...value.entries()]
+            };
+        }
+        if (value instanceof Set) {
+            return {
+                dataType: "Set",
+                value: [...value.entries()]
+            };
+        }
+        return value;
+    };
+
+    const commitsState = useCommits(() =>
+        localStorage.getItem("commits")
+            ? new Map(
+                  JSON.parse(localStorage.getItem("commits") || "", reviver)
+              )
+            : new Map()
+    );
+
+    const { commits } = commitsState;
+
+    useEffect(() => {
+        localStorage.setItem("commits", JSON.stringify(commits, replacer));
+    }, [commits]);
+
+    return commitsState;
+};
 
 export default function Main(props: any) {
     const [sections, updateSections] = useSections();
 
-    const [path, setPath] = useState<string[]>(() => {
-        const storedPath = localStorage.getItem("path");
-        return storedPath ? JSON.parse(storedPath) : ["root"];
-    });
+    const [path, setPath] = useLocalStorage<string[]>("path", ["root"]);
 
-    useEffect(() => {
-        localStorage.setItem("path", JSON.stringify(path));
-    }, [path]);
+    const [selection, setSelection] = useLocalStorage<string[]>(
+        "selection",
+        []
+    );
 
     const [commitModalProps, setCommitModalProps] = useState<CommitModalProps>({
         isNew: true,
@@ -37,13 +80,8 @@ export default function Main(props: any) {
     });
     const commitModalRef = useRef<HTMLDialogElement>(null);
 
-    const commitsState = useCommits();
-
+    const commitsState = useLocalStoredCommits();
     const { commits, addCommit, deleteCommit, clearCommits } = commitsState;
-
-    useEffect(() => {
-        localStorage.setItem("commits", JSON.stringify(commits));
-    }, [commits]);
 
     const [isCommitInModalNew, setIsCommitInModalNew] =
         useState<boolean>(false);
