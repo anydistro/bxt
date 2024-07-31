@@ -8,7 +8,6 @@ import { Drawer, Menu, Button, Progress } from "react-daisyui";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import ConfirmSyncModal from "../modals/ConfirmSyncModal";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useLocalStorage } from "@uidotdev/usehooks";
 import axios from "axios";
 import { useSyncMessage } from "../hooks/BxtWebSocketHooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -19,8 +18,10 @@ import {
     faFolderTree,
     faListCheck,
     faRightFromBracket,
-    faToolbox
+    faToolbox,
+    faUser
 } from "@fortawesome/free-solid-svg-icons";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 const triggerSync = async () => {
     await axios.post("/api/packages/sync");
@@ -106,12 +107,19 @@ export default function RootDrawerLayout() {
                     <div className="h-5 flex flex-col place-content-center">
                         <hr />
                     </div>
-                    <Menu.Item onClick={(e) => revokeToken()}>
-                        <a>
-                            <FontAwesomeIcon icon={faRightFromBracket} />
-                            Logout
-                        </a>
-                    </Menu.Item>
+
+                    <span className="flex items-center justify-between">
+                        <span>
+                            <FontAwesomeIcon icon={faUser} className="mr-2" />
+                            {userName}
+                        </span>
+                        <Menu.Item>
+                            <a onClick={(e) => revokeToken()}>
+                                <FontAwesomeIcon icon={faRightFromBracket} />
+                                Logout
+                            </a>
+                        </Menu.Item>
+                    </span>
                 </Menu>
             }
         >
