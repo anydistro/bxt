@@ -7,12 +7,13 @@
 import { Drawer, Menu, Button, Progress } from "react-daisyui";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import ConfirmSyncModal from "../modals/ConfirmSyncModal";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocalStorage } from "@uidotdev/usehooks";
 import axios from "axios";
 import { useSyncMessage } from "../hooks/BxtWebSocketHooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+    faBars,
     faCircleDown,
     faCodeCompare,
     faFolderTree,
@@ -52,10 +53,13 @@ export default function RootDrawerLayout() {
 
     const location = useLocation();
 
+    const [drawerOpened, setDrawerOpened] = useState(false);
+
     return (
         <Drawer
             className="lg:drawer-open"
-            open={true}
+            open={drawerOpened}
+            onClickOverlay={() => setDrawerOpened(false)}
             side={
                 <Menu className="h-screen p-4 w-60 bg-base-100 text-base-content border-r-base border-r-2">
                     <Link
@@ -119,8 +123,17 @@ export default function RootDrawerLayout() {
                 }}
                 ref={modalRef}
             />
-
-            <Outlet />
+            <Button
+                className={`fixed bottom-6 left-6 z-20 lg:hidden ${drawerOpened ? "hidden" : ""}`}
+                onClick={() => setDrawerOpened(!drawerOpened)}
+                color="primary"
+                size="md"
+            >
+                <FontAwesomeIcon icon={faBars} />
+            </Button>
+            <div className="flex h-screen">
+                <Outlet />
+            </div>
         </Drawer>
     );
 }
