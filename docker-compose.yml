@@ -20,5 +20,7 @@ services:
       - "80:8080"
     volumes:
       - persistence_volume:/app/persistence/
+      - /etc/bxtd/box.yml:/app/box.yml
+      - /etc/bxtd/config.toml:/app/config.toml
 volumes:
   persistence_volume:
