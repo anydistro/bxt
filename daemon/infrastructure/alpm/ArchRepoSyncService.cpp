@@ -22,6 +22,7 @@
 #include <coro/sync_wait.hpp>
 #include <coro/thread_pool.hpp>
 #include <coro/when_all.hpp>
+#include <cstdint>
 #include <expected>
 #include <httplib.h>
 #include <ios>
@@ -229,10 +230,14 @@ std::optional<ArchRepoSyncService::PackageInfo> parse_descfile(auto& entry) {
 
     if (!hash.has_value()) { return {}; }
 
+    const auto package_size = desc.get("ISIZE");
+    if (!package_size.has_value()) { return {}; }
+
     return ArchRepoSyncService::PackageInfo {.name = *name,
                                              .filename = *filename,
                                              .version = *version,
-                                             .hash = *hash};
+                                             .hash = *hash,
+                                             .package_size = *package_size};
 }
 coro::task<
     ArchRepoSyncService::Result<std::vector<ArchRepoSyncService::PackageInfo>>>
@@ -283,7 +288,11 @@ coro::task<
         co_return bxt::make_error_with_source<DownloadError>(
             std::move(open_ok.error()), path, "The archive cannot be opened");
     }
+
+    uint64_t packages_size = 0;
+
     auto uow = co_await m_uow_factory();
+
     for (auto& [header, entry] : reader) {
         std::string pname = archive_entry_pathname(*header);
 
@@ -296,12 +305,15 @@ coro::task<
                 "Unknown", fmt::format("Cannot parse descfile {}", pname));
         }
 
-        const auto& [name, filename, version, hash] = *parsed_package_info;
+        const auto& [name, filename, version, hash, package_size] =
+            *parsed_package_info;
 
         if (is_excluded(section, name)) {
             logi("Package {} is excluded. Skipping.", name);
             continue;
         }
+
+        packages_size += std::stoull(package_size);
 
         const auto existing_package =
             co_await m_package_repository.find_by_section_async(
@@ -314,6 +326,24 @@ coro::task<
             result.emplace_back(std::move(*parsed_package_info));
         }
     }
+
+    std::error_code ec;
+    const auto filepath =
+        m_options.sources[section].download_path / bxt::to_string(section);
+    const auto available_space = std::filesystem::space(filepath, ec).available;
+    if (ec) {
+        co_return bxt::make_error<DownloadError>(
+            "Unknown",
+            fmt::format("Error checking disk space: {}.", ec.value()));
+    }
+    if (available_space <= packages_size) {
+        co_return bxt::make_error<DownloadError>(
+            "Unknown",
+            fmt::format(
+                "Not enough available disk space. Need: {}, available: {}.",
+                packages_size, available_space));
+    }
+
     co_return result;
 }
 

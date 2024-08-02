@@ -44,6 +44,7 @@ public:
         std::string filename;
         Core::Domain::PackageVersion version;
         std::string hash;
+        std::string package_size;
     };
 
     ArchRepoSyncService(Utilities::EventBusDispatcher& dispatcher,
