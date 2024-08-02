@@ -1,6 +1,7 @@
 /* === This file is part of bxt ===
  *
  *   SPDX-FileCopyrightText: 2022 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-FileCopyrightText: 2024 Daniil Lyudvig <thricht3r@yandex.ru>
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
@@ -162,6 +163,24 @@ drogon::Task<drogon::HttpResponsePtr>
     response->removeCookie(Names::AccessToken);
 
     co_return response;
+}
+
+drogon::Task<drogon::HttpResponsePtr>
+    AuthController::verify(drogon::HttpRequestPtr req) {
+    auto accesss_token = drogon_helpers::get_access_token(req, m_options.issuer,
+                                                          m_options.secret);
+    if (!accesss_token.has_value()) {
+        co_return drogon_helpers::make_error_response(accesss_token.error(),
+                                                      drogon::k401Unauthorized);
+    }
+
+    auto user_permissions = co_await m_service.verify_user(*accesss_token);
+    if (!user_permissions.has_value()) {
+        co_return drogon_helpers::make_error_response(
+            user_permissions.error().what());
+    }
+
+    co_return drogon_helpers::make_json_response(*user_permissions);
 }
 
 auto time_point_to_trantor_date(

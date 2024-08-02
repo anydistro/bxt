@@ -1,6 +1,7 @@
 /* === This file is part of bxt ===
  *
  *   SPDX-FileCopyrightText: 2022 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-FileCopyrightText: 2024 Daniil Lyudvig <thricht3r@yandex.ru>
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
@@ -23,6 +24,8 @@ public:
     virtual coro::task<Result<void>> remove_user(const std::string name);
     virtual coro::task<Result<void>> update_user(const UserDTO user);
     virtual coro::task<Result<std::vector<UserDTO>>> get_users() const;
+    virtual coro::task<Result<UserDTO>>
+        get_user(const std::string user_name) const;
 
 private:
     bxt::Core::Domain::UserRepository& m_repository;

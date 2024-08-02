@@ -1,6 +1,7 @@
 /* === This file is part of bxt ===
  *
  *   SPDX-FileCopyrightText: 2022 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-FileCopyrightText: 2024 Daniil Lyudvig <thricht3r@yandex.ru>
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
@@ -8,6 +9,7 @@
 #include "core/application/errors/AuthError.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "core/domain/repositories/UserRepository.h"
+#include "presentation/Token.h"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
 
@@ -29,6 +31,9 @@ public:
     coro::task<Result<void>> auth(std::string name, std::string password);
 
     coro::task<Result<void>> verify(const std::string token) const;
+
+    coro::task<Result<std::set<std::string>>>
+        verify_user(const Presentation::Token token) const;
 
 private:
     Domain::UserRepository& m_user_repository;
