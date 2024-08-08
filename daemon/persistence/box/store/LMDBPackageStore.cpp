@@ -139,11 +139,11 @@ coro::task<std::expected<void, DatabaseError>>
         co_return bxt::make_error<DatabaseError>(
             DatabaseError::ErrorType::InvalidArgument);
     }
-    auto moved_package = m_pool.move_to(package);
+    auto moved_package_path = m_pool.path_for_package(package);
 
-    if (!moved_package.has_value()) {
+    if (!moved_package_path.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
-            std::move(moved_package.error()),
+            std::move(moved_package_path.error()),
             DatabaseError::ErrorType::InvalidArgument);
     }
 
@@ -151,13 +151,15 @@ coro::task<std::expected<void, DatabaseError>>
 
     auto existing_package = co_await m_db.get(lmdb_uow->txn().value, key);
     if (existing_package.has_value()) {
-        for (const auto& [location, desc] : moved_package->descriptions) {
-            existing_package->descriptions[location] = desc;
+        auto merged_package = *existing_package;
+        for (const auto& [location, desc] : moved_package_path->descriptions) {
+            merged_package.descriptions[location] = desc;
         }
-        moved_package = *existing_package;
+        moved_package_path = merged_package;
     }
 
-    auto result = co_await m_db.put(lmdb_uow->txn().value, key, *moved_package);
+    auto result =
+        co_await m_db.put(lmdb_uow->txn().value, key, *moved_package_path);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
@@ -165,8 +167,20 @@ coro::task<std::expected<void, DatabaseError>>
             DatabaseError::ErrorType::InvalidArgument);
     }
 
-    // auto mark = m_archiver.mark_dirty_sections({section});
-    // co_await mark;
+    lmdb_uow->hook([this, package, moved_package_path, existing_package] {
+        auto tmp_package = package;
+        for (const auto& desc : moved_package_path->descriptions) {
+            if (package.descriptions.contains(desc.first)
+                && existing_package->descriptions.contains(desc.first)
+                && desc.second.filepath
+                       == existing_package->descriptions.at(desc.first)
+                              .filepath) {
+                tmp_package.descriptions.erase(desc.first);
+            }
+        }
+
+        m_pool.move_to(std::move(tmp_package));
+    });
 
     co_return {};
 }
