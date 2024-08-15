@@ -44,6 +44,7 @@ public:
         std::string filename;
         Core::Domain::PackageVersion version;
         std::string hash;
+        std::optional<std::string> signature;
     };
 
     ArchRepoSyncService(Utilities::EventBusDispatcher& dispatcher,
@@ -67,9 +68,11 @@ protected:
 
     coro::task<Result<std::vector<PackageInfo>>>
         get_available_packages(const PackageSectionDTO section);
-    coro::task<Result<Package>> download_package(PackageSectionDTO section,
-                                                 std::string package_filename,
-                                                 std::string sha256_hash);
+    coro::task<Result<Package>>
+        download_package(PackageSectionDTO section,
+                         std::string package_filename,
+                         std::string sha256_hash,
+                         std::optional<std::string> signature = std::nullopt);
 
     coro::task<std::unique_ptr<httplib::SSLClient>>
         get_client(const std::string url);

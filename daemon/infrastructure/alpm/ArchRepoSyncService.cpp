@@ -14,6 +14,7 @@
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/base64.h"
 #include "utilities/hash_from_file.h"
 #include "utilities/libarchive/Reader.h"
 #include "utilities/log/Logging.h"
@@ -164,8 +165,8 @@ coro::task<SyncService::Result<std::vector<Package>>>
         auto task =
             [this, section](
                 const PackageInfo pkginfo) -> coro::task<Result<Package>> {
-            co_return co_await download_package(section, pkginfo.filename,
-                                                pkginfo.hash);
+            co_return co_await download_package(
+                section, pkginfo.filename, pkginfo.hash, pkginfo.signature);
         };
 
         auto tasks = *remote_packages | std::views::transform(task)
@@ -229,10 +230,17 @@ std::optional<ArchRepoSyncService::PackageInfo> parse_descfile(auto& entry) {
 
     if (!hash.has_value()) { return {}; }
 
+    auto signature = desc.get("PGPSIG");
+
+    if (signature.has_value()) {
+        signature = bxt::Utilities::b64_decode(*signature);
+    }
+
     return ArchRepoSyncService::PackageInfo {.name = *name,
                                              .filename = *filename,
                                              .version = *version,
-                                             .hash = *hash};
+                                             .hash = *hash,
+                                             .signature = signature};
 }
 coro::task<
     ArchRepoSyncService::Result<std::vector<ArchRepoSyncService::PackageInfo>>>
@@ -296,7 +304,8 @@ coro::task<
                 "Unknown", fmt::format("Cannot parse descfile {}", pname));
         }
 
-        const auto& [name, filename, version, hash] = *parsed_package_info;
+        const auto& [name, filename, version, hash, signature] =
+            *parsed_package_info;
 
         if (is_excluded(section, name)) {
             logi("Package {} is excluded. Skipping.", name);
@@ -318,9 +327,11 @@ coro::task<
 }
 
 coro::task<ArchRepoSyncService::Result<Package>>
-    ArchRepoSyncService::download_package(PackageSectionDTO section,
-                                          std::string package_filename,
-                                          std::string sha256_hash) {
+    ArchRepoSyncService::download_package(
+        PackageSectionDTO section,
+        std::string package_filename,
+        std::string sha256_hash,
+        std::optional<std::string> signature) {
     const auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
 
@@ -371,17 +382,34 @@ coro::task<ArchRepoSyncService::Result<Package>>
                 package_filename, httplib::to_string(response->error()));
         }
     }
-    auto response =
-        co_await download_file(m_options.sources[section].repo_url,
-                               path + ".sig", full_filename + ".sig");
+    if (signature == std::nullopt) {
+        logi("Signature was not found in downloaded database."
+             "Trying to download it from the repository...");
+        auto response =
+            co_await download_file(m_options.sources[section].repo_url,
+                                   path + ".sig", full_filename + ".sig");
 
-    if (!response.has_value()) {
-        co_return bxt::make_error<DownloadError>(
-            package_filename + ".sig", "Can't download the signature");
-    }
-    if (!(*response)) {
-        co_return bxt::make_error<DownloadError>(
-            package_filename + ".sig", httplib::to_string(response->error()));
+        if (!response.has_value()) {
+            co_return bxt::make_error<DownloadError>(
+                package_filename + ".sig", "Can't download the signature");
+        }
+        if (!(*response)) {
+            co_return bxt::make_error<DownloadError>(
+                package_filename + ".sig",
+                httplib::to_string(response->error()));
+        }
+    } else {
+        logi("Signature was found in downloaded database, writing it to file.");
+        std::ofstream sig_file(full_filename + ".sig", std::ios::binary);
+        if (!sig_file) {
+            co_return bxt::make_error<DownloadError>(
+                package_filename + ".sig", "Can't create signature file");
+        }
+        sig_file.write(signature->data(), signature->size());
+        if (!sig_file) {
+            co_return bxt::make_error<DownloadError>(
+                package_filename + ".sig", "Can't write to signature file");
+        }
     }
 
     auto result = Package::from_file_path(SectionDTOMapper::to_entity(section),
