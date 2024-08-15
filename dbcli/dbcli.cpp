@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <fmt/color.h>
 #include <fmt/core.h>
+#include <fstream>
 #include <lmdbxx/lmdb++.h>
 #include <string>
 
@@ -62,8 +63,28 @@ int validate_and_rebuild(lmdb::txn& transaction,
                 continue;
             }
 
+            std::string signature;
+
+            if (description.signature_path) {
+                try {
+                    std::ifstream file(*description.signature_path);
+                    if (file.is_open()) {
+                        std::stringstream buffer;
+                        buffer << file.rdbuf();
+                        signature = buffer.str();
+                        file.close();
+                    } else {
+                        std::cerr << "Unable to open signature file: "
+                                  << *description.signature_path << std::endl;
+                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "Error reading signature file: " << e.what()
+                              << std::endl;
+                }
+            }
+
             auto desc_result = bxt::Utilities::AlpmDb::Desc::parse_package(
-                description.filepath);
+                description.filepath, signature);
 
             if (!desc_result) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),

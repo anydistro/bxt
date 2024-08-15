@@ -6,6 +6,7 @@
  */
 #include "Desc.h"
 
+#include "utilities/base64.h"
 #include "utilities/hash_from_file.h"
 #include "utilities/libarchive/Error.h"
 #include "utilities/libarchive/Reader.h"
@@ -58,6 +59,7 @@ std::optional<std::string> Desc::get(const std::string &key) const {
 }
 
 Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
+                                       const std::string &signature,
                                        bool create_files) {
     std::ostringstream desc;
     std::ostringstream files;
@@ -122,6 +124,11 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
                         filepath.filename().string());
     desc << fmt::format(format_string, "CSIZE",
                         std::to_string(std::filesystem::file_size(filepath)));
+
+    if (!signature.empty()) {
+        desc << fmt::format(format_string, "PGPSIG",
+                            bxt::Utilities::b64_encode(signature));
+    }
 
     desc << fmt::format(
         format_string, "MD5SUM",

@@ -52,6 +52,7 @@ struct Desc {
     template<class Archive> void serialize(Archive& ar) { ar(desc, files); }
 
     static Result<Desc> parse_package(const std::filesystem::path& filepath,
+                                      const std::string& signature = "",
                                       bool create_files = true);
 
     std::optional<std::string> get(const std::string& key) const;
