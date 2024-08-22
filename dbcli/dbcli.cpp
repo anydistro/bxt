@@ -95,9 +95,57 @@ int validate_and_rebuild(lmdb::txn& transaction,
                 error_count++;
                 continue;
             }
-            fmt::print(fg(fmt::terminal_color::green), "{} ({}): Valid\n",
-                       record->id.to_string(), bxt::to_string(location));
 
+            if (desc_result->desc != description.descfile.desc) {
+                fmt::print(stderr, fg(fmt::terminal_color::red),
+                           "{} ({}): Desc-file mismatch for: {}\n",
+                           record->id.to_string(), bxt::to_string(location),
+                           description.filepath.string());
+
+                // Create directory for saving desc files
+                std::filesystem::path report_dir = "dbcli-report";
+                std::filesystem::path package_dir = report_dir
+                                                    / record->id.to_string()
+                                                    / bxt::to_string(location);
+                std::filesystem::create_directories(package_dir);
+
+                // Save db desc file
+                std::ofstream db_file(package_dir / "db");
+                if (db_file.is_open()) {
+                    db_file << description.descfile.desc;
+                    db_file.close();
+                } else {
+                    fmt::print(stderr, fg(fmt::terminal_color::red),
+                               "{} ({}): Failed to save db desc file\n",
+                               record->id.to_string(),
+                               bxt::to_string(location));
+                }
+
+                // Save pkg desc file
+                std::ofstream pkg_file(package_dir / "pkg");
+                if (pkg_file.is_open()) {
+                    pkg_file << desc_result->desc;
+                    pkg_file.close();
+                } else {
+                    fmt::print(stderr, fg(fmt::terminal_color::red),
+                               "{} ({}): Failed to save pkg desc file\n",
+                               record->id.to_string(),
+                               bxt::to_string(location));
+                }
+
+                fmt::print(fg(fmt::terminal_color::yellow),
+                           "{} ({}): Desc files saved in {}\n",
+                           record->id.to_string(), bxt::to_string(location),
+                           package_dir.string());
+
+                needs_update = true;
+
+                if (!rebuild_descfile) { error_count++; }
+
+            } else {
+                fmt::print(fg(fmt::terminal_color::green), "{} ({}): Valid\n",
+                           record->id.to_string(), bxt::to_string(location));
+            }
             if (rebuild_descfile) {
                 fmt::print("{} ({}): Rebuilding desc-file for: {}\n",
                            record->id.to_string(), bxt::to_string(location),
