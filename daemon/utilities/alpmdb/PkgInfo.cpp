@@ -30,22 +30,14 @@ void PkgInfo::parse(std::string_view contents) {
         std::string_view key = line.substr(0, delim_pos);
         std::string_view value = line.substr(delim_pos + 3);
 
-        m_values.insert({std::string(key), std::string(value)});
+        m_values[std::string(key)].emplace_back(value);
     }
 }
 
-std::set<std::string> PkgInfo::values(const std::string &key) {
-    std::set<std::string> result;
-    auto iterator_range = m_values.equal_range(key);
-
-    static auto select2nd = []<typename TValue>(const TValue &val) {
-        return val.second;
-    };
-
-    std::transform(iterator_range.first, iterator_range.second,
-                   std::inserter(result, result.end()), select2nd);
-
-    return result;
+std::vector<std::string> PkgInfo::values(const std::string& key) const {
+    auto it = m_values.find(key);
+    if (it != m_values.end()) { return it->second; }
+    return {};
 }
 
 } // namespace bxt::Utilities::AlpmDb

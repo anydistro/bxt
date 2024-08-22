@@ -6,8 +6,8 @@
  */
 #include "Desc.h"
 
-#include "utilities/base64.h"
-#include "utilities/hash_from_file.h"
+#include "utilities/alpmdb/DescFormatter.h"
+#include "utilities/alpmdb/PkgInfo.h"
 #include "utilities/libarchive/Error.h"
 #include "utilities/libarchive/Reader.h"
 
@@ -18,33 +18,10 @@
 #include <frozen/set.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-
-constexpr static frozen::unordered_map<frozen::string, frozen::string, 20>
-    m_desc_to_info_mapping {{"NAME", "pkgname"},
-                            {"BASE", "pkgbase"},
-                            {"VERSION", "pkgver"},
-                            {"DESC", "pkgdesc"},
-                            {"ISIZE", "size"},
-                            {"URL", "url"},
-                            {"LICENSE", "license"},
-                            {"ARCH", "arch"},
-                            {"BUILDDATE", "builddate"},
-                            {"PACKAGER", "packager"},
-                            {"REPLACES", "replaces"},
-                            {"CONFLICTS", "conflict"},
-                            {"PROVIDES", "provides"},
-                            {"DEPENDS", "depend"},
-                            {"MAKEDEPENDS", "makedepend"},
-                            {"CHECKDEPENDS", "checkdepend"},
-                            {"OPTDEPENDS", "optdepend"},
-                            {"GROUPS", "groups"},
-                            {"BACKUP", "backup"},
-                            {"INSTALL", "install"}};
+#include <optional>
 
 namespace bxt::Utilities::AlpmDb {
-std::optional<std::string> Desc::get(const std::string &key) const {
+std::optional<std::string> Desc::get(const std::string& key) const {
     auto prepared_key = fmt::format("%{}%\n", key);
     auto value_begin = desc.find(prepared_key);
 
@@ -58,8 +35,8 @@ std::optional<std::string> Desc::get(const std::string &key) const {
     return desc.substr(value_begin, value_end - value_begin);
 }
 
-Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
-                                       const std::string &signature,
+Desc::Result<Desc> Desc::parse_package(const std::filesystem::path& filepath,
+                                       const std::string& signature,
                                        bool create_files) {
     std::ostringstream desc;
     std::ostringstream files;
@@ -79,7 +56,7 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
     PkgInfo package_info;
 
     bool found = false;
-    for (auto &[header, entry] : file_reader) {
+    for (auto& [header, entry] : file_reader) {
         if (!header) { continue; }
         std::string pathname = archive_entry_pathname(*header);
 
@@ -119,36 +96,9 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
             ParseError(ParseError::ErrorType::NoPackageInfo));
     }
 
-    constexpr static char format_string[] = "%{}%\n{}\n\n";
+    DescFormatter formatter {package_info, filepath, signature};
 
-    desc << fmt::format(format_string, "FILENAME",
-                        filepath.filename().string());
-    desc << fmt::format(format_string, "CSIZE",
-                        std::to_string(std::filesystem::file_size(filepath)));
-
-    if (!signature.empty()) {
-        desc << fmt::format(format_string, "PGPSIG",
-                            bxt::Utilities::b64_encode(signature));
-    }
-
-    desc << fmt::format(
-        format_string, "MD5SUM",
-        bxt::hash_from_file<MD5, MD5_DIGEST_LENGTH>(filepath.string()));
-    desc << fmt::format(
-        format_string, "SHA256SUM",
-        bxt::hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(filepath.string()));
-
-    for (const auto &mapping : m_desc_to_info_mapping) {
-        auto values = package_info.values(
-            std::string {mapping.second.data(), mapping.second.size()});
-
-        if (values.size() == 0) continue;
-
-        desc << fmt::format(
-            format_string,
-            std::string {mapping.first.data(), mapping.first.size()},
-            boost::join(values, "\n"));
-    }
+    desc << formatter.format();
 
     return Desc {.desc = desc.str(), .files = files.str()};
 }

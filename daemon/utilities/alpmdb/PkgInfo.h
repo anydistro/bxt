@@ -6,9 +6,9 @@
  */
 #pragma once
 
-#include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace bxt::Utilities::AlpmDb {
 
@@ -17,10 +17,10 @@ public:
     PkgInfo() = default;
     void parse(std::string_view contents);
 
-    std::set<std::string> values(const std::string& key);
+    std::vector<std::string> values(const std::string& key) const;
 
 private:
-    std::unordered_multimap<std::string, std::string> m_values;
+    std::unordered_map<std::string, std::vector<std::string>> m_values;
 };
 
 } // namespace bxt::Utilities::AlpmDb
