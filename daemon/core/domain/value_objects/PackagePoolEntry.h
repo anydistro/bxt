@@ -29,11 +29,14 @@ public:
 
         const ErrorCode error_code;
 
-        static inline const frozen::map<ErrorCode, std::string_view, 3>
+        static inline const frozen::map<ErrorCode, std::string_view, 6>
             error_messages = {
                 {ErrorCode::InvalidFilename, "Invalid filename"},
                 {ErrorCode::InvalidVersion, "Invalid package version"},
-                {ErrorCode::InvalidName, "Invalid package name"}};
+                {ErrorCode::InvalidName, "Invalid package name"},
+                {ErrorCode::InvalidReleaseTag, "Invalid release tag"},
+                {ErrorCode::InvalidEpoch, "Invalid epoch"},
+                {ErrorCode::InvalidPackage, "Invalid package"}};
 
         ParsingError(ErrorCode error_code) : error_code(error_code) {
             message = error_messages.at(error_code).data();
