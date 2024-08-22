@@ -108,7 +108,8 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath,
             }
         }
 
-        package_info.parse(reinterpret_cast<char *>(contents->data()));
+        package_info.parse(std::string_view {
+            reinterpret_cast<char*>(contents->data()), contents->size()});
 
         if (!create_files) { break; }
     }
