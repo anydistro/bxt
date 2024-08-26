@@ -33,6 +33,14 @@ This repository contains following projects:
 To build and run this application you can use Docker
 
 ```bash
+# copy example configs
+mkdir -p /etc/bxtd/
+cp configs/config.toml /etc/bxtd/config.toml
+cp configs/box.yml /etc/bxtd/box.yml
+
+# adopt configs as needed
+
+# build and run
 docker compose up production
 ```
 
