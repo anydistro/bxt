@@ -2,9 +2,10 @@
   <img src="web/public/logo-full.svg" alt="drawing" width="200"/>
   <br><br>
 
-  [![Badge CI]][CI]
-  [![Badge License]][License]
-  [![Badge SemVer]][SemVer]
+[![Badge CI]][CI]
+[![Badge License]][License]
+[![Badge SemVer]][SemVer]
+
 </div>
 
 #
@@ -36,13 +37,17 @@ docker compose up production
 ```
 
 <!------------------------------------------------------------------------------------------------>
+
 [CI]: https://github.com/anydistro/bxt/actions/workflows/change.yml
 [License]: LICENSE
 [SemVer]: https://semver.org/spec/v2.0.0.html
+
 <!------------------------------------------------------------------------------------------------>
 
 <!-------------------------------------------- Badges -------------------------------------------->
+
 [Badge CI]: https://github.com/anydistro/bxt/actions/workflows/change.yml/badge.svg?event=push
 [Badge License]: https://img.shields.io/github/license/anydistro/bxt
 [Badge SemVer]: https://img.shields.io/badge/SemVer-2.0.0-83649e?logo=semver
+
 <!------------------------------------------------------------------------------------------------>
