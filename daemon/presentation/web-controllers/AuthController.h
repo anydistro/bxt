@@ -1,6 +1,7 @@
 /* === This file is part of bxt ===
  *
  *   SPDX-FileCopyrightText: 2022 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-FileCopyrightText: 2024 Daniil Lyudvig <thricht3r@yandex.ru>
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
@@ -39,12 +40,14 @@ public:
                       "/api/auth/refresh",
                       drogon::Get);
     BXT_ADD_METHOD_TO(AuthController::revoke, "/api/auth/revoke", drogon::Post);
+    BXT_ADD_METHOD_TO(AuthController::verify, "/api/auth/verify", drogon::Get);
 
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> auth(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> refresh(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> revoke(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> verify(drogon::HttpRequestPtr req);
 
 private:
     drogon::HttpResponsePtr make_token_response(Token& access_token,

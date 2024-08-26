@@ -1,6 +1,7 @@
 /* === This file is part of bxt ===
  *
  *   SPDX-FileCopyrightText: 2022 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-FileCopyrightText: 2024 Daniil Lyudvig <thricht3r@yandex.ru>
  *   SPDX-License-Identifier: AGPL-3.0-or-later
  *
  */
@@ -99,6 +100,21 @@ drogon::Task<drogon::HttpResponsePtr>
                   name, permissions.value_or(std::set<std::string> {})};
           })
         | std::ranges::to<std::vector>());
+}
+
+drogon::Task<drogon::HttpResponsePtr>
+    UserController::get_user(drogon::HttpRequestPtr req,
+                             std::string user_name) {
+    BXT_JWT_CHECK_PERMISSIONS("users.get", req)
+
+    const auto user = co_await m_service.get_user(user_name);
+
+    if (!user.has_value()) {
+        co_return drogon_helpers::make_error_response(user.error().what());
+    }
+
+    co_return drogon_helpers::make_json_response(UserResponse {
+        user->name, user->permissions.value_or(std::set<std::string> {})});
 }
 
 } // namespace bxt::Presentation
