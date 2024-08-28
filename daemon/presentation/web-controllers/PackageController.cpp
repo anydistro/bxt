@@ -161,16 +161,16 @@ drogon::Task<drogon::HttpResponsePtr>
     }
     auto to_copy_it = params_map.find("to_copy");
     if (to_copy_it != params_map.end()) {
-        auto to_move = rfl::json::read<
+        auto to_copy = rfl::json::read<
             std::vector<PackageService::Transaction::TransferAction>>(
             to_copy_it->second);
 
-        if (!to_move) {
+        if (!to_copy) {
             co_return drogon_helpers::make_error_response(fmt::format(
-                "Invalid to_move format: {}", to_move.error()->what()));
+                "Invalid to_copy format: {}", to_copy.error()->what()));
         }
 
-        for (const auto &action : *to_move) {
+        for (const auto &action : *to_copy) {
             transaction.to_copy.emplace_back(action);
         }
     }
