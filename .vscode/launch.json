@@ -3,15 +3,17 @@
   "configurations": [
     {
       "name": "(lldb) Daemon",
-      "type": "lldb",
+      "type": "lldb-dap",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
       "args": [],
       "cwd": "${command:cmake.getLaunchTargetDirectory}",
-      "env": {
-        "LD_LIBRARY_PATH": "./libs/",
-        "PATH": "${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
-      }
+      "env": [
+        "LD_LIBRARY_PATH=./libs/",
+        "PATH=${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
+      ],
+      "disableASLR": false,
+      "initCommands": ["settings set target.disable-aslr false"]
     },
     {
       "name": "(bun) Frontend",

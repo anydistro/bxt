@@ -8,8 +8,8 @@
     "ms-vscode.cpptools-themes",
     "tamasfe.even-better-toml",
     "twxs.cmake",
-    "vadimcn.vscode-lldb",
+    "llvm-vs-code-extensions.lldb-dap",
     "42crunch.vscode-openapi",
-    "redhat.vscode-yaml",
+    "redhat.vscode-yaml"
   ]
 }
