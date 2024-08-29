@@ -72,7 +72,7 @@ coro::task<BoxRepository::TResult>
             }
             return Utilities::NavigationAction::Next;
         },
-        uow);
+        bxt::to_string(id), uow);
 
     if (!result.has_value()) {
         co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);

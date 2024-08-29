@@ -18,6 +18,7 @@
 
 #include <expected>
 #include <filesystem>
+#include <fmt/format.h>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -92,3 +93,10 @@ private:
 };
 
 } // namespace bxt::Core::Domain
+
+namespace bxt {
+template<>
+inline std::string to_string(const bxt::Core::Domain::Package::TId& id) {
+    return fmt::format("{}/{}", bxt::to_string(id.section), id.package_name);
+}
+} // namespace bxt
