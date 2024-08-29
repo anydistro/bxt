@@ -156,6 +156,9 @@ coro::task<std::expected<void, DatabaseError>>
             merged_package.descriptions[location] = desc;
         }
         moved_package_path = merged_package;
+    } else {
+        co_return bxt::make_error<DatabaseError>(
+            DatabaseError::ErrorType::EntityNotFound);
     }
 
     auto result =
