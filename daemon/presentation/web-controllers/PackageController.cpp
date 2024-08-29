@@ -140,6 +140,15 @@ drogon::Task<drogon::HttpResponsePtr>
         }
 
         for (const auto &action : *to_delete) {
+            BXT_JWT_CHECK_PERMISSIONS(
+                (std::vector<std::string_view> {
+                    fmt::format(
+                        "packages.commit.{}.{}.{}", action.section.branch,
+                        action.section.repository, action.section.architecture),
+                    fmt::format("sections.{}.{}.{}", action.section.branch,
+                                action.section.repository,
+                                action.section.architecture)}),
+                req)
             transaction.to_delete.emplace_back(action);
         }
     }
@@ -156,6 +165,19 @@ drogon::Task<drogon::HttpResponsePtr>
         }
 
         for (const auto &action : *to_move) {
+            BXT_JWT_CHECK_PERMISSIONS(
+                (std::vector<std::string_view> {
+                    fmt::format("packages.commit.{}.{}.{}",
+                                action.to_section.branch,
+                                action.to_section.repository,
+                                action.to_section.architecture),
+                    fmt::format("sections.{}.{}.{}", action.from_section.branch,
+                                action.from_section.repository,
+                                action.from_section.architecture),
+                    fmt::format("sections.{}.{}.{}", action.to_section.branch,
+                                action.to_section.repository,
+                                action.to_section.architecture)}),
+                req)
             transaction.to_move.emplace_back(action);
         }
     }
@@ -171,6 +193,19 @@ drogon::Task<drogon::HttpResponsePtr>
         }
 
         for (const auto &action : *to_copy) {
+            BXT_JWT_CHECK_PERMISSIONS(
+                (std::vector<std::string_view> {
+                    fmt::format("packages.commit.{}.{}.{}",
+                                action.to_section.branch,
+                                action.to_section.repository,
+                                action.to_section.architecture),
+                    fmt::format("sections.{}.{}.{}", action.from_section.branch,
+                                action.from_section.repository,
+                                action.from_section.architecture),
+                    fmt::format("sections.{}.{}.{}", action.to_section.branch,
+                                action.to_section.repository,
+                                action.to_section.architecture)}),
+                req)
             transaction.to_copy.emplace_back(action);
         }
     }
