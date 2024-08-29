@@ -15,6 +15,10 @@ namespace bxt {
 
 template<auto HashFunction, size_t DigestLength>
 const std::string hash_from_file(const std::filesystem::path &path) {
+    if (!std::filesystem::exists(path) || std::filesystem::is_empty(path)) {
+        return "";
+    }
+
     std::array<unsigned char, DigestLength> result;
     boost::iostreams::mapped_file_source src(path);
     HashFunction(reinterpret_cast<const unsigned char *>(src.data()),
