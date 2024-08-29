@@ -81,20 +81,20 @@ public:
         ~Iterator() = default;
 
         iterator& operator++(int) {
-            archive_entry* entry;
+            archive_entry* entry = {};
             auto status = archive_read_next_header(m_archive, &entry);
 
-            m_value.header = std::move(Header(entry));
+            m_value.header = Header(entry);
 
             if (status != ARCHIVE_OK) { m_value.header = std::nullopt; }
             return *this;
         }
 
         iterator& operator++() {
-            archive_entry* entry;
+            archive_entry* entry = {};
             auto status = archive_read_next_header(m_archive, &entry);
 
-            m_value.header = std::move(Header(entry));
+            m_value.header = Header(entry);
 
             if (status != ARCHIVE_OK) { m_value.header = std::nullopt; }
 
@@ -106,11 +106,11 @@ public:
 
         iterator operator+(std::size_t v) const {
             Header header;
-            archive_entry* entry;
+            archive_entry* entry = {};
             for (std::size_t i = 0; i < v; i++) {
                 auto status = archive_read_next_header(m_archive, &entry);
 
-                header = std::move(Header(entry));
+                header = Header(entry);
 
                 if (status != ARCHIVE_OK) {
                     return Iterator {m_archive, std::nullopt};
