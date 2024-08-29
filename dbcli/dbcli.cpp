@@ -29,6 +29,7 @@ int validate_and_rebuild(lmdb::txn& transaction,
     int error_count = 0;
 
     while (cursor.get(key, value, MDB_NEXT)) {
+        fmt::print("Checking record: {}\n", key);
         auto record = Serializer::deserialize(std::string(value));
         if (!record) {
             fmt::print(stderr, fg(fmt::terminal_color::red),
@@ -165,7 +166,15 @@ int validate_and_rebuild(lmdb::txn& transaction,
             }
 
             try {
-                db.put(transaction, key, *serialized);
+                auto new_key = record->id.to_string();
+
+                cursor.del();
+
+                db.put(transaction, new_key, *serialized);
+
+                fmt::print(fg(fmt::terminal_color::green), "{}: Updated\n",
+                           new_key);
+
             } catch (const std::exception& e) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),
                            "{}: Failed to update record: {}\n",
@@ -260,27 +269,30 @@ int main(int argc, char** argv) {
             fmt::print(stderr, "Failed to delete value or value not found.\n");
         }
     } else if (command == "validate") {
-        if (argc != 2) {
+        if (argc == 2) {
+            auto error_count = validate_and_rebuild(transaction, db, false);
+
+            if (error_count == 0) {
+                fmt::print("No errors found.\n");
+            } else {
+                fmt::print("{} errors found.\n", error_count);
+            }
+        } else {
             fmt::print(stderr, "Usage: {} validate\n", argv[0]);
             return 1;
         }
 
-        auto error_count = validate_and_rebuild(transaction, db, false);
-
-        if (error_count == 0) {
-            fmt::print("No errors found.\n");
-        } else {
-            fmt::print("{} errors found.\n", error_count);
-        }
-
     } else if (command == "rebuild") {
-        if (argc != 2) {
-            fmt::print(stderr, "Usage: {} rebuild\n", argv[0]);
+        if (argc == 2) {
+            if (validate_and_rebuild(transaction, db, true) == 0) {
+                fmt::print("Successfully rebuilt all packages.\n");
+                transaction.commit();
+            } else {
+                fmt::print(stderr, "Failed to rebuild packages.\n");
+            }
+        } else {
+            fmt::print(stderr, "Usage: {} rebuild \n", argv[0]);
             return 1;
-        }
-        if (validate_and_rebuild(transaction, db, true) == 0) {
-            fmt::print("Successfully rebuilt all packages.\n");
-            transaction.commit();
         }
 
     } else {
