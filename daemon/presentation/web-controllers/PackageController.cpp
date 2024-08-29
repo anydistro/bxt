@@ -190,6 +190,10 @@ drogon::Task<drogon::HttpResponsePtr>
                                     const std::string &branch,
                                     const std::string &repository,
                                     const std::string &architecture) {
+    if (branch.empty() || repository.empty() || architecture.empty()) {
+        co_return drogon_helpers::make_error_response(
+            "Branch, repository and architecture must be specified");
+    }
     PackageSectionDTO section {branch, repository, architecture};
 
     BXT_JWT_CHECK_PERMISSIONS((std::vector<std::string_view> {
