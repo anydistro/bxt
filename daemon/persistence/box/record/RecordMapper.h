@@ -39,7 +39,8 @@ static Core::Domain::Package to_entity(const PackageRecord &from) {
         if (!version_result) { continue; }
 
         Core::Domain::PackagePoolEntry pool_entry(
-            entry.filepath, entry.signature_path, *version_result);
+            entry.filepath, entry.signature_path, entry.descfile,
+            *version_result);
 
         result.pool_entries().emplace(location, pool_entry);
     }

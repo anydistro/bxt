@@ -41,7 +41,7 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
             ParsingError::ErrorCode::InvalidVersion);
     }
 
-    PackagePoolEntry result(file_path, {}, *version);
+    PackagePoolEntry result(file_path, {}, {}, *version);
 
     if (signature_path.has_value()) {
         result.m_signature_path = signature_path;

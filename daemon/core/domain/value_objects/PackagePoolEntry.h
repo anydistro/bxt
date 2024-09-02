@@ -46,9 +46,11 @@ public:
 
     PackagePoolEntry(std::filesystem::path m_file_path,
                      std::optional<std::filesystem::path> m_signature_path,
+                     Utilities::AlpmDb::Desc desc,
                      PackageVersion m_version)
         : m_file_path(std::move(m_file_path)),
           m_signature_path(std::move(m_signature_path)),
+          m_desc(std::move(desc)),
           m_version(std::move(m_version)) {}
 
     std::filesystem::path file_path() const { return m_file_path; }
