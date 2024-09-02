@@ -11,8 +11,8 @@
 #include "utilities/locked.h"
 
 #include <coro/task.hpp>
+#include <cstddef>
 #include <memory>
-#include <queue>
 namespace bxt::Persistence {
 
 class LmdbUnitOfWork : public Core::Domain::UnitOfWorkBase {
@@ -51,14 +51,19 @@ public:
 
     void hook(std::function<void()>&& hook,
               const std::string& name = "") override {
-        auto key = name.empty() ? std::to_string(m_hooks.size()) : name;
-        m_hooks.emplace(key, std::move(hook));
+        if (name.empty()) {
+            m_hooks[m_hooks.size()] = std::move(hook);
+        } else {
+            m_hooks[name] = std::move(hook);
+        }
     }
 
     Utilities::locked<lmdb::txn>& txn() const { return *m_txn; }
 
 private:
-    std::map<std::string, std::function<void()>> m_hooks;
+    using HookKeyType = std::variant<size_t, std::string>;
+
+    std::map<HookKeyType, std::function<void()>> m_hooks;
     std::shared_ptr<Utilities::LMDB::Environment> m_env;
     std::unique_ptr<Utilities::locked<lmdb::txn>> m_txn;
 };
