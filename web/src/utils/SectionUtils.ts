@@ -36,7 +36,7 @@ export module SectionUtils {
     ): string[] => {
         return filteredValues(
             sections,
-            (section) => section.branch === branchName,
+            (section) => (branchName ? section.branch === branchName : true),
             (section) => section.repository
         );
     };
@@ -49,8 +49,8 @@ export module SectionUtils {
         return filteredValues(
             sections,
             (section) =>
-                section.branch === branchName &&
-                section.repository === repoName,
+                (branchName ? section.branch === branchName : true) &&
+                (repoName ? section.repository === repoName : true),
             (section) => section.architecture
         );
     };
