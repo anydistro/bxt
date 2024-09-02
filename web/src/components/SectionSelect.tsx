@@ -63,7 +63,7 @@ export default function SectionSelect({
                 <daisyui.Dropdown>
                     <components.Control
                         className={
-                            "input input-bordered input-sm bg-base-100 " +
+                            "input input-bordered input-sm bg-base-100 w-full" +
                             classNames
                         }
                         {...rest}
@@ -130,7 +130,7 @@ export default function SectionSelect({
     );
 
     return (
-        <span className="flex justify-stretch items-center w-full space-x-1">
+        <span className="flex justify-between items-center w-full space-x-1">
             <Select<IOption>
                 unstyled={true}
                 components={makeComponents(faCodeBranch)}

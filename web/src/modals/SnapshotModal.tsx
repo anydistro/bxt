@@ -17,6 +17,8 @@ import { Button, Form, Modal, ModalProps, Select } from "react-daisyui";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import SectionSelect from "../components/SectionSelect";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowDown, faCopy } from "@fortawesome/free-solid-svg-icons";
 
 export type ISnapshotModalProps = ModalProps & {
     sections: Section[];
@@ -33,6 +35,7 @@ export const SnapshotModal = forwardRef<HTMLDialogElement, ISnapshotModalProps>(
         useEffect(() => {
             setSourceSection({
                 ...props.sections.at(0),
+                ...{ repository: undefined },
                 ...props.sourceSection
             });
         }, [props.sourceSection, props.sections]);
@@ -82,10 +85,14 @@ export const SnapshotModal = forwardRef<HTMLDialogElement, ISnapshotModalProps>(
 
         return createPortal(
             <Modal ref={internalRef} {...props}>
-                <h1 className="text-3xl font-bold">Snapshot</h1>
+                <h1 className="text-3xl font-bold">
+                    <FontAwesomeIcon className="pr-2" size="xs" icon={faCopy} />
+                    Snapshot
+                </h1>
                 <Form>
                     <Form.Label title="Source section" />
                     <SectionSelect
+                        disabled={[false, true, false]}
                         selectedSection={sourceSection}
                         sections={props.sections}
                         onSelected={(value) => {
@@ -93,6 +100,9 @@ export const SnapshotModal = forwardRef<HTMLDialogElement, ISnapshotModalProps>(
                         }}
                     />
                 </Form>
+                <div className="flex justify-center my-4">
+                    <FontAwesomeIcon icon={faArrowDown} className="h-6 w-6" />
+                </div>
 
                 <Form>
                     <Form.Label title="Target section" />
