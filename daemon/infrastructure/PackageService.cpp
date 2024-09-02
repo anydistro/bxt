@@ -12,6 +12,7 @@
 #include "core/application/errors/CrudError.h"
 #include "core/application/events/CommitEvent.h"
 #include "core/application/events/IntegrationEventBase.h"
+#include "core/domain/entities/Section.h"
 #include "coro/task.hpp"
 #include "coro/when_all.hpp"
 #include "utilities/Error.h"
@@ -19,6 +20,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <ranges>
 #include <vector>
 
 namespace bxt::Infrastructure {
@@ -291,6 +293,75 @@ coro::task<PackageService::Result<void>>
                 context.user_name, std::move(packages_to_add),
                 std::move(ids_to_remove), std::move(to_move),
                 std::move(to_copy)));
+    co_return {};
+}
+
+coro::task<PackageService::Result<void>>
+    PackageService::snap_branch(const std::string from_branch,
+                                const std::string to_branch,
+                                const std::string arch) {
+    auto uow = co_await m_uow_factory(true);
+
+    auto from_sections = co_await m_section_repository.find_async(
+        [from_branch, arch](const auto& section) {
+            return section.architecture() == arch
+                   && section.branch() == from_branch;
+        },
+        uow);
+
+    if (!from_sections.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(from_sections.error()),
+            CrudError::ErrorType::InternalError);
+    }
+
+    auto to_sections = co_await m_section_repository.find_async(
+        [to_branch, arch](const auto& section) {
+            return section.architecture() == arch
+                   && section.branch() == to_branch;
+        },
+        uow);
+
+    for (const auto& section : *to_sections) {
+        auto to_delete_packages =
+            co_await m_repository.find_by_section_async(section, uow);
+        if (!to_delete_packages.has_value()) {
+            co_return bxt::make_error_with_source<CrudError>(
+                std::move(to_delete_packages.error()),
+                CrudError::ErrorType::InternalError);
+        }
+        auto to_delete_ids = *to_delete_packages
+                             | std::views::transform([](const auto& package) {
+                                   return package.id();
+                               })
+                             | std::ranges::to<std::vector>();
+
+        auto deleted = co_await m_repository.delete_async(to_delete_ids, uow);
+    }
+
+    std::vector<Package> packages;
+    for (const auto& section : *from_sections) {
+        auto from_packages =
+            co_await m_repository.find_by_section_async(section, uow);
+
+        if (!from_packages.has_value()) {
+            co_return bxt::make_error_with_source<CrudError>(
+                std::move(from_packages.error()),
+                CrudError::ErrorType::InternalError);
+        }
+
+        packages = *from_packages | std::views::transform([&](auto&& package) {
+            auto package_section = package.section();
+            package_section.set_branch(to_branch);
+            package.set_section(package_section);
+            return package;
+        }) | std::ranges::to<std::vector>();
+    }
+
+    auto saved = co_await m_repository.save_async(packages, uow);
+
+    co_await uow->commit_async();
+
     co_return {};
 }
 } // namespace bxt::Infrastructure

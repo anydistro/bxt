@@ -209,6 +209,7 @@ namespace Infrastructure {
               bxt::Infrastructure::PackageService,
               kgr::dependency<di::Utilities::EventBusDispatcher,
                               di::Core::Domain::PackageRepositoryBase,
+                              di::Core::Domain::ReadOnlySectionRepository,
                               di::Core::Domain::UnitOfWorkBaseFactory>>,
           kgr::overrides<di::Core::Application::PackageService> {};
 

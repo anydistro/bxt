@@ -59,6 +59,10 @@ public:
     virtual coro::task<Result<void>>
         snap(const PackageSectionDTO from_section,
              const PackageSectionDTO to_section) = 0;
+
+    virtual coro::task<Result<void>> snap_branch(const std::string from_branch,
+                                                 const std::string to_branch,
+                                                 const std::string arch) = 0;
 };
 
 } // namespace bxt::Core::Application

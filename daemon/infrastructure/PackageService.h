@@ -10,7 +10,9 @@
 #include "PackageServiceOptions.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/services/PackageService.h"
+#include "core/domain/entities/Section.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
+#include "core/domain/repositories/ReadOnlyRepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/task.hpp"
 #include "utilities/eventbus/EventBusDispatcher.h"
@@ -23,9 +25,12 @@ class PackageService : public Core::Application::PackageService {
 public:
     PackageService(Utilities::EventBusDispatcher& dispatcher,
                    Core::Domain::PackageRepositoryBase& repository,
+                   Core::Domain::ReadOnlyRepositoryBase<Core::Domain::Section>&
+                       section_repository,
                    UnitOfWorkBaseFactory& uow_factory)
         : m_dispatcher(dispatcher),
           m_repository(repository),
+          m_section_repository(section_repository),
           m_uow_factory(uow_factory) {}
 
     virtual coro::task<Result<void>>
@@ -40,6 +45,10 @@ public:
 
     coro::task<Result<void>> push(const Transaction transaction,
                                   const RequestContext context) override;
+
+    coro::task<Result<void>> snap_branch(const std::string from_branch,
+                                         const std::string to_branch,
+                                         const std::string arch) override;
 
 private:
     coro::task<Result<void>> add_package(const PackageDTO package,
@@ -60,6 +69,7 @@ private:
     PackageServiceOptions m_options;
     Utilities::EventBusDispatcher& m_dispatcher;
     Core::Domain::PackageRepositoryBase& m_repository;
+    Core::Domain::ReadOnlyRepositoryBase<Section>& m_section_repository;
     UnitOfWorkBaseFactory& m_uow_factory;
 };
 

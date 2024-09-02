@@ -64,17 +64,17 @@ export const SnapshotModal = forwardRef<HTMLDialogElement, ISnapshotModalProps>(
 
         const doSnap = useCallback(async () => {
             if (
-                !sourceSection ||
-                !targetSection ||
-                Object.values(sourceSection).some((el) => el === undefined) ||
-                Object.values(targetSection).some((el) => el === undefined)
+                !sourceSection?.branch ||
+                !targetSection?.branch ||
+                !sourceSection?.architecture
             ) {
                 return;
             }
             try {
-                await axios.post("/api/packages/snap", {
-                    source: sourceSection,
-                    target: targetSection
+                await axios.post("/api/packages/snap/branch", {
+                    sourceBranch: sourceSection.branch,
+                    targetBranch: targetSection.branch,
+                    architecture: sourceSection.architecture
                 });
                 internalRef?.current?.close();
             } catch (error) {}

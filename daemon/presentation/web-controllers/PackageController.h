@@ -45,10 +45,14 @@ public:
                           "/api/packages/sync",
                           drogon::Post);
 
-    BXT_JWT_ADD_METHOD_TO(PackageController::snap,
-                          "/api/packages/snap",
+    BXT_JWT_ADD_METHOD_TO(PackageController::snap_branch,
+                          "/api/packages/snap/branch",
                           drogon::Post);
 
+    // Methods for advanced operations. These are not exposed to the frontend.
+    BXT_JWT_ADD_METHOD_TO(PackageController::snap,
+                          "/api/advanced/packages/snap",
+                          drogon::Post);
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> sync(drogon::HttpRequestPtr req);
@@ -63,6 +67,9 @@ public:
                      const std::string &architecture);
 
     drogon::Task<drogon::HttpResponsePtr> snap(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr>
+        snap_branch(drogon::HttpRequestPtr req);
 
 private:
     Core::Application::PackageService &m_package_service;

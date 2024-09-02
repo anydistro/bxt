@@ -291,7 +291,7 @@ drogon::Task<drogon::HttpResponsePtr>
 
     BXT_JWT_CHECK_PERMISSIONS(
         (std::vector<std::string_view> {
-            fmt::format("packages.snap.{}.{}.{}", source_branch.branch,
+            fmt::format("advanced.packages.snap.{}.{}.{}", source_branch.branch,
                         source_branch.repository, source_branch.architecture),
             fmt::format("sections.{}.{}.{}", source_branch.branch,
                         source_branch.repository, source_branch.architecture)}),
@@ -318,4 +318,34 @@ drogon::Task<drogon::HttpResponsePtr>
     co_return drogon_helpers::make_ok_response();
 }
 
+drogon::Task<drogon::HttpResponsePtr>
+    PackageController::snap_branch(drogon::HttpRequestPtr req) {
+    const auto snap_request =
+        rfl::json::read<SnapBranchRequest>(std::string(req->getBody()));
+
+    if (snap_request.error()) {
+        co_return drogon_helpers::make_error_response("Invalid arguments");
+    }
+    auto &source_branch = (*snap_request).source_branch;
+    auto &target_branch = (*snap_request).target_branch;
+    auto &arch = (*snap_request).architecture;
+
+    BXT_JWT_CHECK_PERMISSIONS(
+        (std::vector<std::string_view> {
+            fmt::format("sections.{}.*.{}", source_branch, arch),
+            fmt::format("packages.snap.from.{}", source_branch),
+            fmt::format("sections.{}.*.{}", target_branch, arch),
+            fmt::format("packages.snap.to.{}", target_branch)}),
+        req)
+
+    const auto snap_ok = co_await m_package_service.snap_branch(
+        source_branch, target_branch, arch);
+
+    if (!snap_ok.has_value()) {
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Snap section failed: {}", snap_ok.error().what()));
+    }
+
+    co_return drogon_helpers::make_ok_response();
+}
 } // namespace bxt::Presentation

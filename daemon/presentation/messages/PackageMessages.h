@@ -19,6 +19,12 @@ struct SnapRequest {
     SectionRequest target;
 };
 
+struct SnapBranchRequest {
+    std::string source_branch;
+    std::string target_branch;
+    std::string architecture;
+};
+
 struct PoolEntryResponse {
     std::string version;
     bool has_signature;

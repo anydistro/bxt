@@ -222,9 +222,10 @@ paths:
           description: Invalid request
         "403":
           description: No permissions
-  /api/packages/snap:
+  /api/advanced/packages/snap:
     post:
-      summary: Snap packages between branches
+      summary: Snap packages between sections
+      description: Note that this operation marked as "advanced".
       operationId: snap
       requestBody:
         required: true
@@ -232,6 +233,23 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/SnapRequest"
+      responses:
+        "200":
+          description: Packages snapped successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/packages/snap/branch:
+    post:
+      summary: Snap packages between branches
+      operationId: snapBranch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnapBranchRequest"
       responses:
         "200":
           description: Packages snapped successfully
@@ -592,3 +610,16 @@ components:
           type: array
           items:
             type: string
+    SnapBranchRequest:
+      type: object
+      properties:
+        source_branch:
+          type: string
+        target_branch:
+          type: string
+        architecture:
+          type: string
+      required:
+        - sourceBranch
+        - targetBranch
+        - architecture
