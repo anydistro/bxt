@@ -77,9 +77,10 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
     static Package to_entity(const PackageDTO& from) {
         Package package(
             SectionDTOMapper::to_entity(from.section),
-            from.name.empty() ? *Package::parse_file_name(
-                from.pool_entries.begin()->second.filepath.filename())
-                              : from.name,
+            from.name.empty()
+                ? *Package::parse_file_name(
+                      from.pool_entries.begin()->second.filepath.filename())
+                : from.name,
             from.is_any_architecture);
 
         for (const auto& entry : from.pool_entries) {

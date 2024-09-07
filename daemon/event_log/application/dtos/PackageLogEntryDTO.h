@@ -60,9 +60,10 @@ struct bxt::Utilities::StaticDTOMapper<
         EventLog::Domain::PackageLogEntry entity(
             from.type, SectionDTOMapper::to_entity(from.section), from.name,
             from.location,
-            from.version.has_value() ? std::make_optional(
-                *PackageVersion::from_string(from.version.value()))
-                                     : std::nullopt);
+            from.version.has_value()
+                ? std::make_optional(
+                      *PackageVersion::from_string(from.version.value()))
+                : std::nullopt);
         return entity;
     }
 };
