@@ -118,11 +118,13 @@ coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
             parts.emplace_back(part);
         }
 
-        if (parts.size() != 2)
+        if (parts.size() != 2) {
             continue;
+        }
 
-        if (parts[1] != "desc")
+        if (parts[1] != "desc") {
             continue;
+        }
 
         auto buffer = data.read_all();
         if (!buffer.has_value()) {

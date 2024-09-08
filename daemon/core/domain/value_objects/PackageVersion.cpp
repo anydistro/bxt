@@ -14,8 +14,9 @@ namespace bxt::Core::Domain {
 
 // naive rewrite of original rpmvercmp from alpm
 std::strong_ordering rpmvercmp(std::string const& a_orig, std::string const& b_orig) {
-    if (a_orig == b_orig)
+    if (a_orig == b_orig) {
         return std::strong_ordering::equal;
+    }
 
     std::string a = a_orig, b = b_orig;
 
@@ -25,13 +26,16 @@ std::strong_ordering rpmvercmp(std::string const& a_orig, std::string const& b_o
     bool isnum;
 
     while (one != a.end() && two != b.end()) {
-        while (one != a.end() && !std::isalnum(*one))
+        while (one != a.end() && !std::isalnum(*one)) {
             one++;
-        while (two != b.end() && !std::isalnum(*two))
+        }
+        while (two != b.end() && !std::isalnum(*two)) {
             two++;
+        }
 
-        if (one == a.end() || two == b.end())
+        if (one == a.end() || two == b.end()) {
             break;
+        }
 
         if ((one - it1) != (two - it2)) {
             return (one - it1) < (two - it2) ? std::strong_ordering::less
@@ -42,16 +46,20 @@ std::strong_ordering rpmvercmp(std::string const& a_orig, std::string const& b_o
         it2 = two;
 
         if (std::isdigit(*it1)) {
-            while (it1 != a.end() && std::isdigit(*it1))
+            while (it1 != a.end() && std::isdigit(*it1)) {
                 it1++;
-            while (it2 != b.end() && std::isdigit(*it2))
+            }
+            while (it2 != b.end() && std::isdigit(*it2)) {
                 it2++;
+            }
             isnum = true;
         } else {
-            while (it1 != a.end() && std::isalpha(*it1))
+            while (it1 != a.end() && std::isalpha(*it1)) {
                 it1++;
-            while (it2 != b.end() && std::isalpha(*it2))
+            }
+            while (it2 != b.end() && std::isalpha(*it2)) {
                 it2++;
+            }
             isnum = false;
         }
 
@@ -69,10 +77,12 @@ std::strong_ordering rpmvercmp(std::string const& a_orig, std::string const& b_o
         }
 
         if (isnum) {
-            while (*one == '0')
+            while (*one == '0') {
                 one++;
-            while (*two == '0')
+            }
+            while (*two == '0') {
                 two++;
+            }
 
             if (std::distance(one, a.end()) > std::distance(two, b.end())) {
                 return std::strong_ordering::greater;

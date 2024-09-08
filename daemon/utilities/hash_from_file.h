@@ -25,8 +25,9 @@ std::string const hash_from_file(std::filesystem::path const& path) {
 
     std::ostringstream sout;
     sout << std::hex << std::setfill('0');
-    for (auto c : result)
+    for (auto c : result) {
         sout << std::setw(2) << (int)c;
+    }
 
     return sout.str();
 }

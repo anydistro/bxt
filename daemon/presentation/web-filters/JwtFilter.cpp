@@ -28,8 +28,9 @@ std::expected<jwt::decoded_jwt<jwt::traits::nlohmann_json>, std::exception>
 void JwtFilter::doFilter(HttpRequestPtr const& request,
                          FilterCallback&& fcb,
                          FilterChainCallback&& fccb) {
-    if (request->getMethod() == HttpMethod::Options)
+    if (request->getMethod() == HttpMethod::Options) {
         return fccb();
+    }
 
     auto access_token =
         drogon_helpers::get_access_token(request, m_options.issuer, m_options.secret);

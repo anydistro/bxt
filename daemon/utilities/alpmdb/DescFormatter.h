@@ -37,8 +37,9 @@ public:
         return fmt::format(format_string, desc_field.buf, boost::join(values, "\n"));
     }
     template<FixedString desc_field> std::string format_entry(std::string const& value) const {
-        if (value.empty())
+        if (value.empty()) {
             return "";
+        }
         return fmt::format(format_string, desc_field.buf, value);
     }
 

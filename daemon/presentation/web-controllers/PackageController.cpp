@@ -55,13 +55,15 @@ drogon::Task<drogon::HttpResponsePtr>
     std::map<int, PackageDTO> packages;
 
     for (auto const& [name, file] : files_map) {
-        if (!name.starts_with("package"))
+        if (!name.starts_with("package")) {
             continue;
+        }
         std::vector<std::string> parts;
         boost::split(parts, name, boost::is_any_of("."));
 
-        if (parts.size() > 3)
+        if (parts.size() > 3) {
             continue;
+        }
 
         auto file_number_str = parts[0].substr(7);
         auto const file_number = std::stoi(file_number_str);
@@ -85,20 +87,23 @@ drogon::Task<drogon::HttpResponsePtr>
     }
 
     for (auto const& [name, param] : params_map) {
-        if (!name.starts_with("package"))
+        if (!name.starts_with("package")) {
             continue;
+        }
 
         std::vector<std::string> parts;
         boost::split(parts, name, boost::is_any_of("."));
 
-        if (parts.size() != 2)
+        if (parts.size() != 2) {
             continue;
+        }
 
         auto file_number_str = parts[0].substr(7);
         auto const file_number = std::stoi(file_number_str);
 
-        if (!packages.contains(file_number))
+        if (!packages.contains(file_number)) {
             continue;
+        }
 
         if (parts[1] == "section") {
             auto section = rfl::json::read<PackageSectionDTO, rfl::SnakeCaseToCamelCase>(param);

@@ -32,8 +32,9 @@ public:
     }
 
     template<typename TList> coro::task<void> dispatch_async(TList evlist) {
-        if (!m_evbus)
+        if (!m_evbus) {
             co_return;
+        }
 
         for (auto const& event : evlist) {
             process(event);
@@ -43,8 +44,9 @@ public:
     }
 
     template<typename TEventBase> coro::task<void> dispatch_single_async(TEventBase event) {
-        if (!m_evbus)
+        if (!m_evbus) {
             co_return;
+        }
 
         process(event);
 
