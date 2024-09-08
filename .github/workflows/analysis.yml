@@ -1,0 +1,25 @@
+name: Static Analysis
+on: workflow_call
+
+jobs:
+  clang-tidy:
+    name: Check clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Docker image from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bxt-development-image
+          path: distfiles
+      - name: Load Docker image
+        run: docker load -i distfiles/bxt-development.tar
+      - uses: addnab/docker-run-action@v3
+        with:
+          image: anydistro/bxt-development:latest
+          options: -v ${{ github.workspace }}:/src
+          run: |
+            ls /src
+            cmake -S /src --preset clang-tidy
+            cmake --build /src/build/clang-tidy

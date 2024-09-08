@@ -21,6 +21,7 @@ apt-get install --yes \
     build-essential \
     clang-18 \
     clang-format-18 \
+    clang-tidy-18 \
     clangd-18 \
     cmake \
     curl \

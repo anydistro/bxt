@@ -24,6 +24,20 @@ include("${CMAKE_SOURCE_DIR}/cmake/bundled-deps.cmake")
 ################################################################################
 include("${CMAKE_SOURCE_DIR}/cmake/deps.cmake")
 
+################################################################################
+# Static Analysis: Enable Clang-Tidy
+################################################################################
+option(ENABLE_CLANG_TIDY "Enable Clang-Tidy checks" OFF)
+if(ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy clang-tidy-18)
+
+    if(CLANG_TIDY_EXE)
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};-header-filter=${CMAKE_SOURCE_DIR}/daemon/.*")
+    message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
+    else()
+    message(SEND_ERROR "clang-tidy not found.")
+    endif()
+endif()
 
 ################################################################################
 # Project Structure: Add subdirectories for different components

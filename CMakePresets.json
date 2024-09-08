@@ -19,7 +19,15 @@
       "name": "debug",
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "clang-tidy",
+      "inherits": "debug",
+      "cacheVariables": {
+        "ENABLE_CLANG_TIDY": "ON"
       }
     },
     {

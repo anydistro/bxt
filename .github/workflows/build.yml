@@ -1,5 +1,15 @@
-name: Build and deploy to testing server
-on: workflow_call
+name: Build Docker Image
+on:
+  workflow_call:
+    inputs:
+      tags:
+        description: List of tags of the resulting Docker image
+        required: true
+        type: string
+      target:
+        description: Sets the target stage to build
+        required: true
+        type: string
 
 jobs:
   build-docker:
@@ -16,54 +26,17 @@ jobs:
         with:
           context: .
           push: false
-          target: production
-          tags: anydistro/bxt:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          outputs: type=docker,dest=./bxt-production.tar
+          target: ${{ inputs.target }}
+          tags: ${{ inputs.tags }}
+          cache-from: type=gha,scope=${{ inputs.target }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.target }}
+          outputs: type=docker,dest=./bxt-${{ inputs.target }}.tar
 
       - name: Upload Docker image to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bxt-production-image
+          name: bxt-${{ inputs.target }}-image
           path: |
-            bxt-production.tar
+            bxt-${{ inputs.target }}.tar
             docker-compose.yml
             docker-compose.caddy.yml
-
-  deploy-ssh:
-    name: Deploy to server using ssh
-    needs: build-docker
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.repository == 'anydistro/bxt'
-
-    steps:
-      - name: Download Docker image from artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bxt-production-image
-          path: distfiles
-
-      - name: Transfer Docker image to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
-          username: ${{ secrets.DEPLOYMENT_SERVER_USER }}
-          key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
-          source: distfiles/*
-          target: "/tmp/bxt/"
-
-      - name: Deploy Docker image on server
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          CADDY_HOST: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
-        with:
-          host: ${{ secrets.DEPLOYMENT_SERVER_HOST }}
-          username: ${{ secrets.DEPLOYMENT_SERVER_USER }}
-          key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
-          envs: CADDY_HOST
-          script: |
-            cd /tmp/bxt/distfiles/
-            docker compose -f docker-compose.yml -f docker-compose.caddy.yml down production || true
-            docker load -i bxt-production.tar
-            docker compose -f docker-compose.yml -f docker-compose.caddy.yml -p bxt up -d production

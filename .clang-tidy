@@ -1,4 +1,14 @@
-Checks: "-*,modernize-*,cppcoreguidelines-*, -modernize-use-nodiscard, -modernize-use-trailing-return-type"
+WarningsAsErrors: "readability-braces-around-statements"
+
+Checks: "
+-*,
+modernize-*,
+cppcoreguidelines-*,
+readability-braces-around-statements,
+-modernize-use-nodiscard,
+-modernize-use-trailing-return-type
+"
+
 CheckOptions:
   - key: modernize-use-nullptr.NullMacros
     value: "NULL"
