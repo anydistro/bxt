@@ -54,10 +54,10 @@ ENV PATH="/root/.bun/bin:/root/.local/bin:${PATH}"
 RUN pipx install conan==2.7.0
 
 RUN conan profile detect --force --name default && \
-    cat <<EOF >> /root/.conan2/profiles/default 
-compiler=clang 
-compiler.version=18 
-compiler.libcxx=libc++ 
+    cat <<EOF >> /root/.conan2/profiles/default
+compiler=clang
+compiler.version=18
+compiler.libcxx=libc++
 compiler.cppstd=23
 EOF
 
@@ -75,7 +75,7 @@ FROM base as development
 
 RUN conan install /conan -pr=/root/.conan2/profiles/default  -s build_type=Debug --build=missing -of /conan
 # for main application
-EXPOSE 8080 
+EXPOSE 8080
 # for web server
 EXPOSE 3000
 
