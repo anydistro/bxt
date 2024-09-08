@@ -21,22 +21,26 @@
 #include <optional>
 
 namespace bxt::Utilities::AlpmDb {
-std::optional<std::string> Desc::get(const std::string& key) const {
+std::optional<std::string> Desc::get(std::string const& key) const {
     auto prepared_key = fmt::format("%{}%\n", key);
     auto value_begin = desc.find(prepared_key);
 
-    if (value_begin == std::string::npos) { return {}; }
+    if (value_begin == std::string::npos) {
+        return {};
+    }
 
     value_begin += prepared_key.size();
     auto value_end = desc.find("\n", value_begin);
 
-    if (value_end == std::string::npos) { return {}; }
+    if (value_end == std::string::npos) {
+        return {};
+    }
 
     return desc.substr(value_begin, value_end - value_begin);
 }
 
-Desc::Result<Desc> Desc::parse_package(const std::filesystem::path& filepath,
-                                       const std::string& signature,
+Desc::Result<Desc> Desc::parse_package(std::filesystem::path const& filepath,
+                                       std::string const& signature,
                                        bool create_files) {
     std::ostringstream desc;
     std::ostringstream files;
@@ -46,18 +50,20 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path& filepath,
     archive_read_support_filter_all(file_reader);
     archive_read_support_format_all(file_reader);
 
-    const auto package_infos = file_reader.open_filename(filepath);
+    auto const package_infos = file_reader.open_filename(filepath);
 
     if (!package_infos.has_value()) {
-        return std::unexpected(ParseError(ParseError::ErrorType::InvalidArchive,
-                                          std::move(package_infos.error())));
+        return std::unexpected(
+            ParseError(ParseError::ErrorType::InvalidArchive, std::move(package_infos.error())));
     }
 
     PkgInfo package_info;
 
     bool found = false;
     for (auto& [header, entry] : file_reader) {
-        if (!header) { continue; }
+        if (!header) {
+            continue;
+        }
         std::string pathname = archive_entry_pathname(*header);
 
         if (!pathname.ends_with(".PKGINFO") && !pathname.starts_with("/.")) {
@@ -71,29 +77,27 @@ Desc::Result<Desc> Desc::parse_package(const std::filesystem::path& filepath,
         auto contents = entry.read_all();
 
         if (!contents.has_value()) {
-            if (const auto invalidentry =
-                    std::get_if<Archive::InvalidEntryError>(
-                        &contents.error())) {
+            if (auto const invalidentry =
+                    std::get_if<Archive::InvalidEntryError>(&contents.error())) {
                 return std::unexpected(
-                    ParseError(ParseError::ErrorType::InvalidArchive,
-                               std::move(*invalidentry)));
+                    ParseError(ParseError::ErrorType::InvalidArchive, std::move(*invalidentry)));
             } else {
-                return std::unexpected(
-                    ParseError(ParseError::ErrorType::InvalidArchive,
-                               std::move(*std::get_if<Archive::LibArchiveError>(
-                                   &contents.error()))));
+                return std::unexpected(ParseError(
+                    ParseError::ErrorType::InvalidArchive,
+                    std::move(*std::get_if<Archive::LibArchiveError>(&contents.error()))));
             }
         }
 
-        package_info.parse(std::string_view {
-            reinterpret_cast<char*>(contents->data()), contents->size()});
+        package_info.parse(
+            std::string_view {reinterpret_cast<char*>(contents->data()), contents->size()});
 
-        if (!create_files) { break; }
+        if (!create_files) {
+            break;
+        }
     }
 
     if (!found) {
-        return std::unexpected(
-            ParseError(ParseError::ErrorType::NoPackageInfo));
+        return std::unexpected(ParseError(ParseError::ErrorType::NoPackageInfo));
     }
 
     DescFormatter formatter {package_info, filepath, signature};

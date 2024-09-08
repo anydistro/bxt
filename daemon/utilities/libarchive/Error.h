@@ -15,11 +15,15 @@
 namespace Archive {
 
 struct ArchiveError : public bxt::Error {
-    ArchiveError() { message = "Unknown Archive error"; }
+    ArchiveError() {
+        message = "Unknown Archive error";
+    }
 };
 
 struct InvalidEntryError : public ArchiveError {
-    InvalidEntryError() { message = "The entry has no linked archive!"; }
+    InvalidEntryError() {
+        message = "The entry has no linked archive!";
+    }
 };
 
 struct LibArchiveError : public ArchiveError {

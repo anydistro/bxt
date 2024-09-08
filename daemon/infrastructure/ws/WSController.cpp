@@ -18,12 +18,12 @@ using namespace drogon;
 
 WSController::WSController(std::shared_ptr<dexode::EventBus> evbus) {
     auto handler = std::make_shared<SyncHandler>(evbus);
-    handler->set_callback([this](const auto &message) {
+    handler->set_callback([this](auto const& message) {
         Json::StreamWriterBuilder builder;
 
         Json::Value msg = message;
         msg["type"] = "sync";
-        for (auto &connection : m_connections) {
+        for (auto& connection : m_connections) {
             connection->send(Json::writeString(builder, msg));
         }
     });
@@ -31,14 +31,16 @@ WSController::WSController(std::shared_ptr<dexode::EventBus> evbus) {
     m_handlers.emplace("sync", handler);
 }
 
-void WSController::handleNewMessage(const WebSocketConnectionPtr &connection,
-                                    std::string &&message,
-                                    const WebSocketMessageType &type) {
+void WSController::handleNewMessage(WebSocketConnectionPtr const& connection,
+                                    std::string&& message,
+                                    WebSocketMessageType const& type) {
     if (type == WebSocketMessageType::Ping) {
         connection->send("", WebSocketMessageType::Pong);
         return;
     }
-    if (type == WebSocketMessageType::Pong) { return; }
+    if (type == WebSocketMessageType::Pong) {
+        return;
+    }
 
     if (type != WebSocketMessageType::Text) {
         connection->send("This connection uses JSON messages");
@@ -53,10 +55,10 @@ void WSController::handleNewMessage(const WebSocketConnectionPtr &connection,
         return;
     }
 
-    const auto handler_type = message_json["type"].asString();
+    auto const handler_type = message_json["type"].asString();
     Json::StreamWriterBuilder builder;
 
-    const auto handler = m_handlers.find(handler_type);
+    auto const handler = m_handlers.find(handler_type);
     if (handler == m_handlers.end()) {
         Json::Value response;
         response["status"] = "error";
@@ -66,23 +68,20 @@ void WSController::handleNewMessage(const WebSocketConnectionPtr &connection,
         return;
     }
 
-    connection->send(Json::writeString(
-        builder, handler->second->handle_message(message_json)));
+    connection->send(Json::writeString(builder, handler->second->handle_message(message_json)));
 }
 
-void WSController::handleNewConnection(
-    const HttpRequestPtr &req, const WebSocketConnectionPtr &connection) {
+void WSController::handleNewConnection(HttpRequestPtr const& req,
+                                       WebSocketConnectionPtr const& connection) {
     Json::StreamWriterBuilder builder;
 
-    for (const auto &handler : m_handlers) {
-        connection->send(
-            Json::writeString(builder, handler.second->handle_connection()));
+    for (auto const& handler : m_handlers) {
+        connection->send(Json::writeString(builder, handler.second->handle_connection()));
     }
     m_connections.emplace(connection);
 }
 
-void WSController::handleConnectionClosed(
-    const WebSocketConnectionPtr &connection) {
+void WSController::handleConnectionClosed(WebSocketConnectionPtr const& connection) {
     m_connections.erase(connection);
 }
 

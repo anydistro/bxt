@@ -10,8 +10,8 @@
 #include "core/application/services/PackageService.h"
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/SyncService.h"
-#include "drogon/utils/FunctionTraits.h"
 #include "drogon/utils/coroutine.h"
+#include "drogon/utils/FunctionTraits.h"
 #include "utilities/drogon/Macro.h"
 
 #include <drogon/drogon.h>
@@ -20,15 +20,14 @@
 
 namespace bxt::Presentation {
 
-class PackageController
-    : public drogon::HttpController<PackageController, false> {
+class PackageController : public drogon::HttpController<PackageController, false> {
 public:
-    PackageController(Core::Application::PackageService &package_service,
-                      Core::Application::SyncService &sync_service,
-                      Core::Application::PermissionService &permission_service)
-        : m_package_service(package_service),
-          m_sync_service(sync_service),
-          m_permission_service(permission_service) {};
+    PackageController(Core::Application::PackageService& package_service,
+                      Core::Application::SyncService& sync_service,
+                      Core::Application::PermissionService& permission_service)
+        : m_package_service(package_service)
+        , m_sync_service(sync_service)
+        , m_permission_service(permission_service) {};
 
     METHOD_LIST_BEGIN
 
@@ -36,45 +35,37 @@ public:
                           "/api/packages/commit",
                           drogon::Post);
 
-    BXT_JWT_ADD_METHOD_TO(
-        PackageController::get_packages,
-        "/api/packages?branch={1}&repository={2}&architecture={3}",
-        drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(PackageController::get_packages,
+                          "/api/packages?branch={1}&repository={2}&architecture={3}",
+                          drogon::Get);
 
-    BXT_JWT_ADD_METHOD_TO(PackageController::sync,
-                          "/api/packages/sync",
-                          drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(PackageController::sync, "/api/packages/sync", drogon::Post);
 
     BXT_JWT_ADD_METHOD_TO(PackageController::snap_branch,
                           "/api/packages/snap/branch",
                           drogon::Post);
 
     // Methods for advanced operations. These are not exposed to the frontend.
-    BXT_JWT_ADD_METHOD_TO(PackageController::snap,
-                          "/api/advanced/packages/snap",
-                          drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(PackageController::snap, "/api/advanced/packages/snap", drogon::Post);
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> sync(drogon::HttpRequestPtr req);
 
-    drogon::Task<drogon::HttpResponsePtr>
-        commit_transaction(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> commit_transaction(drogon::HttpRequestPtr req);
 
-    drogon::Task<drogon::HttpResponsePtr>
-        get_packages(drogon::HttpRequestPtr req,
-                     const std::string &branch,
-                     const std::string &repository,
-                     const std::string &architecture);
+    drogon::Task<drogon::HttpResponsePtr> get_packages(drogon::HttpRequestPtr req,
+                                                       std::string const& branch,
+                                                       std::string const& repository,
+                                                       std::string const& architecture);
 
     drogon::Task<drogon::HttpResponsePtr> snap(drogon::HttpRequestPtr req);
 
-    drogon::Task<drogon::HttpResponsePtr>
-        snap_branch(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> snap_branch(drogon::HttpRequestPtr req);
 
 private:
-    Core::Application::PackageService &m_package_service;
-    Core::Application::SyncService &m_sync_service;
-    Core::Application::PermissionService &m_permission_service;
+    Core::Application::PackageService& m_package_service;
+    Core::Application::SyncService& m_sync_service;
+    Core::Application::PermissionService& m_permission_service;
 };
 
 } // namespace bxt::Presentation

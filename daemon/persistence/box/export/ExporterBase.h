@@ -17,7 +17,6 @@ struct ExporterBase {
     virtual ~ExporterBase() = default;
 
     virtual coro::task<void> export_to_disk() = 0;
-    virtual void add_dirty_sections(
-        std::set<Core::Application::PackageSectionDTO>&&) = 0;
+    virtual void add_dirty_sections(std::set<Core::Application::PackageSectionDTO>&&) = 0;
 };
 } // namespace bxt::Persistence::Box

@@ -15,15 +15,18 @@ namespace bxt::Core::Domain {
 
 class Name {
 public:
-    Name(const std::string& name_string) : m_value(name_string) {
+    Name(std::string const& name_string)
+        : m_value(name_string) {
         if (name_string.empty()) {
             throw new std::invalid_argument("Name cannot be empty");
         }
     }
 
-    operator const std::string&() const { return m_value; }
+    operator std::string const&() const {
+        return m_value;
+    }
 
-    auto operator<=>(const Name& other) const = default;
+    auto operator<=>(Name const& other) const = default;
 
 private:
     std::string m_value;
@@ -31,10 +34,9 @@ private:
 
 } // namespace bxt::Core::Domain
 
-template<>
-struct fmt::formatter<bxt::Core::Domain::Name> : fmt::formatter<std::string> {
+template<> struct fmt::formatter<bxt::Core::Domain::Name> : fmt::formatter<std::string> {
     template<typename FormatCtx>
-    auto format(const bxt::Core::Domain::Name& a, FormatCtx& ctx) const {
+    auto format(bxt::Core::Domain::Name const& a, FormatCtx& ctx) const {
         return fmt::formatter<std::string>::format(std::string(a), ctx);
     }
 };

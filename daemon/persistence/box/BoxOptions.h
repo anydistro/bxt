@@ -15,10 +15,10 @@ namespace bxt::Persistence::Box {
 struct BoxOptions {
     std::filesystem::path box_path = "box";
 
-    void serialize(Utilities::Configuration &config) {
+    void serialize(Utilities::Configuration& config) {
         config.set("box-path", box_path.string());
     }
-    void deserialize(const Utilities::Configuration &config) {
+    void deserialize(Utilities::Configuration const& config) {
         box_path = config.get<std::string>("box-path").value_or(box_path);
     }
 };

@@ -22,9 +22,9 @@
 #include <boost/serialization/set.hpp>
 
 template<class Archive>
-void boost::serialization::serialize(Archive &ar,
-                                     std::filesystem::path &path,
-                                     const unsigned int version) {
+void boost::serialization::serialize(Archive& ar,
+                                     std::filesystem::path& path,
+                                     unsigned int const version) {
     std::string path_string = path.string();
     ar & path_string;
     if (Archive::is_loading::value) {
@@ -33,38 +33,36 @@ void boost::serialization::serialize(Archive &ar,
 }
 
 template<class Archive>
-void boost::serialization::serialize(
-    Archive &ar,
-    bxt::Core::Application::PackageSectionDTO &section,
-    const unsigned int version) {
+void boost::serialization::serialize(Archive& ar,
+                                     bxt::Core::Application::PackageSectionDTO& section,
+                                     unsigned int const version) {
     ar & section.branch;
     ar & section.repository;
     ar & section.architecture;
 }
 
 template<class Archive>
-void boost::serialization::serialize(Archive &ar,
-                                     bxt::Core::Application::UserDTO &user,
-                                     const unsigned int version) {
+void boost::serialization::serialize(Archive& ar,
+                                     bxt::Core::Application::UserDTO& user,
+                                     unsigned int const version) {
     ar & user.name;
     ar & user.password;
     ar & user.permissions;
 }
 
 template<class Archive>
-void boost::serialization::serialize(Archive &ar,
-                                     bxt::Core::Application::PackageDTO &pkg,
-                                     const unsigned int version) {
+void boost::serialization::serialize(Archive& ar,
+                                     bxt::Core::Application::PackageDTO& pkg,
+                                     unsigned int const version) {
     ar & pkg.name;
     ar & pkg.filepath;
     ar & pkg.section;
 }
 
 template<class Archive>
-void boost::serialization::serialize(
-    Archive &ar,
-    bxt::Core::Application::PackageLogEntryDTO &entry,
-    const unsigned int version) {
+void boost::serialization::serialize(Archive& ar,
+                                     bxt::Core::Application::PackageLogEntryDTO& entry,
+                                     unsigned int const version) {
     ar & entry.id;
     ar & entry.package;
     ar & entry.time;
@@ -74,7 +72,7 @@ void boost::serialization::serialize(
 namespace bxt::Utilities::LMDB {
 
 struct BoostSerializationError : public bxt::Error {
-    BoostSerializationError(boost::archive::archive_exception &&exception)
+    BoostSerializationError(boost::archive::archive_exception&& exception)
         : exception(exception) {
         message = exception.what();
     };
@@ -85,7 +83,7 @@ struct BoostSerializationError : public bxt::Error {
 template<typename TSerializable> struct BoostSerializer {
     BXT_DECLARE_RESULT(SerializationError);
 
-    static Result<std::string> serialize(const TSerializable &value) {
+    static Result<std::string> serialize(TSerializable const& value) {
         try {
             std::stringstream entity_stream;
             boost::archive::text_oarchive entity_archive(entity_stream);
@@ -93,7 +91,7 @@ template<typename TSerializable> struct BoostSerializer {
             entity_archive << value;
 
             return entity_stream.str();
-        } catch (boost::archive::archive_exception &e) {
+        } catch (boost::archive::archive_exception& e) {
             return bxt::make_error_with_source<SerializationError>(
                 BoostSerializationError(std::move(e)));
         }
@@ -108,7 +106,7 @@ template<typename TSerializable> struct BoostSerializer {
             entity_archive >> result;
 
             return result;
-        } catch (boost::archive::archive_exception &e) {
+        } catch (boost::archive::archive_exception& e) {
             return bxt::make_error_with_source<SerializationError>(
                 BoostSerializationError(std::move(e)));
         }

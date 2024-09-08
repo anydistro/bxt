@@ -32,20 +32,20 @@ public:
     BXT_DECLARE_RESULT(CompareError);
 
     CompareService(PackageService& package_service)
-        : m_package_service(package_service) {}
+        : m_package_service(package_service) {
+    }
 
     virtual ~CompareService() = default;
 
     struct CompareResult {
         std::vector<PackageSectionDTO> sections;
-        phmap::flat_hash_map<
-            std::tuple<std::string, PackageSectionDTO, Domain::PoolLocation>,
-            std::string>
+        phmap::flat_hash_map<std::tuple<std::string, PackageSectionDTO, Domain::PoolLocation>,
+                             std::string>
             compare_table;
     };
 
     virtual coro::task<Result<CompareResult>>
-        compare(const std::vector<PackageSectionDTO> sections);
+        compare(std::vector<PackageSectionDTO> const sections);
 
 private:
     PackageService& m_package_service;

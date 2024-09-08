@@ -38,14 +38,15 @@ struct PackageRecord {
             return fmt::format("{}/{}", std::string(section), name);
         }
 
-        static std::optional<Id> from_string(const std::string_view key) {
+        static std::optional<Id> from_string(std::string_view const key) {
             std::vector<std::string> parts;
             boost::split(parts, key, boost::is_any_of("/"));
-            if (parts.size() != 4) { return {}; }
+            if (parts.size() != 4) {
+                return {};
+            }
 
-            return Id {PackageSectionDTO {.branch = parts[0],
-                                          .repository = parts[1],
-                                          .architecture = parts[2]},
+            return Id {PackageSectionDTO {
+                           .branch = parts[0], .repository = parts[1], .architecture = parts[2]},
                        parts[3]};
         }
 

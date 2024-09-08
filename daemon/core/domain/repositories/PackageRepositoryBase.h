@@ -16,23 +16,19 @@
 
 namespace bxt::Core::Domain {
 struct PackageRepositoryBase : public ReadWriteRepositoryBase<Package> {
-    template<typename T>
-    using ReadResult = ReadOnlyRepositoryBase<Package>::Result<T>;
-    template<typename T>
-    using WriteResult = ReadWriteRepositoryBase<Package>::Result<T>;
+    template<typename T> using ReadResult = ReadOnlyRepositoryBase<Package>::Result<T>;
+    template<typename T> using WriteResult = ReadWriteRepositoryBase<Package>::Result<T>;
+
+    virtual coro::task<TResults> find_by_section_async(Section const section,
+                                                       std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     virtual coro::task<TResults>
-        find_by_section_async(const Section section,
+        find_by_section_async(Section const section,
+                              std::function<bool(Package const& pkg)> const predicate,
                               std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
-    virtual coro::task<TResults> find_by_section_async(
-        const Section section,
-        const std::function<bool(const Package& pkg)> predicate,
-        std::shared_ptr<UnitOfWorkBase> uow) = 0;
-
-    virtual coro::task<TResult>
-        find_by_section_async(const Section section,
-                              const Name name,
-                              std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<TResult> find_by_section_async(Section const section,
+                                                      Name const name,
+                                                      std::shared_ptr<UnitOfWorkBase> uow) = 0;
 };
 } // namespace bxt::Core::Domain

@@ -11,7 +11,9 @@
 namespace bxt::Core::Domain::Events {
 
 struct UserAdded : public EventBase {
-    UserAdded(const User& user) : user(user) {}
+    UserAdded(User const& user)
+        : user(user) {
+    }
     User user;
 
     virtual std::string message() const {
@@ -20,7 +22,9 @@ struct UserAdded : public EventBase {
 };
 
 struct UserRemoved : public EventBase {
-    UserRemoved(const Name& id) : id(id) {}
+    UserRemoved(Name const& id)
+        : id(id) {
+    }
     Name id;
 
     virtual std::string message() const {
@@ -29,8 +33,10 @@ struct UserRemoved : public EventBase {
 };
 
 struct UserUpdated : public EventBase {
-    UserUpdated(const User& new_user, const User& old_user)
-        : new_user(new_user), old_user(old_user) {}
+    UserUpdated(User const& new_user, User const& old_user)
+        : new_user(new_user)
+        , old_user(old_user) {
+    }
 
     User new_user;
 

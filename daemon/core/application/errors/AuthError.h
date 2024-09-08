@@ -15,17 +15,18 @@ namespace bxt::Core::Application {
 struct AuthError : public bxt::Error {
     enum class ErrorType { InvalidCredentials, UserNotFound, InternalError };
 
-    AuthError(ErrorType error_type) : error_type(error_type) {
+    AuthError(ErrorType error_type)
+        : error_type(error_type) {
         message = error_strings.at(error_type).data();
     }
 
     ErrorType error_type;
 
 private:
-    static inline frozen::unordered_map<ErrorType, std::string, 3>
-        error_strings = {{ErrorType::InvalidCredentials, "Invalid credentials"},
-                         {ErrorType::UserNotFound, "User not found"},
-                         {ErrorType::InternalError, "Internal error"}};
+    static inline frozen::unordered_map<ErrorType, std::string, 3> error_strings = {
+        {ErrorType::InvalidCredentials, "Invalid credentials"},
+        {ErrorType::UserNotFound, "User not found"},
+        {ErrorType::InternalError, "Internal error"}};
 };
 
 } // namespace bxt::Core::Application

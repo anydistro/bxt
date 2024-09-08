@@ -6,6 +6,4 @@
  */
 #include "SyncService.h"
 
-namespace bxt::Core::Application {
-
-} // namespace bxt::Core::Application
+namespace bxt::Core::Application {} // namespace bxt::Core::Application

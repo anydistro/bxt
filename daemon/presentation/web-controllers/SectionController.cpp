@@ -14,8 +14,7 @@
 #include <ranges>
 
 drogon::Task<drogon::HttpResponsePtr>
-    bxt::Presentation::SectionController::get_sections(
-        drogon::HttpRequestPtr req) const {
+    bxt::Presentation::SectionController::get_sections(drogon::HttpRequestPtr req) const {
     auto sections = co_await m_service.get_sections();
 
     if (!sections.has_value()) {
@@ -23,10 +22,10 @@ drogon::Task<drogon::HttpResponsePtr>
     }
 
     sections = *sections | std::views::filter([this, req](auto section) {
-        return coro::sync_wait(m_permission_service.check(
-            fmt::format("sections.{}.{}.{}", section.branch, section.repository,
-                        section.architecture),
-            req->getAttributes()->get<std::string>("jwt_username")));
+        return coro::sync_wait(
+            m_permission_service.check(fmt::format("sections.{}.{}.{}", section.branch,
+                                                   section.repository, section.architecture),
+                                       req->getAttributes()->get<std::string>("jwt_username")));
     }) | std::ranges::to<std::vector>();
 
     co_return drogon_helpers::make_json_response(*sections);

@@ -24,19 +24,19 @@ namespace bxt::Core::Domain {
 struct WriteError : public bxt::Error {
     enum Type { EntityNotFound, OperationError, InvalidArgument };
 
-    WriteError(Type error_type) : error_type(error_type) {
+    WriteError(Type error_type)
+        : error_type(error_type) {
         message = error_messages.at(error_type).data();
     }
 
     Type error_type;
 
 private:
-    static inline frozen::unordered_map<Type, frozen::string, 3>
-        error_messages = {
-            {Type::EntityNotFound, "Entity not found"},
-            {Type::OperationError, "Operation error"},
-            {Type::InvalidArgument, "Invalid argument"},
-        };
+    static inline frozen::unordered_map<Type, frozen::string, 3> error_messages = {
+        {Type::EntityNotFound, "Entity not found"},
+        {Type::OperationError, "Operation error"},
+        {Type::InvalidArgument, "Invalid argument"},
+    };
 };
 
 /**
@@ -52,8 +52,7 @@ private:
  *
  * @tparam TEntity The type of the entities stored in the repository.
  */
-template<typename TEntity>
-struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
+template<typename TEntity> struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
     using TId = typename ReadOnlyRepositoryBase<TEntity>::TId;
     using TResult = typename ReadOnlyRepositoryBase<TEntity>::TResult;
     using TResults = typename ReadOnlyRepositoryBase<TEntity>::TResults;
@@ -70,9 +69,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<Result<void>>
-        add_async(const TEntity entity,
-                  std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<Result<void>> add_async(TEntity const entity,
+                                               std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     /**
      * @brief Asynchronously adds a list of new entities to the repository.
@@ -82,17 +80,16 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<Result<void>>
-        add_async(const TEntities entities,
-                  std::shared_ptr<UnitOfWorkBase> uow) {
-        auto tasks = entities | std::views::transform([&](const auto& entity) {
-                         return add_async(entity, uow);
-                     })
-                     | std::ranges::to<std::vector>();
+    virtual coro::task<Result<void>> add_async(TEntities const entities,
+                                               std::shared_ptr<UnitOfWorkBase> uow) {
+        auto tasks =
+            entities
+            | std::views::transform([&](auto const& entity) { return add_async(entity, uow); })
+            | std::ranges::to<std::vector>();
 
         auto results = co_await coro::when_all(std::move(tasks));
 
-        for (const auto& result : results) {
+        for (auto const& result : results) {
             if (!result.return_value().has_value()) {
                 co_return std::unexpected(result.return_value().error());
             }
@@ -109,9 +106,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<Result<void>>
-        update_async(const TEntity entity,
-                     std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<Result<void>> update_async(TEntity const entity,
+                                                  std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     /**
      * @brief Asynchronously updates a list of existing entities in the
@@ -122,16 +118,15 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<Result<void>>
-        update_async(const TEntities entities,
-                     std::shared_ptr<UnitOfWorkBase> uow) {
-        auto tasks = entities | std::views::transform([&](const auto& entity) {
-                         return update_async(entity, uow);
-                     })
-                     | std::ranges::to<std::vector>();
+    virtual coro::task<Result<void>> update_async(TEntities const entities,
+                                                  std::shared_ptr<UnitOfWorkBase> uow) {
+        auto tasks =
+            entities
+            | std::views::transform([&](auto const& entity) { return update_async(entity, uow); })
+            | std::ranges::to<std::vector>();
 
         auto results = co_await coro::when_all(std::move(tasks));
-        for (const auto& result : results) {
+        for (auto const& result : results) {
             if (!result.return_value().has_value()) {
                 co_return std::unexpected(result.return_value().error());
             }
@@ -148,8 +143,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<Result<void>> A task that represents the asynchronous
      * operation.
      */
-    inline virtual coro::task<Result<void>>
-        save_async(const TEntity entity, std::shared_ptr<UnitOfWorkBase> uow) {
+    inline virtual coro::task<Result<void>> save_async(TEntity const entity,
+                                                       std::shared_ptr<UnitOfWorkBase> uow) {
         return save_async(std::vector {entity}, uow);
     }
 
@@ -163,24 +158,20 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<Result<void>> A task that represents the asynchronous
      * operation.
      */
-    inline virtual coro::task<Result<void>>
-        save_async(const TEntities entities,
-                   std::shared_ptr<UnitOfWorkBase> uow) {
-        for (const auto& entity : entities) {
-            auto find_result =
-                co_await this->find_by_id_async(entity.id(), uow);
+    inline virtual coro::task<Result<void>> save_async(TEntities const entities,
+                                                       std::shared_ptr<UnitOfWorkBase> uow) {
+        for (auto const& entity : entities) {
+            auto find_result = co_await this->find_by_id_async(entity.id(), uow);
 
             if (!find_result.has_value()) {
-                if (find_result.error().error_type
-                    == ReadError::Type::EntityNotFound) {
+                if (find_result.error().error_type == ReadError::Type::EntityNotFound) {
                     auto add_result = co_await add_async(entity, uow);
                     if (!add_result.has_value()) {
                         co_return std::unexpected(add_result.error());
                     }
                 } else {
                     co_return bxt::make_error_with_source<WriteError>(
-                        std::move(find_result.error()),
-                        WriteError::OperationError);
+                        std::move(find_result.error()), WriteError::OperationError);
                 }
             } else {
                 auto update_result = co_await update_async(entity, uow);
@@ -200,8 +191,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<Result<void>>
-        delete_async(const TId id, std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<Result<void>> delete_async(TId const id,
+                                                  std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     /**
      * @brief Asynchronously removes a list of entities from the repository.
@@ -211,16 +202,14 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<Result<void>>
-        delete_async(const std::vector<TId> ids,
-                     std::shared_ptr<UnitOfWorkBase> uow) {
-        auto tasks = ids | std::views::transform([&](const auto& id) {
-                         return delete_async(id, uow);
-                     })
+    virtual coro::task<Result<void>> delete_async(std::vector<TId> const ids,
+                                                  std::shared_ptr<UnitOfWorkBase> uow) {
+        auto tasks = ids
+                     | std::views::transform([&](auto const& id) { return delete_async(id, uow); })
                      | std::ranges::to<std::vector>();
 
         auto results = co_await coro::when_all(std::move(tasks));
-        for (const auto& result : results) {
+        for (auto const& result : results) {
             if (!result.return_value().has_value()) {
                 co_return std::unexpected(result.return_value().error());
             }

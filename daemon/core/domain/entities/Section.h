@@ -16,27 +16,36 @@ namespace bxt::Core::Domain {
 
 class Section {
 public:
-    Section(const Name& branch,
-            const Name& repository,
-            const Name& architecture)
-        : m_branch(branch),
-          m_repository(repository),
-          m_architecture(architecture) {}
+    Section(Name const& branch, Name const& repository, Name const& architecture)
+        : m_branch(branch)
+        , m_repository(repository)
+        , m_architecture(architecture) {
+    }
 
     using TId = std::string;
 
-    TId id() const { return this->string(); }
+    TId id() const {
+        return this->string();
+    }
 
-    Name branch() const { return m_branch; }
-    void set_branch(const Name& new_branch) { m_branch = new_branch; }
+    Name branch() const {
+        return m_branch;
+    }
+    void set_branch(Name const& new_branch) {
+        m_branch = new_branch;
+    }
 
-    Name repository() const { return m_repository; }
-    void set_repository(const Name& new_repository) {
+    Name repository() const {
+        return m_repository;
+    }
+    void set_repository(Name const& new_repository) {
         m_repository = new_repository;
     }
 
-    Name architecture() const { return m_architecture; }
-    void set_architecture(const Name& new_architecture) {
+    Name architecture() const {
+        return m_architecture;
+    }
+    void set_architecture(Name const& new_architecture) {
         m_architecture = new_architecture;
     }
 
@@ -52,7 +61,6 @@ private:
 
 } // namespace bxt::Core::Domain
 
-template<>
-inline std::string bxt::to_string(const Core::Domain::Section& section) {
+template<> inline std::string bxt::to_string(Core::Domain::Section const& section) {
     return section.string();
 }

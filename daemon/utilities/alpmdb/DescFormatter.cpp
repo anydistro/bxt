@@ -25,13 +25,11 @@ std::string DescFormatter::format() const {
     oss << format_pkginfo_entry<"VERSION", "pkgver">();
     oss << format_pkginfo_entry<"DESC", "pkgdesc">();
     oss << format_pkginfo_entry<"GROUPS", "groups">();
-    oss << format_entry<"CSIZE">(
-        std::to_string(std::filesystem::file_size(m_filepath)));
+    oss << format_entry<"CSIZE">(std::to_string(std::filesystem::file_size(m_filepath)));
     oss << format_pkginfo_entry<"ISIZE", "size">();
 
     // add checksums
-    oss << format_entry<"MD5SUM">(
-        bxt::hash_from_file<MD5, MD5_DIGEST_LENGTH>(m_filepath.string()));
+    oss << format_entry<"MD5SUM">(bxt::hash_from_file<MD5, MD5_DIGEST_LENGTH>(m_filepath.string()));
 
     oss << format_entry<"SHA256SUM">(
         bxt::hash_from_file<SHA256, SHA256_DIGEST_LENGTH>(m_filepath.string()));

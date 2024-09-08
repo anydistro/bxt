@@ -10,6 +10,8 @@
 #include <system_error>
 namespace bxt {
 struct FsError : public bxt::Error {
-    FsError(const std::error_code& ec) { message = ec.message(); }
+    FsError(std::error_code const& ec) {
+        message = ec.message();
+    }
 };
 } // namespace bxt

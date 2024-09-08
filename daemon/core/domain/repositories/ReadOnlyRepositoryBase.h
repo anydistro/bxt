@@ -30,19 +30,19 @@ struct ReadError : public bxt::Error {
 
     ReadError() = default;
 
-    ReadError(Type error_type) : error_type(error_type) {
+    ReadError(Type error_type)
+        : error_type(error_type) {
         message = error_messages.at(error_type).data();
     }
 
     Type error_type;
 
 private:
-    static inline frozen::unordered_map<Type, frozen::string, 3>
-        error_messages = {
-            {Type::EntityNotFound, "Entity not found"},
-            {Type::EntityFindError, "Error finding entity"},
-            {Type::InvalidArgument, "Invalid argument"},
-        };
+    static inline frozen::unordered_map<Type, frozen::string, 3> error_messages = {
+        {Type::EntityNotFound, "Entity not found"},
+        {Type::EntityFindError, "Error finding entity"},
+        {Type::InvalidArgument, "Invalid argument"},
+    };
 };
 /**
  * @class ReadOnlyRepositoryBase
@@ -59,8 +59,7 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * @typedef TId
      * @brief The type of the identifier of the entity.
      */
-    using TId = std::remove_cvref_t<
-        std::invoke_result_t<decltype(&TEntity::id), TEntity>>;
+    using TId = std::remove_cvref_t<std::invoke_result_t<decltype(&TEntity::id), TEntity>>;
 
     /**
      * @typedef TResult
@@ -84,8 +83,7 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * operation. The task's result is the found entity or an empty optional if
      * no entity was found.
      */
-    virtual coro::task<TResult>
-        find_by_id_async(TId id, std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<TResult> find_by_id_async(TId id, std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     /**
      * @brief Asynchronously finds the first entity that satisfies a given
@@ -96,9 +94,8 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * operation. The task's result is the found entity or an empty optional if
      * no entity was found.
      */
-    virtual coro::task<TResult>
-        find_first_async(std::function<bool(const TEntity&)>,
-                         std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<TResult> find_first_async(std::function<bool(TEntity const&)>,
+                                                 std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     /**
      * @brief Asynchronously finds all entities that satisfy a given condition.
@@ -108,9 +105,8 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * operation. The task's result is a vector of the found entities or an
      * empty vector if no entity was found.
      */
-    virtual coro::task<TResults>
-        find_async(std::function<bool(const TEntity&)> condition,
-                   std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<TResults> find_async(std::function<bool(TEntity const&)> condition,
+                                            std::shared_ptr<UnitOfWorkBase> uow) = 0;
 
     /**
      * @brief Asynchronously finds all entities stored in the repository.
@@ -119,7 +115,6 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * operation. The task's result is a vector of all entities stored in the
      * repository.
      */
-    virtual coro::task<TResults>
-        all_async(std::shared_ptr<UnitOfWorkBase> uow) = 0;
+    virtual coro::task<TResults> all_async(std::shared_ptr<UnitOfWorkBase> uow) = 0;
 };
 } // namespace bxt::Core::Domain

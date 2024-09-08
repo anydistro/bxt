@@ -24,24 +24,22 @@ struct PackageLogEntryDTO {
     PoolLocation location = PoolLocation::Unknown;
     std::optional<std::string> version;
 
-    template<class Archive> void serialize(Archive &ar) {
+    template<class Archive> void serialize(Archive& ar) {
         ar(type, section, name, location, version);
     }
 };
 
 using PackageLogEntryDTOMapper =
-    bxt::Utilities::StaticDTOMapper<Domain::PackageLogEntry,
-                                    PackageLogEntryDTO>;
+    bxt::Utilities::StaticDTOMapper<Domain::PackageLogEntry, PackageLogEntryDTO>;
 
 } // namespace bxt::EventLog::Application
 namespace bxt::Utilities {
 
 template<>
-struct bxt::Utilities::StaticDTOMapper<
-    bxt::EventLog::Domain::PackageLogEntry,
-    bxt::EventLog::Application::PackageLogEntryDTO> {
+struct bxt::Utilities::StaticDTOMapper<bxt::EventLog::Domain::PackageLogEntry,
+                                       bxt::EventLog::Application::PackageLogEntryDTO> {
     static EventLog::Application::PackageLogEntryDTO
-        to_dto(const EventLog::Domain::PackageLogEntry &from) {
+        to_dto(EventLog::Domain::PackageLogEntry const& from) {
         EventLog::Application::PackageLogEntryDTO dto;
 
         dto.type = from.type();
@@ -56,13 +54,11 @@ struct bxt::Utilities::StaticDTOMapper<
     }
 
     static EventLog::Domain::PackageLogEntry
-        to_entity(const EventLog::Application::PackageLogEntryDTO &from) {
+        to_entity(EventLog::Application::PackageLogEntryDTO const& from) {
         EventLog::Domain::PackageLogEntry entity(
-            from.type, SectionDTOMapper::to_entity(from.section), from.name,
-            from.location,
+            from.type, SectionDTOMapper::to_entity(from.section), from.name, from.location,
             from.version.has_value()
-                ? std::make_optional(
-                      *PackageVersion::from_string(from.version.value()))
+                ? std::make_optional(*PackageVersion::from_string(from.version.value()))
                 : std::nullopt);
         return entity;
     }

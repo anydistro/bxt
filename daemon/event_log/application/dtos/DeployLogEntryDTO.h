@@ -36,7 +36,7 @@ using bxt::EventLog::Domain::DeployLogEntry;
 using EventLog::Application::PackageLogEntryDTOMapper;
 
 template<> struct StaticDTOMapper<DeployLogEntry, DeployLogEntryDTO> {
-    static DeployLogEntryDTO to_dto(const DeployLogEntry& from) {
+    static DeployLogEntryDTO to_dto(DeployLogEntry const& from) {
         DeployLogEntryDTO dto;
         dto.time = from.time();
 
@@ -46,10 +46,9 @@ template<> struct StaticDTOMapper<DeployLogEntry, DeployLogEntryDTO> {
         return dto;
     }
 
-    static DeployLogEntry to_entity(const DeployLogEntryDTO& from) {
-        return DeployLogEntry {
-            from.time, from.runner_url,
-            map_entries(from.added, PackageLogEntryDTOMapper::to_entity)};
+    static DeployLogEntry to_entity(DeployLogEntryDTO const& from) {
+        return DeployLogEntry {from.time, from.runner_url,
+                               map_entries(from.added, PackageLogEntryDTOMapper::to_entity)};
     }
 };
 } // namespace bxt::Utilities

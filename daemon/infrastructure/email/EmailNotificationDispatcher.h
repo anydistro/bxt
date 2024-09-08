@@ -13,12 +13,10 @@
 
 namespace bxt::Infrastructure {
 
-class EmailNotificationDispatcher
-    : public Core::Application::NotificationDispatcherBase {
+class EmailNotificationDispatcher : public Core::Application::NotificationDispatcherBase {
 public:
     EmailNotificationDispatcher();
-    virtual void
-        dispatch(const Core::Application::Notification& notification) override;
+    virtual void dispatch(Core::Application::Notification const& notification) override;
 
 private:
     EmailOptions options;

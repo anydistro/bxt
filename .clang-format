@@ -6,12 +6,11 @@ AlignConsecutiveMacros: 'true'
 AlignConsecutiveDeclarations: 'false'
 AlignEscapedNewlines: Left
 AllowAllArgumentsOnNextLine: 'true'
-AllowAllConstructorInitializersOnNextLine: 'true'
 AllowAllParametersOfDeclarationOnNextLine: 'true'
-AllowShortBlocksOnASingleLine: 'true'
-AllowShortCaseLabelsOnASingleLine: 'true'
-AllowShortFunctionsOnASingleLine: InlineOnly
-AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortBlocksOnASingleLine: 'Never'
+AllowShortCaseLabelsOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: 'false'
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: 'false'
 AlwaysBreakBeforeMultilineStrings: 'false'
@@ -21,13 +20,13 @@ BinPackParameters: 'false'
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Attach
 BreakBeforeTernaryOperators: 'true'
-BreakConstructorInitializers: BeforeColon
-BreakInheritanceList: BeforeColon
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
 BreakStringLiterals: 'true'
-CompactNamespaces: 'true'
-ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+ColumnLimit: 100
+CompactNamespaces: 'false'
 Cpp11BracedListStyle: 'true'
-DerivePointerAlignment: 'true'
+DerivePointerAlignment: 'false'
 FixNamespaceComments: 'true'
 IncludeBlocks: Regroup
 IndentCaseLabels: 'false'
@@ -37,9 +36,10 @@ IndentWrappedFunctionNames: 'true'
 KeepEmptyLinesAtTheStartOfBlocks: 'false'
 Language: Cpp
 NamespaceIndentation: Inner
+PackConstructorInitializers: Never
 PointerAlignment: Left
 ReflowComments: 'true'
-SortIncludes: 'true'
+SortIncludes: 'CaseInsensitive'
 SortUsingDeclarations: 'true'
 SpaceAfterLogicalNot: 'false'
 SpaceAfterTemplateKeyword: 'false'
@@ -49,13 +49,13 @@ SpaceBeforeCtorInitializerColon: 'true'
 SpaceBeforeInheritanceColon: 'true'
 SpaceBeforeParens: ControlStatements
 SpaceBeforeRangeBasedForLoopColon: 'true'
-SpaceInEmptyParentheses: 'false'
 SpacesInAngles: 'false'
 SpacesInCStyleCastParentheses: 'false'
 SpacesInContainerLiterals: 'false'
 SpacesInParentheses: 'false'
 SpacesInSquareBrackets: 'false'
 Standard: Cpp11
+QualifierAlignment: Right
 UseTab: Never
 
 ...

@@ -12,9 +12,11 @@ namespace bxt::Core::Domain {
 
 class PackageArchitecture {
 public:
-    PackageArchitecture(const std::string& arch_name = "");
+    PackageArchitecture(std::string const& arch_name = "");
 
-    operator const std::string&() const { return m_arch_name; }
+    operator std::string const&() const {
+        return m_arch_name;
+    }
 
 private:
     std::string m_arch_name;

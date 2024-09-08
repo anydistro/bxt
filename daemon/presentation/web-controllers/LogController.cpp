@@ -14,34 +14,32 @@
 #include <rfl.hpp>
 
 namespace bxt::Presentation {
-drogon::Task<drogon::HttpResponsePtr>
-    LogController::get_package_logs(drogon::HttpRequestPtr req,
-                                    const std::string& from_str,
-                                    const std::string& to_str,
-                                    const std::string& text) {
+drogon::Task<drogon::HttpResponsePtr> LogController::get_package_logs(drogon::HttpRequestPtr req,
+                                                                      std::string const& from_str,
+                                                                      std::string const& to_str,
+                                                                      std::string const& text) {
     BXT_JWT_CHECK_PERMISSIONS("logs", req)
 
     if (from_str.empty() || to_str.empty()) {
-        co_return drogon_helpers::make_error_response(
-            "Missing 'since' or 'until' parameters");
+        co_return drogon_helpers::make_error_response("Missing 'since' or 'until' parameters");
     }
 
-    const auto from_result = Iso8601TimePoint::from_string(from_str);
+    auto const from_result = Iso8601TimePoint::from_string(from_str);
     if (!from_result) {
-        co_return drogon_helpers::make_error_response(fmt::format(
-            "Invalid 'since' time format: {}", from_result.error()->what()));
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Invalid 'since' time format: {}", from_result.error()->what()));
     }
 
-    const auto from = (*from_result).to_class();
+    auto const from = (*from_result).to_class();
 
-    const auto to_result = Iso8601TimePoint::from_string(to_str);
+    auto const to_result = Iso8601TimePoint::from_string(to_str);
     if (!to_result) {
-        co_return drogon_helpers::make_error_response(fmt::format(
-            "Invalid 'until' time format: {}", to_result.error()->what()));
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Invalid 'until' time format: {}", to_result.error()->what()));
     }
-    const auto to = (*to_result).to_class();
+    auto const to = (*to_result).to_class();
 
-    const auto dto = co_await m_service.events(
+    auto const dto = co_await m_service.events(
         {.since = from,
          .until = to,
          .full_text = text.empty() ? std::nullopt : std::make_optional(text)});
@@ -50,7 +48,7 @@ drogon::Task<drogon::HttpResponsePtr>
         drogon_helpers::make_json_response(LogResponse {});
     }
 
-    static constexpr auto package_mapping = [](const auto& dto) {
+    static constexpr auto package_mapping = [](auto const& dto) {
         PackageLogEntryResponse response;
         response.type = dto.type;
         response.section = dto.section;
@@ -61,24 +59,22 @@ drogon::Task<drogon::HttpResponsePtr>
     };
     co_return drogon_helpers::make_json_response(LogResponse {
         .syncs = Utilities::map_entries(
-            dto.syncs, ([](const auto& dto) {
-                return SyncLogEntryResponse {
-                    dto.time, dto.sync_trigger_username,
-                    Utilities::map_entries(dto.added, package_mapping),
-                    Utilities::map_entries(dto.deleted, package_mapping)};
+            dto.syncs, ([](auto const& dto) {
+                return SyncLogEntryResponse {dto.time, dto.sync_trigger_username,
+                                             Utilities::map_entries(dto.added, package_mapping),
+                                             Utilities::map_entries(dto.deleted, package_mapping)};
             })),
-        .commits = Utilities::map_entries(
-            dto.commits, ([](const auto& dto) {
-                return CommitLogEntryResponse {
-                    dto.time, dto.commiter_username,
-                    Utilities::map_entries(dto.added, package_mapping),
-                    Utilities::map_entries(dto.deleted, package_mapping)};
-            })),
+        .commits =
+            Utilities::map_entries(dto.commits, ([](auto const& dto) {
+                                       return CommitLogEntryResponse {
+                                           dto.time, dto.commiter_username,
+                                           Utilities::map_entries(dto.added, package_mapping),
+                                           Utilities::map_entries(dto.deleted, package_mapping)};
+                                   })),
         .deploys = Utilities::map_entries(
-            dto.deploys, ([](const auto& dto) {
-                return DeployLogEntryResponse {
-                    dto.time, dto.runner_url,
-                    Utilities::map_entries(dto.added, package_mapping)};
+            dto.deploys, ([](auto const& dto) {
+                return DeployLogEntryResponse {dto.time, dto.runner_url,
+                                               Utilities::map_entries(dto.added, package_mapping)};
             }))});
 }
 

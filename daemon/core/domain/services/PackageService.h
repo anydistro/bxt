@@ -19,9 +19,10 @@ namespace bxt::Core::Domain {
 
 class PackageService {
 public:
-    PackageService(std::shared_ptr<dexode::EventBus> evbus,
-                   PackageRepositoryBase& repository)
-        : m_evbus(evbus), m_repository(repository) {}
+    PackageService(std::shared_ptr<dexode::EventBus> evbus, PackageRepositoryBase& repository)
+        : m_evbus(evbus)
+        , m_repository(repository) {
+    }
 
     coro::task<void> add_package(Package pkg);
 

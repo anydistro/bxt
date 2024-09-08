@@ -18,12 +18,13 @@ namespace bxt::Persistence {
 class LmdbUnitOfWork : public Core::Domain::UnitOfWorkBase {
 public:
     explicit LmdbUnitOfWork(std::shared_ptr<Utilities::LMDB::Environment> env)
-        : m_env(std::move(env)) {}
+        : m_env(std::move(env)) {
+    }
 
     virtual ~LmdbUnitOfWork() = default;
 
     coro::task<Result<void>> commit_async() override {
-        for (const auto& [name, hook] : m_hooks) {
+        for (auto const& [name, hook] : m_hooks) {
             hook();
         }
         m_hooks.clear();
@@ -49,8 +50,7 @@ public:
         co_return {};
     }
 
-    void hook(std::function<void()>&& hook,
-              const std::string& name = "") override {
+    void hook(std::function<void()>&& hook, std::string const& name = "") override {
         if (name.empty()) {
             m_hooks[m_hooks.size()] = std::move(hook);
         } else {
@@ -58,7 +58,9 @@ public:
         }
     }
 
-    Utilities::locked<lmdb::txn>& txn() const { return *m_txn; }
+    Utilities::locked<lmdb::txn>& txn() const {
+        return *m_txn;
+    }
 
 private:
     using HookKeyType = std::variant<size_t, std::string>;
@@ -69,12 +71,11 @@ private:
 };
 
 struct LmdbUnitOfWorkFactory : public Core::Domain::UnitOfWorkBaseFactory {
-    explicit LmdbUnitOfWorkFactory(
-        std::shared_ptr<Utilities::LMDB::Environment> env)
-        : m_env(std::move(env)) {}
+    explicit LmdbUnitOfWorkFactory(std::shared_ptr<Utilities::LMDB::Environment> env)
+        : m_env(std::move(env)) {
+    }
 
-    coro::task<std::shared_ptr<Core::Domain::UnitOfWorkBase>>
-        operator()(bool rw = false) override {
+    coro::task<std::shared_ptr<Core::Domain::UnitOfWorkBase>> operator()(bool rw = false) override {
         auto uow = std::make_shared<LmdbUnitOfWork>(m_env);
         if (rw) {
             co_await uow->begin_async();

@@ -15,11 +15,14 @@ class PackageUpdateLogEntry {
 public:
     PackageUpdateLogEntry(PackageLogEntry package_log_entry,
                           PackageLogEntry previous_package_log_entry)
-        : package_log_entry(std::move(package_log_entry)),
-          previous_package_log_entry(std::move(previous_package_log_entry)) {}
+        : package_log_entry(std::move(package_log_entry))
+        , previous_package_log_entry(std::move(previous_package_log_entry)) {
+    }
 
-    const PackageLogEntry& package() const { return package_log_entry; }
-    const PackageLogEntry& previous_package() const {
+    PackageLogEntry const& package() const {
+        return package_log_entry;
+    }
+    PackageLogEntry const& previous_package() const {
         return previous_package_log_entry;
     }
 

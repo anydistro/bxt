@@ -30,9 +30,10 @@ struct SyncFinished : public IntegrationEventBase {
     SyncFinished(std::vector<Core::Domain::Package>&& packages,
                  std::vector<Core::Domain::Package::TId>&& deleted_package_ids,
                  std::string user_name)
-        : added_packages(std::move(packages)),
-          deleted_package_ids(std::move(deleted_package_ids)),
-          user_name(std::move(user_name)) {}
+        : added_packages(std::move(packages))
+        , deleted_package_ids(std::move(deleted_package_ids))
+        , user_name(std::move(user_name)) {
+    }
 
     std::vector<Core::Domain::Package> added_packages;
 
@@ -43,8 +44,7 @@ struct SyncFinished : public IntegrationEventBase {
     std::string message() const override {
         return fmt::format("Sync started by {} was finished: {} packages "
                            "added, {} packages deleted",
-                           user_name, added_packages.size(),
-                           deleted_package_ids.size());
+                           user_name, added_packages.size(), deleted_package_ids.size());
     }
 };
 

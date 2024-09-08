@@ -14,7 +14,9 @@ public:
     std::string title;
     std::string content;
 
-    bool valid() const { return !title.empty(); }
+    bool valid() const {
+        return !title.empty();
+    }
 };
 
 } // namespace bxt::Core::Application

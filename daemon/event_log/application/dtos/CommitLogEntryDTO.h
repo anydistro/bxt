@@ -42,29 +42,24 @@ using EventLog::Application::PackageLogEntryDTOMapper;
 using EventLog::Application::PackageUpdateLogEntryDTOMapper;
 
 template<> struct StaticDTOMapper<CommitLogEntry, CommitLogEntryDTO> {
-    static CommitLogEntryDTO to_dto(const CommitLogEntry& from) {
+    static CommitLogEntryDTO to_dto(CommitLogEntry const& from) {
         CommitLogEntryDTO dto;
         dto.time = from.time();
         dto.commiter_username = from.commiter_name();
         dto.added = map_entries(from.added(), PackageLogEntryDTOMapper::to_dto);
-        dto.deleted =
-            map_entries(from.deleted(), PackageLogEntryDTOMapper::to_dto);
-        dto.moved =
-            map_entries(from.moved(), PackageUpdateLogEntryDTOMapper::to_dto);
-        dto.copied =
-            map_entries(from.copied(), PackageUpdateLogEntryDTOMapper::to_dto);
+        dto.deleted = map_entries(from.deleted(), PackageLogEntryDTOMapper::to_dto);
+        dto.moved = map_entries(from.moved(), PackageUpdateLogEntryDTOMapper::to_dto);
+        dto.copied = map_entries(from.copied(), PackageUpdateLogEntryDTOMapper::to_dto);
         return dto;
     }
 
-    static CommitLogEntry to_entity(const CommitLogEntryDTO& from) {
-        return CommitLogEntry {
-            from.time,
-            from.commiter_username,
-            map_entries(from.added, PackageLogEntryDTOMapper::to_entity),
-            map_entries(from.deleted, PackageLogEntryDTOMapper::to_entity),
-            map_entries(from.moved, PackageUpdateLogEntryDTOMapper::to_entity),
-            map_entries(from.copied,
-                        PackageUpdateLogEntryDTOMapper::to_entity)};
+    static CommitLogEntry to_entity(CommitLogEntryDTO const& from) {
+        return CommitLogEntry {from.time,
+                               from.commiter_username,
+                               map_entries(from.added, PackageLogEntryDTOMapper::to_entity),
+                               map_entries(from.deleted, PackageLogEntryDTOMapper::to_entity),
+                               map_entries(from.moved, PackageUpdateLogEntryDTOMapper::to_entity),
+                               map_entries(from.copied, PackageUpdateLogEntryDTOMapper::to_entity)};
     }
 };
 } // namespace bxt::Utilities

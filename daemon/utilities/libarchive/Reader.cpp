@@ -12,9 +12,8 @@
 #include <variant>
 
 namespace Archive {
-Reader::Result<void> Reader::open_filename(const std::filesystem::path &path) {
-    int status =
-        archive_read_open_filename(m_archive.get(), path.c_str(), 1024);
+Reader::Result<void> Reader::open_filename(std::filesystem::path const& path) {
+    int status = archive_read_open_filename(m_archive.get(), path.c_str(), 1024);
 
     if (status != ARCHIVE_OK) {
         return std::unexpected(LibArchiveError(m_archive.get()));
@@ -23,10 +22,8 @@ Reader::Result<void> Reader::open_filename(const std::filesystem::path &path) {
     return {};
 }
 
-Reader::Result<void>
-    Reader::open_memory(const std::vector<uint8_t> &byte_array) {
-    int status = archive_read_open_memory(m_archive.get(), byte_array.data(),
-                                          byte_array.size());
+Reader::Result<void> Reader::open_memory(std::vector<uint8_t> const& byte_array) {
+    int status = archive_read_open_memory(m_archive.get(), byte_array.data(), byte_array.size());
 
     if (status != ARCHIVE_OK) {
         return std::unexpected(LibArchiveError(m_archive.get()));
@@ -35,7 +32,7 @@ Reader::Result<void>
     return {};
 }
 
-Reader::Result<void> Reader::open_memory(uint8_t *data, size_t length) {
+Reader::Result<void> Reader::open_memory(uint8_t* data, size_t length) {
     int status = archive_read_open_memory(m_archive.get(), data, length);
 
     if (status != ARCHIVE_OK) {
@@ -53,27 +50,27 @@ Reader::Entry::Result<std::vector<uint8_t>> Reader::Entry::read_all() {
     std::vector<uint8_t> result;
 
     do {
-        const auto read_result = read_buffer(buffer, actual_size);
+        auto const read_result = read_buffer(buffer, actual_size);
 
         if (!read_result.has_value()) {
             return std::unexpected(read_result.error());
         }
 
-        std::copy(buffer.begin(), buffer.begin() + actual_size,
-                  std::back_inserter(result));
+        std::copy(buffer.begin(), buffer.begin() + actual_size, std::back_inserter(result));
     } while (actual_size == block_size);
 
     return result;
 }
 
-Reader::Entry::Result<std::vector<uint8_t>>
-    Reader::Entry::read(std::size_t amount) {
-    if (!m_reader) { return std::unexpected(InvalidEntryError()); }
+Reader::Entry::Result<std::vector<uint8_t>> Reader::Entry::read(std::size_t amount) {
+    if (!m_reader) {
+        return std::unexpected(InvalidEntryError());
+    }
 
     std::vector<uint8_t> result;
     result.resize(amount);
 
-    const auto size = archive_read_data(m_reader, result.data(), amount);
+    auto const size = archive_read_data(m_reader, result.data(), amount);
 
     if (static_cast<int64_t>(size) < 0) {
         return std::unexpected(LibArchiveError(m_reader));

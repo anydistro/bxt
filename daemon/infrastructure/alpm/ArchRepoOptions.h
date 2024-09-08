@@ -18,26 +18,24 @@
 namespace bxt::Infrastructure {
 
 struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
-    phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,
-                                  ArchRepoSource>
-        sources;
+    phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO, ArchRepoSource> sources;
     std::filesystem::path download_path = "/var/cache/bxt/packages";
 
     virtual void parse(const YAML::Node& root_node) override {
         constexpr char Tag[] = "(alpm.sync)";
 
-        const auto& options_node = root_node[Tag];
+        auto const& options_node = root_node[Tag];
 
-        if (options_node["download-path"].IsDefined()
-            && options_node["download-path"].IsScalar()) {
+        if (options_node["download-path"].IsDefined() && options_node["download-path"].IsScalar()) {
             download_path = options_node["download-path"].as<std::string>();
         }
-        for (const auto& branch :
-             options_node["sync-branches"].as<std::vector<std::string>>()) {
-            for (const auto& repo : root_node["repositories"]) {
-                const auto& key = repo.first;
-                const auto& value = repo.second;
-                if (!key || !value || !value.IsMap()) { continue; }
+        for (auto const& branch : options_node["sync-branches"].as<std::vector<std::string>>()) {
+            for (auto const& repo : root_node["repositories"]) {
+                auto const& key = repo.first;
+                auto const& value = repo.second;
+                if (!key || !value || !value.IsMap()) {
+                    continue;
+                }
 
                 auto source_options = value[Tag];
 
@@ -48,8 +46,7 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
                 std::vector<std::string> source_repo_names;
 
                 if (source_options["repo-names"].IsSequence()) {
-                    source_repo_names = source_options["repo-names"]
-                                            .as<std::vector<std::string>>();
+                    source_repo_names = source_options["repo-names"].as<std::vector<std::string>>();
                 }
 
                 if (key.IsScalar()) {
@@ -57,9 +54,7 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
                         source.repo_name = source_repo_names[0];
                     }
 
-                    sources.emplace(PackageSectionDTO {branch,
-                                                       key.as<std::string>(),
-                                                       architecture},
+                    sources.emplace(PackageSectionDTO {branch, key.as<std::string>(), architecture},
                                     std::move(source));
                 } else if (key.IsSequence()) {
                     auto repos = key.as<std::vector<std::string>>();
@@ -70,9 +65,8 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
                             named_source.repo_name = source_repo_names[i];
                         }
 
-                        sources.emplace(
-                            PackageSectionDTO {branch, repos[i], architecture},
-                            named_source);
+                        sources.emplace(PackageSectionDTO {branch, repos[i], architecture},
+                                        named_source);
                     }
                 }
             }

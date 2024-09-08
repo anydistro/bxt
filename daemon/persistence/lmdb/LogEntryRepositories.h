@@ -15,14 +15,11 @@
 
 namespace bxt::Persistence::LMDB {
 using SyncLogEntryRepository =
-    LmdbRepositoryBase<EventLog::Domain::SyncLogEntry,
-                       EventLog::Application::SyncLogEntryDTO>;
+    LmdbRepositoryBase<EventLog::Domain::SyncLogEntry, EventLog::Application::SyncLogEntryDTO>;
 
 using CommitLogEntryRepository =
-    LmdbRepositoryBase<EventLog::Domain::CommitLogEntry,
-                       EventLog::Application::CommitLogEntryDTO>;
+    LmdbRepositoryBase<EventLog::Domain::CommitLogEntry, EventLog::Application::CommitLogEntryDTO>;
 
 using DeployLogEntryRepository =
-    LmdbRepositoryBase<EventLog::Domain::DeployLogEntry,
-                       EventLog::Application::DeployLogEntryDTO>;
+    LmdbRepositoryBase<EventLog::Domain::DeployLogEntry, EventLog::Application::DeployLogEntryDTO>;
 } // namespace bxt::Persistence::LMDB

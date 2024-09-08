@@ -24,8 +24,7 @@ struct UserDTO {
     }
 };
 
-using UserDTOMapper =
-    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::User, UserDTO>;
+using UserDTOMapper = bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::User, UserDTO>;
 
 } // namespace bxt::Core::Application
 
@@ -37,33 +36,27 @@ namespace {
 } // namespace
 
 template<> struct StaticDTOMapper<User, UserDTO> {
-    static User to_entity(const UserDTO& from) {
+    static User to_entity(UserDTO const& from) {
         User to(from.name, *from.password);
 
         std::set<Permission> mapped_permissions;
         std::ranges::transform(
-            *from.permissions,
-            std::inserter(mapped_permissions, mapped_permissions.end()),
-            [](const std::string& permission) {
-                return Permission(permission);
-            });
+            *from.permissions, std::inserter(mapped_permissions, mapped_permissions.end()),
+            [](std::string const& permission) { return Permission(permission); });
 
         to.set_permissions(mapped_permissions);
         return to;
     }
 
-    static UserDTO to_dto(const User& from) {
+    static UserDTO to_dto(User const& from) {
         UserDTO to;
         to.name = std::string(from.name());
         to.password = from.password();
         std::set<std::string> mapped_permissions;
 
         std::ranges::transform(
-            from.permissions(),
-            std::inserter(mapped_permissions, mapped_permissions.end()),
-            [](const Permission& permission) {
-                return std::string(permission);
-            });
+            from.permissions(), std::inserter(mapped_permissions, mapped_permissions.end()),
+            [](Permission const& permission) { return std::string(permission); });
 
         to.permissions = mapped_permissions;
         return to;

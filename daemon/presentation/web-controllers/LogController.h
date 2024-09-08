@@ -15,9 +15,11 @@ namespace bxt::Presentation {
 
 class LogController : public drogon::HttpController<LogController, false> {
 public:
-    LogController(EventLog::Application::LogService &service,
-                  Core::Application::PermissionService &permission_service)
-        : m_service(service), m_permission_service(permission_service) {}
+    LogController(EventLog::Application::LogService& service,
+                  Core::Application::PermissionService& permission_service)
+        : m_service(service)
+        , m_permission_service(permission_service) {
+    }
 
     METHOD_LIST_BEGIN
     BXT_JWT_ADD_METHOD_TO(LogController::get_package_logs,
@@ -26,15 +28,14 @@ public:
 
     METHOD_LIST_END
 
-    drogon::Task<drogon::HttpResponsePtr>
-        get_package_logs(drogon::HttpRequestPtr req,
-                         const std::string &since,
-                         const std::string &until,
-                         const std::string &text);
+    drogon::Task<drogon::HttpResponsePtr> get_package_logs(drogon::HttpRequestPtr req,
+                                                           std::string const& since,
+                                                           std::string const& until,
+                                                           std::string const& text);
 
 private:
-    EventLog::Application::LogService &m_service;
-    Core::Application::PermissionService &m_permission_service;
+    EventLog::Application::LogService& m_service;
+    Core::Application::PermissionService& m_permission_service;
 };
 
 } // namespace bxt::Presentation

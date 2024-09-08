@@ -11,10 +11,10 @@
 
 namespace bxt::Core::Domain {
 
-PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
-    const std::filesystem::path& file_path,
-    const std::optional<std::filesystem::path>& signature_path) {
-    const std::string filename = file_path.filename();
+PackagePoolEntry::Result<PackagePoolEntry>
+    PackagePoolEntry::parse_file_path(std::filesystem::path const& file_path,
+                                      std::optional<std::filesystem::path> const& signature_path) {
+    std::string const filename = file_path.filename();
 
     std::vector<std::string> substrings;
 
@@ -23,8 +23,7 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
     auto subsize = substrings.size();
 
     if (subsize < 4) {
-        return bxt::make_error<ParsingError>(
-            ParsingError::ErrorCode::InvalidFilename);
+        return bxt::make_error<ParsingError>(ParsingError::ErrorCode::InvalidFilename);
     }
 
     auto release_substr = substrings[subsize - 2];
@@ -32,13 +31,12 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
 
     auto version_pos = filename.find(version_substr);
 
-    auto version = PackageVersion::from_string(
-        fmt::format("{}-{}", version_substr, release_substr));
+    auto version =
+        PackageVersion::from_string(fmt::format("{}-{}", version_substr, release_substr));
 
     if (!version.has_value()) {
-        return bxt::make_error_with_source<ParsingError>(
-            std::move(version.error()),
-            ParsingError::ErrorCode::InvalidVersion);
+        return bxt::make_error_with_source<ParsingError>(std::move(version.error()),
+                                                         ParsingError::ErrorCode::InvalidVersion);
     }
 
     PackagePoolEntry result(file_path, {}, {}, *version);
@@ -46,25 +44,22 @@ PackagePoolEntry::Result<PackagePoolEntry> PackagePoolEntry::parse_file_path(
     if (signature_path.has_value()) {
         result.m_signature_path = signature_path;
     } else {
-        const auto deduced_signature_path =
-            fmt::format("{}.sig", file_path.string());
+        auto const deduced_signature_path = fmt::format("{}.sig", file_path.string());
 
         if (std::filesystem::exists(deduced_signature_path)) {
             result.m_signature_path = deduced_signature_path;
         }
     }
 
-    std::ifstream signature_file(result.m_signature_path.value(),
-                                 std::ios::binary);
+    std::ifstream signature_file(result.m_signature_path.value(), std::ios::binary);
 
     std::string signature_data((std::istreambuf_iterator<char>(signature_file)),
                                std::istreambuf_iterator<char>());
 
-    auto desc =
-        bxt::Utilities::AlpmDb::Desc::parse_package(file_path, signature_data);
+    auto desc = bxt::Utilities::AlpmDb::Desc::parse_package(file_path, signature_data);
     if (!desc.has_value()) {
-        return bxt::make_error_with_source<ParsingError>(
-            std::move(desc.error()), ParsingError::ErrorCode::InvalidPackage);
+        return bxt::make_error_with_source<ParsingError>(std::move(desc.error()),
+                                                         ParsingError::ErrorCode::InvalidPackage);
     }
     result.m_desc = std::move(desc.value());
 

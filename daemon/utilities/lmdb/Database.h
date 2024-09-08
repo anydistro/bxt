@@ -5,25 +5,24 @@
  *
  */
 #pragma once
-#include "Environment.h"
 #include "core/application/errors/CrudError.h"
 #include "coro/sync_wait.hpp"
+#include "Environment.h"
 #include "lmdb.h"
 #include "utilities/Error.h"
-#include "utilities/NavigationAction.h"
 #include "utilities/errors/DatabaseError.h"
 #include "utilities/errors/Macro.h"
 #include "utilities/lmdb/CerealSerializer.h"
 #include "utilities/lmdb/Error.h"
 #include "utilities/log/Logging.h"
+#include "utilities/NavigationAction.h"
 
 #include <exception>
 #include <lmdbxx/lmdb++.h>
 #include <string_view>
 namespace bxt::Utilities::LMDB {
 
-template<typename TEntity, typename TSerializer = CerealSerializer<TEntity>>
-class Database {
+template<typename TEntity, typename TSerializer = CerealSerializer<TEntity>> class Database {
 public:
     using Serializer = TSerializer;
     BXT_DECLARE_RESULT(bxt::DatabaseError)
@@ -37,8 +36,7 @@ public:
 
         txn->value.commit();
     }
-    coro::task<Result<bool>>
-        put(lmdb::txn& txn, std::string_view key, const TEntity value) {
+    coro::task<Result<bool>> put(lmdb::txn& txn, std::string_view key, TEntity const value) {
         bool result;
         try {
             auto value_string = TSerializer::serialize(value);
@@ -51,12 +49,11 @@ public:
 
             result = m_dbi.put(txn, key, *value_string);
 
-        } catch (const lmdb::error& err) {
+        } catch (lmdb::error const& err) {
             loge("LMDB::Database::put: {}", err.what());
             co_return bxt::make_error_with_source<DatabaseError>(
-                LMDB::Error(std::move(err)),
-                DatabaseError::ErrorType::DatabaseMalformedError);
-        } catch (const std::exception& e) {
+                LMDB::Error(std::move(err)), DatabaseError::ErrorType::DatabaseMalformedError);
+        } catch (std::exception const& e) {
             co_return bxt::make_error<DatabaseError>(
                 DatabaseError::ErrorType::DatabaseMalformedError);
         }
@@ -69,11 +66,10 @@ public:
         try {
             result = m_dbi.del(txn, key);
 
-        } catch (const lmdb::error& err) {
+        } catch (lmdb::error const& err) {
             co_return bxt::make_error_with_source<DatabaseError>(
-                LMDB::Error(std::move(err)),
-                DatabaseError::ErrorType::DatabaseMalformedError);
-        } catch (const std::exception& e) {
+                LMDB::Error(std::move(err)), DatabaseError::ErrorType::DatabaseMalformedError);
+        } catch (std::exception const& e) {
             co_return bxt::make_error<DatabaseError>(
                 DatabaseError::ErrorType::DatabaseMalformedError);
         }
@@ -86,25 +82,22 @@ public:
             std::string_view value_string;
 
             if (!m_dbi.get(txn, key, value_string)) {
-                co_return bxt::make_error<DatabaseError>(
-                    DatabaseError::ErrorType::EntityNotFound);
+                co_return bxt::make_error<DatabaseError>(DatabaseError::ErrorType::EntityNotFound);
             }
 
             auto result = TSerializer::deserialize(std::string(value_string));
 
             if (!result.has_value()) {
                 co_return bxt::make_error_with_source<DatabaseError>(
-                    std::move(result.error()),
-                    DatabaseError::ErrorType::DatabaseMalformedError);
+                    std::move(result.error()), DatabaseError::ErrorType::DatabaseMalformedError);
             }
 
             co_return *result;
 
-        } catch (const lmdb::error& err) {
+        } catch (lmdb::error const& err) {
             co_return bxt::make_error_with_source<DatabaseError>(
-                LMDB::Error(std::move(err)),
-                DatabaseError::ErrorType::DatabaseMalformedError);
-        } catch (const std::exception& e) {
+                LMDB::Error(std::move(err)), DatabaseError::ErrorType::DatabaseMalformedError);
+        } catch (std::exception const& e) {
             co_return bxt::make_error<DatabaseError>(
                 DatabaseError::ErrorType::DatabaseMalformedError);
         }
@@ -112,8 +105,7 @@ public:
 
     coro::task<Result<void>>
         accept(lmdb::txn& txn,
-               std::function<NavigationAction(std::string_view key,
-                                              const TEntity& value)> visitor,
+               std::function<NavigationAction(std::string_view key, TEntity const& value)> visitor,
                std::string_view prefix = "") {
         {
             auto cursor = lmdb::cursor::open(txn, m_dbi);
@@ -121,14 +113,12 @@ public:
             std::string_view key = prefix;
             std::string_view value;
 
-            MDB_cursor_op operation =
-                prefix.empty() ? MDB_FIRST : MDB_SET_RANGE;
+            MDB_cursor_op operation = prefix.empty() ? MDB_FIRST : MDB_SET_RANGE;
 
             // If operation == MDB_SET_RANGE cursor.get will return the first
             // value >= key. We need to check the key to actually have our
             // prefix otherwise there are no found values
-            if (!cursor.get(key, value, operation)
-                || !key.starts_with(prefix)) {
+            if (!cursor.get(key, value, operation) || !key.starts_with(prefix)) {
                 co_return {};
             }
 
@@ -137,28 +127,35 @@ public:
 
                 if (!res.has_value()) {
                     co_return bxt::make_error_with_source<DatabaseError>(
-                        std::move(res.error()),
-                        DatabaseError::ErrorType::InvalidEntityError);
+                        std::move(res.error()), DatabaseError::ErrorType::InvalidEntityError);
                 }
 
-                const auto result = visitor(key, *res);
+                auto const result = visitor(key, *res);
 
                 switch (result) {
-                case NavigationAction::Next: operation = MDB_NEXT; break;
-                case NavigationAction::Previous: operation = MDB_PREV; break;
-                case NavigationAction::Stop: co_return {};
+                case NavigationAction::Next:
+                    operation = MDB_NEXT;
+                    break;
+                case NavigationAction::Previous:
+                    operation = MDB_PREV;
+                    break;
+                case NavigationAction::Stop:
+                    co_return {};
                 }
 
-            } while (cursor.get(key, value, operation)
-                     && key.starts_with(prefix));
+            } while (cursor.get(key, value, operation) && key.starts_with(prefix));
         }
 
         co_return {};
     }
 
-    lmdb::dbi& dbi() { return m_dbi; }
+    lmdb::dbi& dbi() {
+        return m_dbi;
+    }
 
-    std::shared_ptr<Environment> env() { return m_env; };
+    std::shared_ptr<Environment> env() {
+        return m_env;
+    };
 
 private:
     std::shared_ptr<Environment> m_env;

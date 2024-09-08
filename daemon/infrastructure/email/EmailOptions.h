@@ -16,18 +16,17 @@
 
 namespace bxt::Infrastructure {
 namespace {
-    static constexpr frozen::
-        unordered_map<frozen::string, mailio::smtps::auth_method_t, 3>
-            AuthType = {
-                {"none", mailio::smtps::auth_method_t::NONE},
-                {"login", mailio::smtps::auth_method_t::LOGIN},
-                {"starttls", mailio::smtps::auth_method_t::START_TLS},
+    static constexpr frozen::unordered_map<frozen::string, mailio::smtps::auth_method_t, 3>
+        AuthType = {
+            {"none", mailio::smtps::auth_method_t::NONE},
+            {"login", mailio::smtps::auth_method_t::LOGIN},
+            {"starttls", mailio::smtps::auth_method_t::START_TLS},
 
     };
 } // namespace
 
 struct EmailOptions {
-    const std::string _section = "email";
+    std::string const _section = "email";
 
     std::string server_hostname = "localhost";
     uint16_t server_port = 2222;
@@ -44,7 +43,7 @@ struct EmailOptions {
     std::string sender_name = "bxt daemon";
     std::string sender_address = "daemon@bxt.local";
 
-    void serialize(Utilities::Configuration &config) {
+    void serialize(Utilities::Configuration& config) {
         config.set<std::string>("server-hostname", server_hostname);
 
         config.set<int64_t>("server-port", int64_t(server_port));
@@ -58,24 +57,18 @@ struct EmailOptions {
         config.set<std::string>("sender-address", sender_address);
     }
 
-    void deserialize(const Utilities::Configuration &config) {
-        server_hostname = config.get<std::string>("server-hostname")
-                              .value_or(server_hostname);
+    void deserialize(Utilities::Configuration const& config) {
+        server_hostname = config.get<std::string>("server-hostname").value_or(server_hostname);
 
         server_port = config.get<int64_t>("server-port").value_or(server_port);
 
         connection_auth_type_string =
-            config.get<std::string>("auth-type")
-                .value_or(connection_auth_type_string);
+            config.get<std::string>("auth-type").value_or(connection_auth_type_string);
 
-        connection_user =
-            config.get<std::string>("user").value_or(connection_user);
-        connection_password =
-            config.get<std::string>("password").value_or(connection_password);
-        sender_name =
-            config.get<std::string>("sender-name").value_or(sender_name);
-        sender_address =
-            config.get<std::string>("sender-address").value_or(sender_address);
+        connection_user = config.get<std::string>("user").value_or(connection_user);
+        connection_password = config.get<std::string>("password").value_or(connection_password);
+        sender_name = config.get<std::string>("sender-name").value_or(sender_name);
+        sender_address = config.get<std::string>("sender-address").value_or(sender_address);
     }
 };
 

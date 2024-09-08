@@ -19,7 +19,7 @@ struct PackageSectionDTO {
     std::string repository;
     std::string architecture;
 
-    auto operator<=>(const PackageSectionDTO& other) const = default;
+    auto operator<=>(PackageSectionDTO const& other) const = default;
 
     operator std::string() const {
         return fmt::format("{}/{}/{}", branch, repository, architecture);
@@ -31,8 +31,7 @@ struct PackageSectionDTO {
 };
 
 using SectionDTOMapper =
-    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::Section,
-                                    PackageSectionDTO>;
+    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::Section, PackageSectionDTO>;
 
 } // namespace bxt::Core::Application
 
@@ -42,15 +41,13 @@ using namespace bxt::Core::Application;
 } // namespace
 
 template<> struct bxt::Utilities::StaticDTOMapper<Section, PackageSectionDTO> {
-    static PackageSectionDTO to_dto(const Section& from) {
-        return Core::Application::PackageSectionDTO {
-            .branch = from.branch(),
-            .repository = from.repository(),
-            .architecture = from.architecture()};
+    static PackageSectionDTO to_dto(Section const& from) {
+        return Core::Application::PackageSectionDTO {.branch = from.branch(),
+                                                     .repository = from.repository(),
+                                                     .architecture = from.architecture()};
     }
-    static Section to_entity(const PackageSectionDTO& from) {
-        return Core::Domain::Section(from.branch, from.repository,
-                                     from.architecture);
+    static Section to_entity(PackageSectionDTO const& from) {
+        return Core::Domain::Section(from.branch, from.repository, from.architecture);
     }
 };
 
@@ -66,7 +63,6 @@ template<> struct std::hash<PackageSectionDTO> {
     }
 };
 
-template<> inline std::string bxt::to_string(const PackageSectionDTO& dto) {
-    return fmt::format("{}/{}/{}", dto.branch, dto.repository,
-                       dto.architecture);
+template<> inline std::string bxt::to_string(PackageSectionDTO const& dto) {
+    return fmt::format("{}/{}/{}", dto.branch, dto.repository, dto.architecture);
 }

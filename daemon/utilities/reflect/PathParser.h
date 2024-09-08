@@ -12,7 +12,7 @@
 struct Path {
     std::string path;
 
-    static Path from_class(const std::filesystem::path& _p) noexcept {
+    static Path from_class(std::filesystem::path const& _p) noexcept {
         return Path {_p.string()};
     }
     std::filesystem::path to_class() const {
@@ -23,10 +23,6 @@ namespace rfl::parsing {
 
 template<class ReaderType, class WriterType, class ProcessorsType>
 struct Parser<ReaderType, WriterType, std::filesystem::path, ProcessorsType>
-    : public CustomParser<ReaderType,
-                          WriterType,
-                          ProcessorsType,
-                          std::filesystem::path,
-                          Path> {};
+    : public CustomParser<ReaderType, WriterType, ProcessorsType, std::filesystem::path, Path> {};
 
 } // namespace rfl::parsing

@@ -7,6 +7,5 @@
 #pragma once
 #include <expected>
 
-#define BXT_DECLARE_RESULT(error)        \
-    template<typename TBxtExpectedValue> \
-    using Result = std::expected<TBxtExpectedValue, error>;
+#define BXT_DECLARE_RESULT(error) \
+    template<typename TBxtExpectedValue> using Result = std::expected<TBxtExpectedValue, error>;

@@ -17,7 +17,8 @@ namespace bxt::Infrastructure {
 class EventLogger {
 public:
     EventLogger(std::shared_ptr<dexode::EventBus> evbus)
-        : m_listener(dexode::EventBus::Listener::createNotOwning(*evbus)) {}
+        : m_listener(dexode::EventBus::Listener::createNotOwning(*evbus)) {
+    }
 
 private:
     dexode::EventBus::Listener m_listener;

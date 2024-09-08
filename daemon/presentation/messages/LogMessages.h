@@ -27,10 +27,8 @@ struct CommitLogEntryResponse {
     std::string commiter_username;
     std::vector<PackageLogEntryResponse> added;
     std::vector<PackageLogEntryResponse> deleted;
-    std::vector<std::pair<PackageLogEntryResponse, PackageLogEntryResponse>>
-        moved;
-    std::vector<std::pair<PackageLogEntryResponse, PackageLogEntryResponse>>
-        copied;
+    std::vector<std::pair<PackageLogEntryResponse, PackageLogEntryResponse>> moved;
+    std::vector<std::pair<PackageLogEntryResponse, PackageLogEntryResponse>> copied;
 };
 
 struct SyncLogEntryResponse {

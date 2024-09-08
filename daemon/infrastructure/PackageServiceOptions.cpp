@@ -8,15 +8,14 @@
 
 namespace bxt::Infrastructure {
 
-std::filesystem::path
-    PackageServiceOptions::pool(const PackageSectionDTO &section) const {
+std::filesystem::path PackageServiceOptions::pool(PackageSectionDTO const& section) const {
     if (m_pool_path_overrides.contains(section)) {
         return m_pool_path_overrides.at(section);
     }
     return m_default_pool_path;
 }
 
-void PackageServiceOptions::parse(const YAML::Node &root_node) {
+void PackageServiceOptions::parse(const YAML::Node& root_node) {
 }
 
 } // namespace bxt::Infrastructure

@@ -23,13 +23,13 @@ public:
     BXT_DECLARE_RESULT(CrudError)
     PermissionService(Core::Domain::UserRepository& repository,
                       Domain::UnitOfWorkBaseFactory& uow_factory)
-        : m_repository(repository), m_uow_factory(uow_factory) {}
+        : m_repository(repository)
+        , m_uow_factory(uow_factory) {
+    }
 
-    coro::task<bool> check(const std::string_view target_permission,
-                           const std::string user_name);
-    coro::task<bool>
-        check(const std::vector<std::string_view> target_permissions,
-              const std::string user_name);
+    coro::task<bool> check(std::string_view const target_permission, std::string const user_name);
+    coro::task<bool> check(std::vector<std::string_view> const target_permissions,
+                           std::string const user_name);
 
 private:
     Core::Domain::UserRepository& m_repository;

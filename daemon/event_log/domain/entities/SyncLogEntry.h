@@ -16,22 +16,27 @@ namespace bxt::EventLog::Domain {
 
 class SyncLogEntry : public EventLogEntryBase {
 public:
-    SyncLogEntry(const time_point& time,
+    SyncLogEntry(time_point const& time,
                  std::string username,
-                 const std::vector<PackageLogEntry>& added,
-                 const std::vector<PackageLogEntry>& deleted)
-        : EventLogEntryBase(EventLogEntryType::Sync, time),
-          m_sync_trigger_username(std::move(username)),
-          m_added {added},
-          m_deleted {deleted} {}
+                 std::vector<PackageLogEntry> const& added,
+                 std::vector<PackageLogEntry> const& deleted)
+        : EventLogEntryBase(EventLogEntryType::Sync, time)
+        , m_sync_trigger_username(std::move(username))
+        , m_added {added}
+        , m_deleted {deleted} {
+    }
 
     std::string sync_trigger_username() const {
         return m_sync_trigger_username;
     }
 
-    std::vector<PackageLogEntry> added() const { return m_added; }
+    std::vector<PackageLogEntry> added() const {
+        return m_added;
+    }
 
-    std::vector<PackageLogEntry> deleted() const { return m_deleted; }
+    std::vector<PackageLogEntry> deleted() const {
+        return m_deleted;
+    }
 
 private:
     std::string m_sync_trigger_username;

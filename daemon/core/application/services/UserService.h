@@ -17,11 +17,13 @@ public:
     BXT_DECLARE_RESULT(CrudError)
     UserService(bxt::Core::Domain::UserRepository& repository,
                 Domain::UnitOfWorkBaseFactory& uow_factory)
-        : m_repository(repository), m_uow_factory(uow_factory) {}
+        : m_repository(repository)
+        , m_uow_factory(uow_factory) {
+    }
 
-    virtual coro::task<Result<void>> add_user(const UserDTO user);
-    virtual coro::task<Result<void>> remove_user(const std::string name);
-    virtual coro::task<Result<void>> update_user(const UserDTO user);
+    virtual coro::task<Result<void>> add_user(UserDTO const user);
+    virtual coro::task<Result<void>> remove_user(std::string const name);
+    virtual coro::task<Result<void>> update_user(UserDTO const user);
     virtual coro::task<Result<std::vector<UserDTO>>> get_users() const;
 
 private:

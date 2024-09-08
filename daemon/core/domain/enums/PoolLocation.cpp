@@ -12,8 +12,6 @@
 using bxt::Core::Domain::pool_location_names;
 using bxt::Core::Domain::PoolLocation;
 
-template<>
-std::string bxt::to_string(const Core::Domain::PoolLocation& location) {
-    return {pool_location_names.at(location).begin(),
-            pool_location_names.at(location).end()};
+template<> std::string bxt::to_string(Core::Domain::PoolLocation const& location) {
+    return {pool_location_names.at(location).begin(), pool_location_names.at(location).end()};
 }

@@ -29,8 +29,7 @@ namespace bxt::Infrastructure {
 class ArchRepoSyncService : public bxt::Core::Application::SyncService {
 public:
     struct DownloadError : public bxt::Error {
-        DownloadError(const std::string& package_filename,
-                      const std::string& error_message)
+        DownloadError(std::string const& package_filename, std::string const& error_message)
             : package_filename(std::move(package_filename)) {
             message = error_message;
         }
@@ -51,37 +50,34 @@ public:
                         PackageRepositoryBase& package_repository,
                         ArchRepoOptions& options,
                         UnitOfWorkBaseFactory& uow_factory)
-        : m_dispatcher(dispatcher),
-          m_package_repository(package_repository),
-          m_options(options),
-          m_uow_factory(uow_factory) {}
+        : m_dispatcher(dispatcher)
+        , m_package_repository(package_repository)
+        , m_options(options)
+        , m_uow_factory(uow_factory) {
+    }
 
-    coro::task<SyncService::Result<void>>
-        sync(const PackageSectionDTO section,
-             const RequestContext context) override;
-    coro::task<SyncService::Result<void>>
-        sync_all(const RequestContext context) override;
+    coro::task<SyncService::Result<void>> sync(PackageSectionDTO const section,
+                                               RequestContext const context) override;
+    coro::task<SyncService::Result<void>> sync_all(RequestContext const context) override;
 
 protected:
     coro::task<SyncService::Result<std::vector<Package>>>
-        sync_section(const PackageSectionDTO section);
+        sync_section(PackageSectionDTO const section);
 
     coro::task<Result<std::vector<PackageInfo>>>
-        get_available_packages(const PackageSectionDTO section);
+        get_available_packages(PackageSectionDTO const section);
     coro::task<Result<Package>>
         download_package(PackageSectionDTO section,
                          std::string package_filename,
                          std::string sha256_hash,
                          std::optional<std::string> signature = std::nullopt);
 
-    coro::task<std::unique_ptr<httplib::SSLClient>>
-        get_client(const std::string url);
+    coro::task<std::unique_ptr<httplib::SSLClient>> get_client(std::string const url);
 
-    coro::task<std::optional<httplib::Result>> download_file(
-        std::string url, std::string path, std::string filename = "");
+    coro::task<std::optional<httplib::Result>>
+        download_file(std::string url, std::string path, std::string filename = "");
 
-    bool is_excluded(const PackageSectionDTO& section,
-                     const std::string& package_name) const;
+    bool is_excluded(PackageSectionDTO const& section, std::string const& package_name) const;
 
 private:
     Utilities::EventBusDispatcher& m_dispatcher;

@@ -15,14 +15,15 @@ namespace bxt::Persistence::Box {
 
 struct PoolBase {
     struct FsError : public bxt::Error {
-        FsError(const std::error_code& ec) { message = ec.message(); }
+        FsError(std::error_code const& ec) {
+            message = ec.message();
+        }
     };
     BXT_DECLARE_RESULT(FsError);
 
-    virtual Result<PackageRecord> move_to(const PackageRecord& package) = 0;
-    virtual Result<void> remove(const PackageRecord& package) = 0;
+    virtual Result<PackageRecord> move_to(PackageRecord const& package) = 0;
+    virtual Result<void> remove(PackageRecord const& package) = 0;
 
-    virtual Result<PackageRecord>
-        path_for_package(const PackageRecord& package) const = 0;
+    virtual Result<PackageRecord> path_for_package(PackageRecord const& package) const = 0;
 };
 } // namespace bxt::Persistence::Box

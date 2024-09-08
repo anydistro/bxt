@@ -10,22 +10,23 @@
 
 namespace bxt::Core::Application {
 
-coro::task<bool>
-    PermissionService::check(const std::string_view target_permission,
-                             const std::string user_name) {
+coro::task<bool> PermissionService::check(std::string_view const target_permission,
+                                          std::string const user_name) {
     return check(std::vector<std::string_view> {target_permission}, user_name);
 }
 
-coro::task<bool> PermissionService::check(
-    const std::vector<std::string_view> target_permissions,
-    const std::string user_name) {
-    auto user = co_await m_repository.find_by_id_async(
-        user_name, co_await m_uow_factory());
+coro::task<bool> PermissionService::check(std::vector<std::string_view> const target_permissions,
+                                          std::string const user_name) {
+    auto user = co_await m_repository.find_by_id_async(user_name, co_await m_uow_factory());
 
-    if (!user) { co_return {}; }
+    if (!user) {
+        co_return {};
+    }
 
-    for (const auto& target_permission : target_permissions) {
-        if (!user->has_permission(target_permission)) { co_return false; }
+    for (auto const& target_permission : target_permissions) {
+        if (!user->has_permission(target_permission)) {
+            co_return false;
+        }
     }
 
     co_return true;

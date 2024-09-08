@@ -17,32 +17,45 @@ namespace bxt::Core::Domain {
 
 class User {
 public:
-    User() : m_name("Unnamed") {}
+    User()
+        : m_name("Unnamed") {
+    }
 
-    User(const Name &name, const std::string &password)
-        : m_name(name), m_password(password) {};
+    User(Name const& name, std::string const& password)
+        : m_name(name)
+        , m_password(password) {};
 
-    const Name &id() const { return m_name; }
-    const Name &name() const { return m_name; }
+    Name const& id() const {
+        return m_name;
+    }
+    Name const& name() const {
+        return m_name;
+    }
 
-    const std::string &password() const { return m_password; }
+    std::string const& password() const {
+        return m_password;
+    }
 
-    const std::set<Permission> &permissions() const { return m_permissions; }
+    std::set<Permission> const& permissions() const {
+        return m_permissions;
+    }
 
-    void set_name(const std::string &new_name) { m_name = new_name; }
+    void set_name(std::string const& new_name) {
+        m_name = new_name;
+    }
 
-    void set_password(const std::string &new_password) {
+    void set_password(std::string const& new_password) {
         m_password = new_password;
     }
 
-    void set_permissions(const std::set<Permission> &new_permissions) {
+    void set_permissions(std::set<Permission> const& new_permissions) {
         m_permissions = new_permissions;
     }
 
     bool has_permission(std::string_view target_permission) {
-        for (const auto &permission : permissions()) {
-            if (Core::Domain::PermissionMatcher::match(
-                    std::string(target_permission), permission)) {
+        for (auto const& permission : permissions()) {
+            if (Core::Domain::PermissionMatcher::match(std::string(target_permission),
+                                                       permission)) {
                 return true;
             }
         }

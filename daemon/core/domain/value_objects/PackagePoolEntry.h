@@ -27,18 +27,18 @@ public:
             InvalidPackage
         };
 
-        const ErrorCode error_code;
+        ErrorCode const error_code;
 
-        static inline const frozen::map<ErrorCode, std::string_view, 6>
-            error_messages = {
-                {ErrorCode::InvalidFilename, "Invalid filename"},
-                {ErrorCode::InvalidVersion, "Invalid package version"},
-                {ErrorCode::InvalidName, "Invalid package name"},
-                {ErrorCode::InvalidReleaseTag, "Invalid release tag"},
-                {ErrorCode::InvalidEpoch, "Invalid epoch"},
-                {ErrorCode::InvalidPackage, "Invalid package"}};
+        static inline frozen::map<ErrorCode, std::string_view, 6> const error_messages = {
+            {ErrorCode::InvalidFilename, "Invalid filename"},
+            {ErrorCode::InvalidVersion, "Invalid package version"},
+            {ErrorCode::InvalidName, "Invalid package name"},
+            {ErrorCode::InvalidReleaseTag, "Invalid release tag"},
+            {ErrorCode::InvalidEpoch, "Invalid epoch"},
+            {ErrorCode::InvalidPackage, "Invalid package"}};
 
-        ParsingError(ErrorCode error_code) : error_code(error_code) {
+        ParsingError(ErrorCode error_code)
+            : error_code(error_code) {
             message = error_messages.at(error_code).data();
         }
     };
@@ -48,24 +48,31 @@ public:
                      std::optional<std::filesystem::path> m_signature_path,
                      Utilities::AlpmDb::Desc desc,
                      PackageVersion m_version)
-        : m_file_path(std::move(m_file_path)),
-          m_signature_path(std::move(m_signature_path)),
-          m_desc(std::move(desc)),
-          m_version(std::move(m_version)) {}
+        : m_file_path(std::move(m_file_path))
+        , m_signature_path(std::move(m_signature_path))
+        , m_desc(std::move(desc))
+        , m_version(std::move(m_version)) {
+    }
 
-    std::filesystem::path file_path() const { return m_file_path; }
+    std::filesystem::path file_path() const {
+        return m_file_path;
+    }
 
     std::optional<std::filesystem::path> signature_path() const {
         return m_signature_path;
     }
 
-    PackageVersion version() const { return m_version; }
+    PackageVersion version() const {
+        return m_version;
+    }
 
-    Utilities::AlpmDb::Desc desc() const { return m_desc; }
+    Utilities::AlpmDb::Desc desc() const {
+        return m_desc;
+    }
 
-    static Result<PackagePoolEntry> parse_file_path(
-        const std::filesystem::path& file_path,
-        const std::optional<std::filesystem::path>& signature_path);
+    static Result<PackagePoolEntry>
+        parse_file_path(std::filesystem::path const& file_path,
+                        std::optional<std::filesystem::path> const& signature_path);
 
 private:
     std::filesystem::path m_file_path;

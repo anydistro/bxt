@@ -8,20 +8,21 @@
 
 namespace bxt::Core::Application {
 coro::task<CompareService::Result<CompareService::CompareResult>>
-    CompareService::compare(const std::vector<PackageSectionDTO> sections) {
+    CompareService::compare(std::vector<PackageSectionDTO> const sections) {
     CompareResult result;
 
-    for (const auto& section : sections) {
-        const auto packages = co_await m_package_service.get_packages(section);
+    for (auto const& section : sections) {
+        auto const packages = co_await m_package_service.get_packages(section);
 
-        if (!packages.has_value() || packages->empty()) { continue; }
+        if (!packages.has_value() || packages->empty()) {
+            continue;
+        }
 
         result.sections.emplace_back(section);
 
-        for (const auto& package : *packages) {
-            for (const auto& [location, entry] : package.pool_entries)
-                result.compare_table[{package.name, section, location}] =
-                    entry.version;
+        for (auto const& package : *packages) {
+            for (auto const& [location, entry] : package.pool_entries)
+                result.compare_table[{package.name, section, location}] = entry.version;
         }
     }
 

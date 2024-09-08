@@ -15,14 +15,12 @@ namespace bxt::Infrastructure {
 
 class PackageServiceOptions : public Utilities::RepoSchema::Extension {
 public:
-    std::filesystem::path
-        pool(const Core::Application::PackageSectionDTO& section) const;
+    std::filesystem::path pool(Core::Application::PackageSectionDTO const& section) const;
 
     virtual void parse(const YAML::Node& root_node) override;
 
 private:
-    phmap::flat_hash_map<Core::Application::PackageSectionDTO,
-                         std::filesystem::path>
+    phmap::flat_hash_map<Core::Application::PackageSectionDTO, std::filesystem::path>
         m_pool_path_overrides;
 
     std::filesystem::path m_default_pool_path = "box/pool/overlay/";

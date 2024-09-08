@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "PackageServiceOptions.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/services/PackageService.h"
 #include "core/domain/entities/Section.h"
@@ -15,6 +14,7 @@
 #include "core/domain/repositories/ReadOnlyRepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/task.hpp"
+#include "PackageServiceOptions.h"
 #include "utilities/eventbus/EventBusDispatcher.h"
 
 #include <memory>
@@ -25,45 +25,43 @@ class PackageService : public Core::Application::PackageService {
 public:
     PackageService(Utilities::EventBusDispatcher& dispatcher,
                    Core::Domain::PackageRepositoryBase& repository,
-                   Core::Domain::ReadOnlyRepositoryBase<Core::Domain::Section>&
-                       section_repository,
+                   Core::Domain::ReadOnlyRepositoryBase<Core::Domain::Section>& section_repository,
                    UnitOfWorkBaseFactory& uow_factory)
-        : m_dispatcher(dispatcher),
-          m_repository(repository),
-          m_section_repository(section_repository),
-          m_uow_factory(uow_factory) {}
+        : m_dispatcher(dispatcher)
+        , m_repository(repository)
+        , m_section_repository(section_repository)
+        , m_uow_factory(uow_factory) {
+    }
 
-    virtual coro::task<Result<void>>
-        commit_transaction(const Transaction transaction) override;
+    virtual coro::task<Result<void>> commit_transaction(Transaction const transaction) override;
 
     virtual coro::task<Result<std::vector<PackageDTO>>>
-        get_packages(const PackageSectionDTO section_dto) const override;
+        get_packages(PackageSectionDTO const section_dto) const override;
 
-    virtual coro::task<Result<void>>
-        snap(const PackageSectionDTO from_section,
-             const PackageSectionDTO to_section) override;
+    virtual coro::task<Result<void>> snap(PackageSectionDTO const from_section,
+                                          PackageSectionDTO const to_section) override;
 
-    coro::task<Result<void>> push(const Transaction transaction,
-                                  const RequestContext context) override;
+    coro::task<Result<void>> push(Transaction const transaction,
+                                  RequestContext const context) override;
 
-    coro::task<Result<void>> snap_branch(const std::string from_branch,
-                                         const std::string to_branch,
-                                         const std::string arch) override;
+    coro::task<Result<void>> snap_branch(std::string const from_branch,
+                                         std::string const to_branch,
+                                         std::string const arch) override;
 
 private:
-    coro::task<Result<void>> add_package(const PackageDTO package,
+    coro::task<Result<void>> add_package(PackageDTO const package,
                                          std::shared_ptr<UnitOfWorkBase> uow);
 
     coro::task<PackageService::Result<void>>
-        move_package(const std::string package_name,
-                     const PackageSectionDTO from_section,
-                     const PackageSectionDTO to_section,
+        move_package(std::string const package_name,
+                     PackageSectionDTO const from_section,
+                     PackageSectionDTO const to_section,
                      std::shared_ptr<UnitOfWorkBase> unitofwork);
 
     coro::task<PackageService::Result<void>>
-        copy_package(const std::string package_name,
-                     const PackageSectionDTO from_section,
-                     const PackageSectionDTO to_section,
+        copy_package(std::string const package_name,
+                     PackageSectionDTO const from_section,
+                     PackageSectionDTO const to_section,
                      std::shared_ptr<UnitOfWorkBase> unitofwork);
 
     PackageServiceOptions m_options;

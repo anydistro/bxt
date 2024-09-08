@@ -10,8 +10,8 @@
 #include "core/domain/value_objects/PackageVersion.h"
 #include "fmt/core.h"
 #include "scn/tuple_return/tuple_return.h"
-#include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/Error.h"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -26,7 +26,9 @@
 #include <vector>
 
 bool check_valid_name(std::string_view name) {
-    if (name.empty()) { return false; }
+    if (name.empty()) {
+        return false;
+    }
 
     static constexpr std::string_view valid = "@._+-";
 
@@ -45,36 +47,39 @@ bool check_valid_name(std::string_view name) {
 
 namespace bxt::Core::Domain {
 
-std::optional<std::string>
-    Package::parse_file_name(const std::string& filename) {
+std::optional<std::string> Package::parse_file_name(std::string const& filename) {
     std::vector<std::string> substrings;
     boost::split(substrings, filename, boost::is_any_of("-"));
 
-    if (substrings.size() < 4) { return {}; }
+    if (substrings.size() < 4) {
+        return {};
+    }
 
     auto version_pos = filename.find(substrings[substrings.size() - 3]);
     std::string name = filename.substr(0, version_pos - 1);
 
-    if (!check_valid_name(name)) { return {}; }
+    if (!check_valid_name(name)) {
+        return {};
+    }
 
     return name;
 }
-Package::Result<Package> Package::from_file_path(
-    const Section& section,
-    const PoolLocation location,
-    const std::filesystem::path& filepath,
-    const std::optional<std::filesystem::path>& signature_path) {
-    auto pool_entry =
-        PackagePoolEntry::parse_file_path(filepath, signature_path);
+Package::Result<Package>
+    Package::from_file_path(Section const& section,
+                            PoolLocation const location,
+                            std::filesystem::path const& filepath,
+                            std::optional<std::filesystem::path> const& signature_path) {
+    auto pool_entry = PackagePoolEntry::parse_file_path(filepath, signature_path);
 
     if (!pool_entry.has_value()) {
-        return bxt::make_error_with_source<ParseError>(
-            std::move(pool_entry.error()));
+        return bxt::make_error_with_source<ParseError>(std::move(pool_entry.error()));
     }
 
     auto name = parse_file_name(filepath.filename());
 
-    if (!name.has_value()) { return bxt::make_error<ParseError>(); }
+    if (!name.has_value()) {
+        return bxt::make_error<ParseError>();
+    }
 
     Package result(section, *name, false);
     result.pool_entries().emplace(location, *pool_entry);

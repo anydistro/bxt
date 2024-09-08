@@ -13,8 +13,7 @@ namespace bxt::Core::Domain::Events {
 struct EventBase {
     virtual ~EventBase() = default;
 
-    std::chrono::time_point<std::chrono::system_clock> when =
-        std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> when = std::chrono::system_clock::now();
 
     virtual std::string message() const = 0;
 };

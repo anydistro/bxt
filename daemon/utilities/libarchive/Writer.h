@@ -34,11 +34,13 @@ public:
         template<typename T> using Result = std::expected<T, ArchiveError>;
 
         // Use the Result template for function return type
-        Result<void> write(const std::vector<uint8_t>& data);
-        Result<void> operator>>(const std::vector<uint8_t>& data);
+        Result<void> write(std::vector<uint8_t> const& data);
+        Result<void> operator>>(std::vector<uint8_t> const& data);
 
         Result<void> finish() {
-            if (!m_writer) { return std::unexpected(InvalidEntryError {}); }
+            if (!m_writer) {
+                return std::unexpected(InvalidEntryError {});
+            }
 
             if (archive_write_finish_entry(m_writer) != ARCHIVE_OK) {
                 return std::unexpected(LibArchiveError(m_writer));
@@ -46,7 +48,9 @@ public:
             return {};
         }
 
-        const Header& header() { return m_header; }
+        Header const& header() {
+            return m_header;
+        }
 
     private:
         archive* m_writer = nullptr;
@@ -57,24 +61,24 @@ public:
 
     BXT_DECLARE_RESULT(LibArchiveError)
 
-    Result<void> open_filename(const std::filesystem::path& path);
-    Result<void> open_memory(std::vector<std::byte>& byte_array,
-                             size_t& used_size);
+    Result<void> open_filename(std::filesystem::path const& path);
+    Result<void> open_memory(std::vector<std::byte>& byte_array, size_t& used_size);
 
-    operator archive*() { return m_archive.get(); }
+    operator archive*() {
+        return m_archive.get();
+    }
 
     Result<Entry> start_write(Header& header);
 
 private:
     static Result<void> deleter(archive* a) {
-        const int status = archive_write_free(a);
+        int const status = archive_write_free(a);
         if (status != ARCHIVE_OK) {
             return std::unexpected(LibArchiveError(a));
         }
         return {};
     }
-    std::unique_ptr<archive, decltype(&deleter)> m_archive {archive_write_new(),
-                                                            &deleter};
+    std::unique_ptr<archive, decltype(&deleter)> m_archive {archive_write_new(), &deleter};
 };
 
 } // namespace Archive

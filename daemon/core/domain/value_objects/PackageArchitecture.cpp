@@ -8,9 +8,11 @@
 
 namespace bxt::Core::Domain {
 
-PackageArchitecture::PackageArchitecture(const std::string &arch_name)
+PackageArchitecture::PackageArchitecture(std::string const& arch_name)
     : m_arch_name(arch_name) {
-    if (m_arch_name.empty()) { m_arch_name = "any"; }
+    if (m_arch_name.empty()) {
+        m_arch_name = "any";
+    }
 }
 
 } // namespace bxt::Core::Domain

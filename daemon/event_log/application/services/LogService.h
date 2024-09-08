@@ -26,19 +26,17 @@ class LogService {
 public:
     LogService(
         std::shared_ptr<dexode::EventBus> evbus,
-        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::SyncLogEntry>&
-            sync_repository,
-        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::CommitLogEntry>&
-            commit_repository,
-        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::DeployLogEntry>&
-            deploy_repository,
+        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::SyncLogEntry>& sync_repository,
+        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::CommitLogEntry>& commit_repository,
+        bxt::Core::Domain::ReadWriteRepositoryBase<Domain::DeployLogEntry>& deploy_repository,
         UnitOfWorkBaseFactory& uow_factory)
-        : m_evbus(std::move(evbus)),
-          m_listener(dexode::EventBus::Listener::createNotOwning(*m_evbus)),
-          m_sync_repository(sync_repository),
-          m_commit_repository(commit_repository),
-          m_deploy_repository(deploy_repository),
-          m_uow_factory(uow_factory) {}
+        : m_evbus(std::move(evbus))
+        , m_listener(dexode::EventBus::Listener::createNotOwning(*m_evbus))
+        , m_sync_repository(sync_repository)
+        , m_commit_repository(commit_repository)
+        , m_deploy_repository(deploy_repository)
+        , m_uow_factory(uow_factory) {
+    }
 
     void init();
 
@@ -54,18 +52,15 @@ public:
         std::optional<std::string> full_text;
     };
 
-    coro::task<LogEntriesDTO> events(const EventSpecification spec);
+    coro::task<LogEntriesDTO> events(EventSpecification const spec);
 
 private:
     std::shared_ptr<dexode::EventBus> m_evbus;
     dexode::EventBus::Listener m_listener;
 
-    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::SyncLogEntry>&
-        m_sync_repository;
-    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::CommitLogEntry>&
-        m_commit_repository;
-    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::DeployLogEntry>&
-        m_deploy_repository;
+    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::SyncLogEntry>& m_sync_repository;
+    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::CommitLogEntry>& m_commit_repository;
+    bxt::Core::Domain::ReadWriteRepositoryBase<Domain::DeployLogEntry>& m_deploy_repository;
     UnitOfWorkBaseFactory& m_uow_factory;
 };
 

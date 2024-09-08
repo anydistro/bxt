@@ -7,8 +7,8 @@
 #include "Database.h"
 
 #include "parallel_hashmap/phmap.h"
-#include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/Error.h"
 #include "utilities/errors/DatabaseError.h"
 #include "utilities/libarchive/Error.h"
 #include "utilities/log/Logging.h"
@@ -32,20 +32,19 @@ constexpr static frozen::set<frozen::string, 3> supported_package_extensions = {
     "pkg.tar.gz", "pkg.tar.xz", "pkg.tar.zst"};
 
 coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
-    parse_packages(const std::set<std::string> packages) {
+    parse_packages(std::set<std::string> const packages) {
     phmap::parallel_flat_hash_map<std::string, Desc> descriptions;
 
     coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
 
-    accept(packages, [&descriptions, &latch](const std::string& name,
-                                             const Desc& description) {
+    accept(packages, [&descriptions, &latch](std::string const& name, Desc const& description) {
         descriptions.lazy_emplace_l(
             name,
             [description, &latch, name](auto& value) {
                 value.second = description;
                 latch.count_down();
             },
-            [description, &latch, name](const auto& ctor) {
+            [description, &latch, name](auto const& ctor) {
                 ctor(name, description);
                 latch.count_down();
             });
@@ -60,18 +59,15 @@ void create_symlinks(std::filesystem::path path) {
     std::string name = path.stem();
 
     std::error_code ec;
-    std::filesystem::create_symlink(
-        path.parent_path() / fmt::format("{}.db.tar.zst", name),
-        path.parent_path() / fmt::format("{}.db", name), ec);
+    std::filesystem::create_symlink(path.parent_path() / fmt::format("{}.db.tar.zst", name),
+                                    path.parent_path() / fmt::format("{}.db", name), ec);
 
-    std::filesystem::create_symlink(
-        path.parent_path() / fmt::format("{}.files.tar.zst", name),
-        path.parent_path() / fmt::format("{}.files", name), ec);
+    std::filesystem::create_symlink(path.parent_path() / fmt::format("{}.files.tar.zst", name),
+                                    path.parent_path() / fmt::format("{}.files", name), ec);
 }
 
-coro::task<Result<void>>
-    save(phmap::parallel_flat_hash_map<std::string, Desc> descriptions,
-         std::filesystem::path path) {
+coro::task<Result<void>> save(phmap::parallel_flat_hash_map<std::string, Desc> descriptions,
+                              std::filesystem::path path) {
     Archive::Writer db_writer, files_writer;
 
     logd("Saving entries to {}.db.tar.zst...\n", path.string());
@@ -85,14 +81,12 @@ coro::task<Result<void>>
     archive_write_set_format_pax_restricted(files_writer);
     files_writer.open_filename(path);
 
-    for (const auto& [name, description] : descriptions) {
+    for (auto const& [name, description] : descriptions) {
         logd("Description for {} is being added...", name);
 
-        write_buffer_to_archive(db_writer, fmt::format("{}/desc", name),
-                                description.desc);
+        write_buffer_to_archive(db_writer, fmt::format("{}/desc", name), description.desc);
 
-        write_buffer_to_archive(files_writer, fmt::format("{}/files", name),
-                                description.files);
+        write_buffer_to_archive(files_writer, fmt::format("{}/files", name), description.files);
     }
 
     create_symlinks(path);
@@ -111,8 +105,8 @@ coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
     auto opened = db_reader.open_filename(path);
 
     if (!opened.has_value()) {
-        co_return bxt::make_error_with_source<DatabaseError>(
-            std::move(opened.error()), DatabaseError::ErrorType::IOError);
+        co_return bxt::make_error_with_source<DatabaseError>(std::move(opened.error()),
+                                                             DatabaseError::ErrorType::IOError);
     }
 
     for (auto& [header, data] : db_reader) {
@@ -120,25 +114,24 @@ coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
 
         std::vector<std::string> parts;
 
-        for (const auto& part : path) {
+        for (auto const& part : path) {
             parts.emplace_back(part);
         }
 
-        if (parts.size() != 2) continue;
+        if (parts.size() != 2)
+            continue;
 
-        if (parts[1] != "desc") continue;
+        if (parts[1] != "desc")
+            continue;
 
         auto buffer = data.read_all();
         if (!buffer.has_value()) {
-            if (const auto& buffer_err =
-                    std::get_if<Archive::InvalidEntryError>(&buffer.error())) {
+            if (auto const& buffer_err = std::get_if<Archive::InvalidEntryError>(&buffer.error())) {
                 co_return bxt::make_error_with_source<DatabaseError>(
-                    std::move(*buffer_err),
-                    DatabaseError::ErrorType::DatabaseMalformedError);
+                    std::move(*buffer_err), DatabaseError::ErrorType::DatabaseMalformedError);
             } else {
                 co_return bxt::make_error_with_source<DatabaseError>(
-                    std::move(*std::get_if<Archive::LibArchiveError>(
-                        &buffer.error())),
+                    std::move(*std::get_if<Archive::LibArchiveError>(&buffer.error())),
                     DatabaseError::ErrorType::DatabaseMalformedError);
             }
         }
@@ -153,19 +146,19 @@ coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
 
 coro::task<Result<void>>
     accept(std::set<std::string> files,
-           std::function<void(const std::string& name, const Desc& description)>
-               visitor) {
-    for (const auto& package : files) {
+           std::function<void(std::string const& name, Desc const& description)> visitor) {
+    for (auto const& package : files) {
         auto description = Desc::parse_package(package);
         if (!description.has_value()) {
-            co_return bxt::make_error<DatabaseError>(
-                DatabaseError::ErrorType::InvalidEntityError);
+            co_return bxt::make_error<DatabaseError>(DatabaseError::ErrorType::InvalidEntityError);
         }
-        const auto name = description->get("NAME");
+        auto const name = description->get("NAME");
 
-        const auto version = description->get("VERSION");
+        auto const version = description->get("VERSION");
 
-        if (!name.has_value() || !version.has_value()) { continue; }
+        if (!name.has_value() || !version.has_value()) {
+            continue;
+        }
 
         visitor(fmt::format("{}-{}", *name, *version), *description);
     }

@@ -21,20 +21,20 @@ struct CrudError : public bxt::Error {
         InternalError
     };
 
-    CrudError(ErrorType error_type) : error_type(error_type) {
+    CrudError(ErrorType error_type)
+        : error_type(error_type) {
         message = error_strings.at(error_type).data();
     }
 
     ErrorType error_type;
 
 private:
-    static inline frozen::unordered_map<ErrorType, frozen::string, 5>
-        error_strings = {
-            {ErrorType::EntityAlreadyExists, "Entity already exists"},
-            {ErrorType::EntityNotFound, "Entity not found."},
-            {ErrorType::AccessDenied, "Access denied."},
-            {ErrorType::InvalidArgument, "Invalid argument."},
-            {ErrorType::InternalError, "Internal error."}};
+    static inline frozen::unordered_map<ErrorType, frozen::string, 5> error_strings = {
+        {ErrorType::EntityAlreadyExists, "Entity already exists"},
+        {ErrorType::EntityNotFound, "Entity not found."},
+        {ErrorType::AccessDenied, "Access denied."},
+        {ErrorType::InvalidArgument, "Invalid argument."},
+        {ErrorType::InternalError, "Internal error."}};
 };
 
 } // namespace bxt::Core::Application

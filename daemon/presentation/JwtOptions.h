@@ -16,11 +16,11 @@ struct JwtOptions {
     std::string secret = "secret";
     std::string issuer = "bxt";
 
-    void serialize(Utilities::Configuration &config) {
+    void serialize(Utilities::Configuration& config) {
         config.set("jwt-secret", secret);
         config.set("jwt-issuer", issuer);
     }
-    void deserialize(const Utilities::Configuration &config) {
+    void deserialize(Utilities::Configuration const& config) {
         secret = config.get<std::string>("jwt-secret").value_or(secret);
         issuer = config.get<std::string>("jwt-issuer").value_or(issuer);
     }

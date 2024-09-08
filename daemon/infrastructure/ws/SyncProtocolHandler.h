@@ -34,37 +34,37 @@ struct SyncHandler : public HandlerBase {
         return event_json;
     }
 
-    virtual std::string name() override { return "sync"; }
+    virtual std::string name() override {
+        return "sync";
+    }
 
 private:
     void init() {
-        m_listener.listen<Core::Application::Events::SyncStarted>(
-            [this](const auto& event) {
-                m_sync_started = true;
-                m_when = event.when;
+        m_listener.listen<Core::Application::Events::SyncStarted>([this](auto const& event) {
+            m_sync_started = true;
+            m_when = event.when;
 
-                Json::Value event_json;
+            Json::Value event_json;
 
-                event_json["type"] = "sync";
-                event_json["when"] = fmt::format("{}", event.when);
-                event_json["started"] = true;
+            event_json["type"] = "sync";
+            event_json["when"] = fmt::format("{}", event.when);
+            event_json["started"] = true;
 
-                m_callback(event_json);
-            });
+            m_callback(event_json);
+        });
 
-        m_listener.listen<Core::Application::Events::SyncFinished>(
-            [this](const auto& event) {
-                m_sync_started = false;
-                m_when = event.when;
+        m_listener.listen<Core::Application::Events::SyncFinished>([this](auto const& event) {
+            m_sync_started = false;
+            m_when = event.when;
 
-                Json::Value event_json;
+            Json::Value event_json;
 
-                event_json["type"] = "sync";
-                event_json["when"] = fmt::format("{}", event.when);
-                event_json["started"] = false;
+            event_json["type"] = "sync";
+            event_json["when"] = fmt::format("{}", event.when);
+            event_json["started"] = false;
 
-                m_callback(event_json);
-            });
+            m_callback(event_json);
+        });
     }
     dexode::EventBus::Listener m_listener;
     bool m_sync_started = false;

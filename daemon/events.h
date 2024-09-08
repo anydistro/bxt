@@ -23,8 +23,7 @@ namespace bxt::events {
 using namespace bxt::Core::Domain::Events;
 using namespace bxt::Core::Application::Events;
 
-using eventbus_visitor =
-    std::function<void(std::any, std::shared_ptr<dexode::EventBus>&)>;
+using eventbus_visitor = std::function<void(std::any, std::shared_ptr<dexode::EventBus>&)>;
 
 template<typename TEvent, typename TEventBase>
 std::pair<std::type_index, eventbus_visitor> to_eventbus_visitor() {

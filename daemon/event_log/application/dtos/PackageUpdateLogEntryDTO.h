@@ -15,40 +15,33 @@ struct PackageUpdateLogEntryDTO {
     PackageLogEntryDTO package;
     PackageLogEntryDTO previous_package;
 
-    template<class Archive> void serialize(Archive &ar) {
+    template<class Archive> void serialize(Archive& ar) {
         ar(package, previous_package);
     }
 };
 
 using PackageUpdateLogEntryDTOMapper =
-    bxt::Utilities::StaticDTOMapper<Domain::PackageUpdateLogEntry,
-                                    PackageUpdateLogEntryDTO>;
+    bxt::Utilities::StaticDTOMapper<Domain::PackageUpdateLogEntry, PackageUpdateLogEntryDTO>;
 
 } // namespace bxt::EventLog::Application
 
 namespace bxt::Utilities {
 
-using PackageUpdateLogEntryDTO =
-    bxt::EventLog::Application::PackageUpdateLogEntryDTO;
-using PackageLogEntryDTOMapper =
-    bxt::EventLog::Application::PackageLogEntryDTOMapper;
+using PackageUpdateLogEntryDTO = bxt::EventLog::Application::PackageUpdateLogEntryDTO;
+using PackageLogEntryDTOMapper = bxt::EventLog::Application::PackageLogEntryDTOMapper;
 using PackageUpdateLogEntry = bxt::EventLog::Domain::PackageUpdateLogEntry;
 
-template<>
-struct StaticDTOMapper<PackageUpdateLogEntry, PackageUpdateLogEntryDTO> {
-    static PackageUpdateLogEntryDTO to_dto(const PackageUpdateLogEntry &from) {
+template<> struct StaticDTOMapper<PackageUpdateLogEntry, PackageUpdateLogEntryDTO> {
+    static PackageUpdateLogEntryDTO to_dto(PackageUpdateLogEntry const& from) {
         PackageUpdateLogEntryDTO dto;
         dto.package = PackageLogEntryDTOMapper::to_dto(from.package());
-        dto.previous_package =
-            PackageLogEntryDTOMapper::to_dto(from.previous_package());
+        dto.previous_package = PackageLogEntryDTOMapper::to_dto(from.previous_package());
         return dto;
     }
 
-    static PackageUpdateLogEntry
-        to_entity(const PackageUpdateLogEntryDTO &from) {
-        PackageUpdateLogEntry entity(
-            PackageLogEntryDTOMapper::to_entity(from.package),
-            PackageLogEntryDTOMapper::to_entity(from.previous_package));
+    static PackageUpdateLogEntry to_entity(PackageUpdateLogEntryDTO const& from) {
+        PackageUpdateLogEntry entity(PackageLogEntryDTOMapper::to_entity(from.package),
+                                     PackageLogEntryDTOMapper::to_entity(from.previous_package));
         return entity;
     }
 };

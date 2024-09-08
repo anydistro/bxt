@@ -19,19 +19,20 @@ struct PoolOptions : public Utilities::RepoSchema::Extension {
 
     void parse(const YAML::Node& root_node) override {
         constexpr char Tag[] = "(box.pool)";
-        const auto& options_node = root_node[Tag];
+        auto const& options_node = root_node[Tag];
 
-        for (const auto& repo : root_node["repositories"]) {
-            const auto& key = repo.first;
-            const auto& value = repo.second;
-            if (!key || !value || !value.IsMap()) { continue; }
+        for (auto const& repo : root_node["repositories"]) {
+            auto const& key = repo.first;
+            auto const& value = repo.second;
+            if (!key || !value || !value.IsMap()) {
+                continue;
+            }
 
-            const auto pool_options = value[Tag];
+            auto const pool_options = value[Tag];
 
-            const auto architecture = value["architecture"].as<std::string>();
+            auto const architecture = value["architecture"].as<std::string>();
 
-            const auto template_string =
-                pool_options["template"].as<std::string>();
+            auto const template_string = pool_options["template"].as<std::string>();
 
             templates.emplace(architecture, template_string);
         }

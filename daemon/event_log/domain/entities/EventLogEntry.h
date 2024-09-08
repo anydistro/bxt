@@ -19,15 +19,21 @@ public:
     virtual ~EventLogEntryBase() = default;
     using TId = std::string;
 
-    EventLogEntryBase(EventLogEntryType type, const time_point& time)
-        : m_time {time}, m_type {type} {}
+    EventLogEntryBase(EventLogEntryType type, time_point const& time)
+        : m_time {time}
+        , m_type {type} {
+    }
 
     std::string id() const {
         return std::to_string(m_time.time_since_epoch().count());
     }
-    time_point time() const { return m_time; }
+    time_point time() const {
+        return m_time;
+    }
 
-    EventLogEntryType type() const { return m_type; }
+    EventLogEntryType type() const {
+        return m_type;
+    }
 
 private:
     time_point m_time;

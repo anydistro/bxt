@@ -22,13 +22,14 @@ class AuthService {
 public:
     BXT_DECLARE_RESULT(AuthError);
 
-    AuthService(Domain::UserRepository& user_repository,
-                Domain::UnitOfWorkBaseFactory& uow_factory)
-        : m_user_repository(user_repository), m_uow_factory(uow_factory) {}
+    AuthService(Domain::UserRepository& user_repository, Domain::UnitOfWorkBaseFactory& uow_factory)
+        : m_user_repository(user_repository)
+        , m_uow_factory(uow_factory) {
+    }
 
     coro::task<Result<void>> auth(std::string name, std::string password);
 
-    coro::task<Result<void>> verify(const std::string token) const;
+    coro::task<Result<void>> verify(std::string const token) const;
 
 private:
     Domain::UserRepository& m_user_repository;

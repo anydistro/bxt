@@ -25,7 +25,7 @@ public:
     }
 
     void extend(Extension* extension);
-    void parse(const std::filesystem::path& filename);
+    void parse(std::filesystem::path const& filename);
 
 private:
     void parse(const YAML::Node& root_node);

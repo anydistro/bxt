@@ -21,11 +21,12 @@ struct Commited : public IntegrationEventBase {
              std::vector<Domain::Package::TId>&& to_delete,
              std::vector<PackageService::Transaction::TransferAction>&& to_move,
              std::vector<PackageService::Transaction::TransferAction>&& to_copy)
-        : user_name(std::move(user_name)),
-          to_add(std::move(to_add)),
-          to_delete(std::move(to_delete)),
-          to_move(std::move(to_move)),
-          to_copy(std::move(to_copy)) {}
+        : user_name(std::move(user_name))
+        , to_add(std::move(to_add))
+        , to_delete(std::move(to_delete))
+        , to_move(std::move(to_move))
+        , to_copy(std::move(to_copy)) {
+    }
 
     std::string user_name;
 
@@ -35,10 +36,9 @@ struct Commited : public IntegrationEventBase {
     std::vector<PackageService::Transaction::TransferAction> to_copy;
 
     std::string message() const override {
-        return fmt::format(
-            "User {} commited a transaction: {} packages added, {} "
-            "packages deleted",
-            user_name, to_add.size(), to_delete.size());
+        return fmt::format("User {} commited a transaction: {} packages added, {} "
+                           "packages deleted",
+                           user_name, to_add.size(), to_delete.size());
     }
 };
 

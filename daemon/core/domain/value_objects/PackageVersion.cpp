@@ -13,9 +13,9 @@
 namespace bxt::Core::Domain {
 
 // naive rewrite of original rpmvercmp from alpm
-std::strong_ordering rpmvercmp(const std::string& a_orig,
-                               const std::string& b_orig) {
-    if (a_orig == b_orig) return std::strong_ordering::equal;
+std::strong_ordering rpmvercmp(std::string const& a_orig, std::string const& b_orig) {
+    if (a_orig == b_orig)
+        return std::strong_ordering::equal;
 
     std::string a = a_orig, b = b_orig;
 
@@ -30,7 +30,8 @@ std::strong_ordering rpmvercmp(const std::string& a_orig,
         while (two != b.end() && !std::isalnum(*two))
             two++;
 
-        if (one == a.end() || two == b.end()) break;
+        if (one == a.end() || two == b.end())
+            break;
 
         if ((one - it1) != (two - it2)) {
             return (one - it1) < (two - it2) ? std::strong_ordering::less
@@ -59,11 +60,12 @@ std::strong_ordering rpmvercmp(const std::string& a_orig,
         char oldch2 = *it2;
         *it2 = 0;
 
-        if (one == it1) { return std::strong_ordering::less; }
+        if (one == it1) {
+            return std::strong_ordering::less;
+        }
 
         if (two == it2) {
-            return isnum ? std::strong_ordering::greater
-                         : std::strong_ordering::less;
+            return isnum ? std::strong_ordering::greater : std::strong_ordering::less;
         }
 
         if (isnum) {
@@ -84,8 +86,7 @@ std::strong_ordering rpmvercmp(const std::string& a_orig,
         auto rc = substr1.compare(substr2);
 
         if (rc) {
-            return rc < 1 ? std::strong_ordering::less
-                          : std::strong_ordering::greater;
+            return rc < 1 ? std::strong_ordering::less : std::strong_ordering::greater;
         }
 
         *it1 = oldch1;
@@ -106,8 +107,7 @@ std::strong_ordering rpmvercmp(const std::string& a_orig,
     }
 }
 
-std::strong_ordering PackageVersion::compare(const PackageVersion& lh,
-                                             const PackageVersion& rh) {
+std::strong_ordering PackageVersion::compare(PackageVersion const& lh, PackageVersion const& rh) {
     std::strong_ordering ret = std::strong_ordering::equal;
 
     ret = rpmvercmp(std::string(lh.epoch), std::string(rh.epoch));
@@ -123,8 +123,7 @@ std::strong_ordering PackageVersion::compare(const PackageVersion& lh,
     return ret;
 }
 
-PackageVersion::ParseResult
-    PackageVersion::from_string(std::string_view version_str) {
+PackageVersion::ParseResult PackageVersion::from_string(std::string_view version_str) {
     std::string epoch;
     std::string version;
     std::optional<std::string> release;
@@ -146,12 +145,10 @@ PackageVersion::ParseResult
         version = version_str.substr(pos);
         release = std::nullopt;
     } else {
-        return bxt::make_error<ParsingError>(
-            ParsingError::ErrorCode::InvalidFormat);
+        return bxt::make_error<ParsingError>(ParsingError::ErrorCode::InvalidFormat);
     }
 
-    return PackageVersion {
-        .version = version, .epoch = epoch, .release = release};
+    return PackageVersion {.version = version, .epoch = epoch, .release = release};
 }
 
 std::string PackageVersion::string() const {

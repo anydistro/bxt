@@ -10,28 +10,26 @@
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/SectionService.h"
 #include "drogon/HttpController.h"
-#include "drogon/utils/FunctionTraits.h"
 #include "drogon/utils/coroutine.h"
+#include "drogon/utils/FunctionTraits.h"
 #include "utilities/drogon/Macro.h"
 namespace bxt::Presentation {
 
-class SectionController
-    : public drogon::HttpController<SectionController, false> {
+class SectionController : public drogon::HttpController<SectionController, false> {
 public:
     SectionController(Core::Application::SectionService& service,
                       Core::Application::PermissionService& permission_service)
-        : m_service(service), m_permission_service(permission_service) {}
+        : m_service(service)
+        , m_permission_service(permission_service) {
+    }
 
     METHOD_LIST_BEGIN
 
-    BXT_JWT_ADD_METHOD_TO(SectionController::get_sections,
-                          "/api/sections",
-                          drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(SectionController::get_sections, "/api/sections", drogon::Get);
 
     METHOD_LIST_END
 
-    drogon::Task<drogon::HttpResponsePtr>
-        get_sections(drogon::HttpRequestPtr req) const;
+    drogon::Task<drogon::HttpResponsePtr> get_sections(drogon::HttpRequestPtr req) const;
 
 private:
     Core::Application::SectionService& m_service;

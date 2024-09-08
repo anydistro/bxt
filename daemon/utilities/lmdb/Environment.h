@@ -20,24 +20,27 @@ namespace bxt::Utilities::LMDB {
 class Environment {
 public:
     Environment(std::shared_ptr<coro::io_scheduler> scheduler)
-        : m_env(lmdb::env::create()), m_mutex(scheduler) {}
+        : m_env(lmdb::env::create())
+        , m_mutex(scheduler) {
+    }
 
     coro::task<std::unique_ptr<locked<lmdb::txn>>> begin_rw_txn() {
-        auto result = std::make_unique<locked<lmdb::txn>>(
-            co_await m_mutex.lock(), lmdb::txn::begin(m_env));
+        auto result =
+            std::make_unique<locked<lmdb::txn>>(co_await m_mutex.lock(), lmdb::txn::begin(m_env));
 
         co_return result;
     }
 
     coro::task<std::unique_ptr<locked<lmdb::txn>>> begin_ro_txn() {
         auto result = std::make_unique<locked<lmdb::txn>>(
-            co_await m_mutex.lock_shared(),
-            lmdb::txn::begin(m_env, nullptr, MDB_RDONLY));
+            co_await m_mutex.lock_shared(), lmdb::txn::begin(m_env, nullptr, MDB_RDONLY));
 
         co_return result;
     }
 
-    lmdb::env& env() { return m_env; }
+    lmdb::env& env() {
+        return m_env;
+    }
 
 private:
     lmdb::env m_env;

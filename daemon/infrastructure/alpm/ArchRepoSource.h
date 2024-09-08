@@ -16,21 +16,24 @@
 namespace bxt::Infrastructure {
 struct ArchRepoSource {
     static ArchRepoSource from_node(const YAML::Node& node) {
-        if (!node.IsDefined()) { return ArchRepoSource {}; }
+        if (!node.IsDefined()) {
+            return ArchRepoSource {};
+        }
 
         ArchRepoSource result;
-        auto get_if_defined =
-            [node]<typename TReturn>(const std::string& value,
-                                     const TReturn& default_value) -> TReturn {
-            if (!node[value].IsDefined()) { return default_value; }
+        auto get_if_defined = [node]<typename TReturn>(std::string const& value,
+                                                       TReturn const& default_value) -> TReturn {
+            if (!node[value].IsDefined()) {
+                return default_value;
+            }
             return node[value].as<TReturn>();
         };
 
         result.repo_url = get_if_defined("repo-url", result.repo_url);
-        result.repo_structure_template = get_if_defined(
-            "repo-structure-template", result.repo_structure_template);
-        const auto exclude_list_path = get_if_defined.operator()<std::string>(
-            "exclude-list-path", "exclude_list");
+        result.repo_structure_template =
+            get_if_defined("repo-structure-template", result.repo_structure_template);
+        auto const exclude_list_path =
+            get_if_defined.operator()<std::string>("exclude-list-path", "exclude_list");
         std::ifstream file(exclude_list_path);
         if (file.is_open()) {
             std::string line;
@@ -44,8 +47,7 @@ struct ArchRepoSource {
     };
 
     std::string repo_url = "cloudflaremirrors.com";
-    std::string repo_structure_template =
-        "/archlinux/{repository}/os/{architecture}";
+    std::string repo_structure_template = "/archlinux/{repository}/os/{architecture}";
     phmap::parallel_flat_hash_set<std::string> exclude_list;
 
     std::optional<std::string> repo_name;

@@ -35,20 +35,16 @@ public:
                    UnitOfWorkBaseFactory& uow_factory);
 
     coro::task<void> export_to_disk() override;
-    void add_dirty_sections(
-        std::set<Core::Application::PackageSectionDTO>&& override) override;
+    void add_dirty_sections(std::set<Core::Application::PackageSectionDTO>&& override) override;
 
 private:
     std::expected<Archive::Writer, bxt::Error>
-        setup_alpmdb_writer(const PackageSectionDTO& section);
+        setup_alpmdb_writer(PackageSectionDTO const& section);
 
-    std::expected<void, FsError>
-        cleanup_section(const PackageSectionDTO& section);
+    std::expected<void, FsError> cleanup_section(PackageSectionDTO const& section);
 
     std::expected<void, std::string>
-        export_package(Archive::Writer& writer,
-                       std::string_view key,
-                       const PackageRecord& package);
+        export_package(Archive::Writer& writer, std::string_view key, PackageRecord const& package);
 
     std::filesystem::path m_box_path;
     std::set<Core::Application::PackageSectionDTO> m_sections;

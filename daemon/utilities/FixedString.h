@@ -11,8 +11,12 @@
 // Needed for string literals to be used as template parameters.
 template<unsigned N> struct FixedString {
     char buf[N + 1] {};
-    constexpr FixedString(char const* s) { std::copy(s, s + N, buf); }
-    constexpr operator char const*() const { return buf; }
+    constexpr FixedString(char const* s) {
+        std::copy(s, s + N, buf);
+    }
+    constexpr operator char const*() const {
+        return buf;
+    }
 };
 
 template<unsigned N> FixedString(char const (&)[N]) -> FixedString<N - 1>;

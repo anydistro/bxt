@@ -6,10 +6,10 @@
  */
 #pragma once
 
-#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/errors/CrudError.h"
+#include "core/application/RequestContext.h"
 #include "core/domain/entities/Package.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
 #include "frozen/unordered_map.h"
@@ -47,22 +47,20 @@ public:
         std::vector<TransferAction> to_copy;
     };
 
-    virtual coro::task<Result<void>>
-        commit_transaction(const Transaction transaction) = 0;
+    virtual coro::task<Result<void>> commit_transaction(Transaction const transaction) = 0;
 
-    virtual coro::task<Result<void>> push(const Transaction transaction,
-                                          const RequestContext context) = 0;
+    virtual coro::task<Result<void>> push(Transaction const transaction,
+                                          RequestContext const context) = 0;
 
     virtual coro::task<Result<std::vector<PackageDTO>>>
-        get_packages(const PackageSectionDTO section_dto) const = 0;
+        get_packages(PackageSectionDTO const section_dto) const = 0;
 
-    virtual coro::task<Result<void>>
-        snap(const PackageSectionDTO from_section,
-             const PackageSectionDTO to_section) = 0;
+    virtual coro::task<Result<void>> snap(PackageSectionDTO const from_section,
+                                          PackageSectionDTO const to_section) = 0;
 
-    virtual coro::task<Result<void>> snap_branch(const std::string from_branch,
-                                                 const std::string to_branch,
-                                                 const std::string arch) = 0;
+    virtual coro::task<Result<void>> snap_branch(std::string const from_branch,
+                                                 std::string const to_branch,
+                                                 std::string const arch) = 0;
 };
 
 } // namespace bxt::Core::Application

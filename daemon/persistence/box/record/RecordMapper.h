@@ -13,13 +13,12 @@
 
 namespace bxt::Persistence::Box::RecordMapper {
 
-static PackageRecord to_record(const Core::Domain::Package &from) {
+static PackageRecord to_record(Core::Domain::Package const& from) {
     PackageRecord result {
-        .id = {.section = SectionDTOMapper::to_dto(from.section()),
-               .name = from.name()},
+        .id = {.section = SectionDTOMapper::to_dto(from.section()), .name = from.name()},
         .is_any_architecture = from.is_any_arch()};
 
-    for (const auto &[location, entry] : from.pool_entries()) {
+    for (auto const& [location, entry] : from.pool_entries()) {
         result.descriptions[location].filepath = entry.file_path();
         result.descriptions[location].signature_path = entry.signature_path();
         result.descriptions[location].descfile = entry.desc();
@@ -27,20 +26,23 @@ static PackageRecord to_record(const Core::Domain::Package &from) {
 
     return result;
 }
-static Core::Domain::Package to_entity(const PackageRecord &from) {
-    Core::Domain::Package result(SectionDTOMapper::to_entity(from.id.section),
-                                 from.id.name, from.is_any_architecture);
+static Core::Domain::Package to_entity(PackageRecord const& from) {
+    Core::Domain::Package result(SectionDTOMapper::to_entity(from.id.section), from.id.name,
+                                 from.is_any_architecture);
 
-    for (const auto &[location, entry] : from.descriptions) {
+    for (auto const& [location, entry] : from.descriptions) {
         auto version_str = entry.descfile.get("VERSION");
-        if (!version_str) { continue; }
+        if (!version_str) {
+            continue;
+        }
         auto version_result = PackageVersion::from_string(*version_str);
 
-        if (!version_result) { continue; }
+        if (!version_result) {
+            continue;
+        }
 
-        Core::Domain::PackagePoolEntry pool_entry(
-            entry.filepath, entry.signature_path, entry.descfile,
-            *version_result);
+        Core::Domain::PackagePoolEntry pool_entry(entry.filepath, entry.signature_path,
+                                                  entry.descfile, *version_result);
 
         result.pool_entries().emplace(location, pool_entry);
     }

@@ -6,8 +6,8 @@
  */
 #pragma once
 
-#include "utilities/FixedString.h"
 #include "utilities/alpmdb/PkgInfo.h"
+#include "utilities/FixedString.h"
 
 #include <boost/algorithm/string/join.hpp>
 #include <filesystem>
@@ -19,26 +19,26 @@
 namespace bxt::Utilities::AlpmDb {
 class DescFormatter {
 public:
-    DescFormatter(PkgInfo m_pkg_info,
-                  std::filesystem::path m_filepath,
-                  std::string m_signature)
-        : m_pkg_info(std::move(m_pkg_info)),
-          m_filepath(std::move(m_filepath)),
-          m_signature(std::move(m_signature)) {}
+    DescFormatter(PkgInfo m_pkg_info, std::filesystem::path m_filepath, std::string m_signature)
+        : m_pkg_info(std::move(m_pkg_info))
+        , m_filepath(std::move(m_filepath))
+        , m_signature(std::move(m_signature)) {
+    }
 
     static constexpr char format_string[] = "%{}%\n{}\n\n";
 
     template<FixedString desc_field, FixedString pkginfo_field>
     std::string format_pkginfo_entry() const {
         auto values = m_pkg_info.values(pkginfo_field.buf);
-        if (values.empty()) { return ""; }
+        if (values.empty()) {
+            return "";
+        }
 
-        return fmt::format(format_string, desc_field.buf,
-                           boost::join(values, "\n"));
+        return fmt::format(format_string, desc_field.buf, boost::join(values, "\n"));
     }
-    template<FixedString desc_field>
-    std::string format_entry(const std::string& value) const {
-        if (value.empty()) return "";
+    template<FixedString desc_field> std::string format_entry(std::string const& value) const {
+        if (value.empty())
+            return "";
         return fmt::format(format_string, desc_field.buf, value);
     }
 

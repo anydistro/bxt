@@ -8,15 +8,19 @@
 
 namespace bxt::Core::Domain::PermissionMatcher {
 
-bool match(const Permission &lh, const Permission &rh) {
-    const auto ltags = lh.tags();
-    const auto rtags = rh.tags();
+bool match(Permission const& lh, Permission const& rh) {
+    auto const ltags = lh.tags();
+    auto const rtags = rh.tags();
 
-    const auto min = std::min(ltags.size(), rtags.size());
+    auto const min = std::min(ltags.size(), rtags.size());
 
     for (std::size_t i = 0; i < min; i++) {
-        if (ltags[i] == "*" || rtags[i] == "*") { continue; }
-        if (ltags[i] != rtags[i]) { return false; }
+        if (ltags[i] == "*" || rtags[i] == "*") {
+            continue;
+        }
+        if (ltags[i] != rtags[i]) {
+            return false;
+        }
     }
 
     return true;

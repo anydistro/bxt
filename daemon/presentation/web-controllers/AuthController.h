@@ -27,17 +27,16 @@ public:
                    Core::Application::AuthService& service,
                    std::shared_ptr<Utilities::LMDB::Environment> env,
                    Core::Domain::UnitOfWorkBaseFactory& uow_factory)
-        : m_options(options),
-          m_service(service),
-          m_token_db(env, "bxt::Tokens"),
-          m_uow_factory(uow_factory) {}
+        : m_options(options)
+        , m_service(service)
+        , m_token_db(env, "bxt::Tokens")
+        , m_uow_factory(uow_factory) {
+    }
 
     METHOD_LIST_BEGIN
 
     BXT_ADD_METHOD_TO(AuthController::auth, "/api/auth", drogon::Post);
-    BXT_ADD_METHOD_TO(AuthController::refresh,
-                      "/api/auth/refresh",
-                      drogon::Get);
+    BXT_ADD_METHOD_TO(AuthController::refresh, "/api/auth/refresh", drogon::Get);
     BXT_ADD_METHOD_TO(AuthController::revoke, "/api/auth/revoke", drogon::Post);
 
     METHOD_LIST_END
@@ -47,9 +46,8 @@ public:
     drogon::Task<drogon::HttpResponsePtr> revoke(drogon::HttpRequestPtr req);
 
 private:
-    drogon::HttpResponsePtr make_token_response(Token& access_token,
-                                                Token& refresh_token,
-                                                Token::Storage storage);
+    drogon::HttpResponsePtr
+        make_token_response(Token& access_token, Token& refresh_token, Token::Storage storage);
     Presentation::JwtOptions& m_options;
     Core::Application::AuthService& m_service;
     Utilities::LMDB::Database<bool> m_token_db;

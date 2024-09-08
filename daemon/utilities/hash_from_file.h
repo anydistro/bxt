@@ -14,15 +14,14 @@
 namespace bxt {
 
 template<auto HashFunction, size_t DigestLength>
-const std::string hash_from_file(const std::filesystem::path &path) {
+std::string const hash_from_file(std::filesystem::path const& path) {
     if (!std::filesystem::exists(path) || std::filesystem::is_empty(path)) {
         return "";
     }
 
     std::array<unsigned char, DigestLength> result;
     boost::iostreams::mapped_file_source src(path);
-    HashFunction(reinterpret_cast<const unsigned char *>(src.data()),
-                 src.size(), result.data());
+    HashFunction(reinterpret_cast<unsigned char const*>(src.data()), src.size(), result.data());
 
     std::ostringstream sout;
     sout << std::hex << std::setfill('0');

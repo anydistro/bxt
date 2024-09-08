@@ -17,22 +17,24 @@ namespace bxt::Persistence::Box {
 class WritebackScheduler {
 public:
     explicit WritebackScheduler(std::shared_ptr<coro::io_scheduler> scheduler)
-        : m_scheduler(std::move(scheduler)) {}
+        : m_scheduler(std::move(scheduler)) {
+    }
 
     coro::task<void> schedule(coro::task<void> task) {
-        const auto lock = co_await m_mutex.lock();
+        auto const lock = co_await m_mutex.lock();
 
-        if (m_scheduled) { co_return; }
+        if (m_scheduled) {
+            co_return;
+        }
 
         this->m_scheduled = true;
 
-        auto scheduled_task = [](auto* self,
-                                 coro::task<void> task) -> coro::task<void> {
+        auto scheduled_task = [](auto* self, coro::task<void> task) -> coro::task<void> {
             using namespace std::chrono_literals;
 
             co_await self->m_scheduler->schedule_after(5s);
 
-            const auto lock = co_await self->m_mutex.lock();
+            auto const lock = co_await self->m_mutex.lock();
 
             co_await task;
 
@@ -46,7 +48,9 @@ public:
         co_return;
     }
 
-    bool scheduled() { return m_scheduled; }
+    bool scheduled() {
+        return m_scheduled;
+    }
 
 private:
     std::shared_ptr<coro::io_scheduler> m_scheduler;

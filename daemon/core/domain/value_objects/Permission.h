@@ -13,17 +13,19 @@
 namespace bxt::Core::Domain {
 class Permission {
 public:
-    Permission(const std::string& permission) {
+    Permission(std::string const& permission) {
         boost::split(m_permission_tags, permission, boost::is_any_of("."));
     }
 
-    operator const std::string() const {
+    operator std::string const() const {
         return boost::join(m_permission_tags, ".");
     }
 
-    std::vector<std::string> tags() const { return m_permission_tags; }
+    std::vector<std::string> tags() const {
+        return m_permission_tags;
+    }
 
-    auto operator<=>(const Permission& other) const = default;
+    auto operator<=>(Permission const& other) const = default;
 
 private:
     std::vector<std::string> m_permission_tags;

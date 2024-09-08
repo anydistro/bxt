@@ -24,7 +24,9 @@ public:
     BXT_DECLARE_RESULT(CrudError)
     SectionService(Domain::ReadOnlyRepositoryBase<Domain::Section>& repository,
                    Domain::UnitOfWorkBaseFactory& uow_factory)
-        : m_repository(repository), m_uow_factory(uow_factory) {}
+        : m_repository(repository)
+        , m_uow_factory(uow_factory) {
+    }
 
     coro::task<Result<std::vector<PackageSectionDTO>>> get_sections() const;
 

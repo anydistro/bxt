@@ -14,8 +14,7 @@ coro::task<void> PackageService::add_package(Package pkg) {
 coro::task<void> PackageService::remove_package(Package pkg) {
 }
 
-coro::task<void> PackageService::update_package(Package pkg,
-                                                bool enable_downgrade) {
+coro::task<void> PackageService::update_package(Package pkg, bool enable_downgrade) {
 }
 
 } // namespace bxt::Core::Domain

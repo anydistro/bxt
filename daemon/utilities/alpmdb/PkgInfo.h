@@ -17,7 +17,7 @@ public:
     PkgInfo() = default;
     void parse(std::string_view contents);
 
-    std::vector<std::string> values(const std::string& key) const;
+    std::vector<std::string> values(std::string const& key) const;
 
 private:
     std::unordered_map<std::string, std::vector<std::string>> m_values;

@@ -19,7 +19,7 @@
 namespace bxt::Utilities::LMDB {
 
 struct CerealSerializationError : public bxt::Error {
-    CerealSerializationError(cereal::Exception &&exception) {
+    CerealSerializationError(cereal::Exception&& exception) {
         message = exception.what();
     };
 };
@@ -27,7 +27,7 @@ struct CerealSerializationError : public bxt::Error {
 template<typename TSerializable> struct CerealSerializer {
     BXT_DECLARE_RESULT(SerializationError);
 
-    static Result<std::string> serialize(const TSerializable &value) {
+    static Result<std::string> serialize(TSerializable const& value) {
         try {
             std::stringstream entity_stream;
             {
@@ -35,13 +35,13 @@ template<typename TSerializable> struct CerealSerializer {
                 entity_archive(value);
             }
             return entity_stream.str();
-        } catch (cereal::Exception &e) {
+        } catch (cereal::Exception& e) {
             return bxt::make_error_with_source<SerializationError>(
                 CerealSerializationError(std::move(e)));
         }
     }
 
-    static Result<TSerializable> deserialize(const std::string &value) {
+    static Result<TSerializable> deserialize(std::string const& value) {
         try {
             std::stringstream entity_stream(value);
             TSerializable result;
@@ -50,7 +50,7 @@ template<typename TSerializable> struct CerealSerializer {
                 entity_archive(result);
             }
             return result;
-        } catch (cereal::Exception &e) {
+        } catch (cereal::Exception& e) {
             return bxt::make_error_with_source<SerializationError>(
                 CerealSerializationError(std::move(e)));
         }

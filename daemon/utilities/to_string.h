@@ -10,5 +10,5 @@
 #include <string>
 
 namespace bxt {
-template<typename T> std::string to_string(const T&);
+template<typename T> std::string to_string(T const&);
 }

@@ -27,15 +27,15 @@ class Reader {
 public:
     class Entry {
         template<typename T>
-        using Result =
-            std::expected<T, std::variant<InvalidEntryError, LibArchiveError>>;
+        using Result = std::expected<T, std::variant<InvalidEntryError, LibArchiveError>>;
         friend class Reader;
 
     public:
         template<std::size_t amount>
-        Result<void> read_buffer(std::array<uint8_t, amount>& buffer,
-                                 std::size_t& actual) {
-            if (!m_reader) { return std::unexpected(InvalidEntryError()); }
+        Result<void> read_buffer(std::array<uint8_t, amount>& buffer, std::size_t& actual) {
+            if (!m_reader) {
+                return std::unexpected(InvalidEntryError());
+            }
 
             actual = archive_read_data(m_reader, buffer.data(), amount);
 
@@ -57,7 +57,9 @@ public:
         }
 
     private:
-        Entry(archive* a) : m_reader(a) {}
+        Entry(archive* a)
+            : m_reader(a) {
+        }
         archive* m_reader = nullptr;
     };
 
@@ -77,7 +79,9 @@ public:
         using reference = value_type&;
 
         Iterator(archive* archive, std::optional<Header> header = std::nullopt)
-            : m_value {header, Entry(archive)}, m_archive(archive) {}
+            : m_value {header, Entry(archive)}
+            , m_archive(archive) {
+        }
         ~Iterator() = default;
 
         iterator& operator++(int) {
@@ -86,7 +90,9 @@ public:
 
             m_value.header = Header(entry);
 
-            if (status != ARCHIVE_OK) { m_value.header = std::nullopt; }
+            if (status != ARCHIVE_OK) {
+                m_value.header = std::nullopt;
+            }
             return *this;
         }
 
@@ -96,13 +102,19 @@ public:
 
             m_value.header = Header(entry);
 
-            if (status != ARCHIVE_OK) { m_value.header = std::nullopt; }
+            if (status != ARCHIVE_OK) {
+                m_value.header = std::nullopt;
+            }
 
             return *this;
         }
 
-        value_type& operator*() { return m_value; }
-        value_type& operator->() { return this->operator*(); }
+        value_type& operator*() {
+            return m_value;
+        }
+        value_type& operator->() {
+            return this->operator*();
+        }
 
         iterator operator+(std::size_t v) const {
             Header header;
@@ -122,12 +134,11 @@ public:
             return {m_archive, header};
         }
 
-        bool operator==(const iterator& rhs) const {
-            return this->m_archive == rhs.m_archive
-                   && this->m_value.header == rhs.m_value.header;
+        bool operator==(iterator const& rhs) const {
+            return this->m_archive == rhs.m_archive && this->m_value.header == rhs.m_value.header;
         }
 
-        bool operator!=(const iterator& rhs) const {
+        bool operator!=(iterator const& rhs) const {
             return !this->operator==(rhs);
         }
 
@@ -139,12 +150,16 @@ public:
     Reader() = default;
     BXT_DECLARE_RESULT(LibArchiveError)
 
-    Result<void> open_filename(const std::filesystem::path& path);
-    Result<void> open_memory(const std::vector<uint8_t>& byte_array);
+    Result<void> open_filename(std::filesystem::path const& path);
+    Result<void> open_memory(std::vector<uint8_t> const& byte_array);
     Result<void> open_memory(uint8_t* data, size_t length);
 
-    struct archive* archive() { return m_archive.get(); }
-    operator struct archive *() { return m_archive.get(); }
+    struct archive* archive() {
+        return m_archive.get();
+    }
+    operator struct archive *() {
+        return m_archive.get();
+    }
 
     Iterator begin() {
         Iterator it(m_archive.get());
@@ -154,7 +169,9 @@ public:
         return it;
     }
 
-    Iterator end() { return Iterator(m_archive.get()); }
+    Iterator end() {
+        return Iterator(m_archive.get());
+    }
 
     Result<void> close() {
         if (archive_read_close(m_archive.get()) != ARCHIVE_OK) {
@@ -164,8 +181,8 @@ public:
     }
 
 private:
-    std::unique_ptr<struct archive, decltype(&archive_read_free)> m_archive {
-        archive_read_new(), archive_read_free};
+    std::unique_ptr<struct archive, decltype(&archive_read_free)> m_archive {archive_read_new(),
+                                                                             archive_read_free};
 };
 
 } // namespace Archive

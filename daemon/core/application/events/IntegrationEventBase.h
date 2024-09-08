@@ -12,8 +12,7 @@ namespace bxt::Core::Application::Events {
 struct IntegrationEventBase {
     virtual ~IntegrationEventBase() = default;
 
-    std::chrono::time_point<std::chrono::system_clock> when =
-        std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> when = std::chrono::system_clock::now();
 
     virtual std::string message() const = 0;
 };

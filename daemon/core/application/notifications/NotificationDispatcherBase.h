@@ -14,7 +14,7 @@ class NotificationDispatcherBase {
 public:
     virtual ~NotificationDispatcherBase() = default;
 
-    virtual void dispatch(const Notification& notification) = 0;
+    virtual void dispatch(Notification const& notification) = 0;
 };
 
 } // namespace bxt::Core::Application

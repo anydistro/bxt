@@ -6,8 +6,8 @@
  */
 #pragma once
 
-#include "core/application/RequestContext.h"
 #include "core/application/dtos/PackageDTO.h"
+#include "core/application/RequestContext.h"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
 
@@ -27,28 +27,26 @@ public:
             InvalidArgument
         };
 
-        Error(ErrorType error_type) : error_type(error_type) {
+        Error(ErrorType error_type)
+            : error_type(error_type) {
             message = error_messages.at(error_type).data();
         }
 
         ErrorType error_type;
 
     private:
-        static inline frozen::unordered_map<ErrorType, std::string, 4>
-            error_messages = {
-                {ErrorType::InvalidSession, "Invalid session."},
-                {ErrorType::PackagePushFailed, "Package push failed."},
-                {ErrorType::DeploymentFailed, "Deployment failed."},
-                {ErrorType::InvalidArgument, "Invalid argument."}};
+        static inline frozen::unordered_map<ErrorType, std::string, 4> error_messages = {
+            {ErrorType::InvalidSession, "Invalid session."},
+            {ErrorType::PackagePushFailed, "Package push failed."},
+            {ErrorType::DeploymentFailed, "Deployment failed."},
+            {ErrorType::InvalidArgument, "Invalid argument."}};
     };
     BXT_DECLARE_RESULT(Error)
 
     virtual ~DeploymentService() = default;
 
-    virtual coro::task<Result<uint64_t>>
-        deploy_start(const RequestContext context) = 0;
-    virtual coro::task<Result<void>> deploy_push(PackageDTO package,
-                                                 uint64_t session_id) = 0;
+    virtual coro::task<Result<uint64_t>> deploy_start(RequestContext const context) = 0;
+    virtual coro::task<Result<void>> deploy_push(PackageDTO package, uint64_t session_id) = 0;
     virtual coro::task<Result<void>> deploy_end(uint64_t session_id) = 0;
 
     virtual coro::task<Result<void>> verify_session(uint64_t session_id) = 0;

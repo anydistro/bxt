@@ -17,7 +17,7 @@ struct DeploymentOptions {
         config.set("deployment-key", key);
     }
 
-    void deserialize(const Utilities::Configuration& config) {
+    void deserialize(Utilities::Configuration const& config) {
         key = config.get<std::string>("deployment-key").value_or(key);
     }
 };

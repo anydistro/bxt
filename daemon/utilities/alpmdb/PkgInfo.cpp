@@ -22,10 +22,14 @@ void PkgInfo::parse(std::string_view contents) {
         line = contents.substr(prev_pos, pos - prev_pos);
         prev_pos = pos + 1;
 
-        if (line.starts_with("#")) { continue; }
+        if (line.starts_with("#")) {
+            continue;
+        }
 
         std::size_t delim_pos = line.find(" = ");
-        if (delim_pos == std::string_view::npos) { continue; }
+        if (delim_pos == std::string_view::npos) {
+            continue;
+        }
 
         std::string_view key = line.substr(0, delim_pos);
         std::string_view value = line.substr(delim_pos + 3);
@@ -34,9 +38,11 @@ void PkgInfo::parse(std::string_view contents) {
     }
 }
 
-std::vector<std::string> PkgInfo::values(const std::string& key) const {
+std::vector<std::string> PkgInfo::values(std::string const& key) const {
     auto it = m_values.find(key);
-    if (it != m_values.end()) { return it->second; }
+    if (it != m_values.end()) {
+        return it->second;
+    }
     return {};
 }
 

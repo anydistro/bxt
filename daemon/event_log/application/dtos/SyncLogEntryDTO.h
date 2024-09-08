@@ -38,23 +38,21 @@ using bxt::EventLog::Domain::SyncLogEntry;
 using EventLog::Application::PackageLogEntryDTOMapper;
 
 template<> struct StaticDTOMapper<SyncLogEntry, SyncLogEntryDTO> {
-    static SyncLogEntryDTO to_dto(const SyncLogEntry& from) {
+    static SyncLogEntryDTO to_dto(SyncLogEntry const& from) {
         SyncLogEntryDTO dto;
         dto.time = from.time();
 
         dto.sync_trigger_username = from.sync_trigger_username();
         dto.added = map_entries(from.added(), PackageLogEntryDTOMapper::to_dto);
-        dto.deleted =
-            map_entries(from.deleted(), PackageLogEntryDTOMapper::to_dto);
+        dto.deleted = map_entries(from.deleted(), PackageLogEntryDTOMapper::to_dto);
 
         return dto;
     }
 
-    static SyncLogEntry to_entity(const SyncLogEntryDTO& from) {
-        return SyncLogEntry {
-            from.time, from.sync_trigger_username,
-            map_entries(from.added, PackageLogEntryDTOMapper::to_entity),
-            map_entries(from.deleted, PackageLogEntryDTOMapper::to_entity)};
+    static SyncLogEntry to_entity(SyncLogEntryDTO const& from) {
+        return SyncLogEntry {from.time, from.sync_trigger_username,
+                             map_entries(from.added, PackageLogEntryDTOMapper::to_entity),
+                             map_entries(from.deleted, PackageLogEntryDTOMapper::to_entity)};
     }
 };
 } // namespace bxt::Utilities

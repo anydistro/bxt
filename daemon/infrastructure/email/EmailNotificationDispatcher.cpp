@@ -16,9 +16,10 @@ EmailNotificationDispatcher::EmailNotificationDispatcher()
                         options.connection_auth_type());
 }
 
-void EmailNotificationDispatcher::dispatch(
-    const Core::Application::Notification &notification) {
-    if (!notification.valid()) { return; }
+void EmailNotificationDispatcher::dispatch(Core::Application::Notification const& notification) {
+    if (!notification.valid()) {
+        return;
+    }
 
     mailio::message msg;
 

@@ -14,7 +14,7 @@ void Parser::extend(Extension* extension) {
     m_extensions.emplace(extension);
 }
 
-void Parser::parse(const std::filesystem::path& filename) {
+void Parser::parse(std::filesystem::path const& filename) {
     parse(YAML::LoadFile(filename));
 }
 
@@ -24,26 +24,29 @@ void Parser::parse(const YAML::Node& root_node) {
     }
 
     for (auto branch : root_node["branches"].as<std::vector<std::string>>()) {
-        for (const auto& repo : root_node["repositories"]) {
-            const auto& key = repo.first;
-            const auto& value = repo.second;
-            if (!key || !value || !value.IsMap()) { continue; }
+        for (auto const& repo : root_node["repositories"]) {
+            auto const& key = repo.first;
+            auto const& value = repo.second;
+            if (!key || !value || !value.IsMap()) {
+                continue;
+            }
 
             auto architecture = value["architecture"].as<std::string>();
 
             if (key.IsScalar()) {
                 m_sections.emplace(branch, key.as<std::string>(), architecture);
             } else if (key.IsSequence()) {
-                for (const auto& repository : key) {
-                    m_sections.emplace(branch, repository.as<std::string>(),
-                                       architecture);
+                for (auto const& repository : key) {
+                    m_sections.emplace(branch, repository.as<std::string>(), architecture);
                 }
             }
         }
     }
 
-    for (const auto& extension : m_extensions) {
-        if (!extension) { return; }
+    for (auto const& extension : m_extensions) {
+        if (!extension) {
+            return;
+        }
         extension->parse(root_node);
     }
 }

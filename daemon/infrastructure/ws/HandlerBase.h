@@ -16,13 +16,13 @@ struct HandlerBase {
     virtual ~HandlerBase() = default;
     virtual Json::Value handle_connection() {};
     virtual Json::Value handle_message(Json::Value message) {};
-    virtual void set_callback(std::function<void(const Json::Value&)> cb) {
+    virtual void set_callback(std::function<void(Json::Value const&)> cb) {
         m_callback = cb;
     };
 
     virtual std::string name() = 0;
 
 protected:
-    std::function<void(const Json::Value&)> m_callback;
+    std::function<void(Json::Value const&)> m_callback;
 };
 } // namespace bxt::Infrastructure

@@ -17,26 +17,27 @@ namespace bxt::Presentation {
 using namespace drogon;
 
 std::expected<jwt::decoded_jwt<jwt::traits::nlohmann_json>, std::exception>
-    decode_jwt(const std::string &token) {
+    decode_jwt(std::string const& token) {
     try {
         return jwt::decode(token);
-    } catch (std::exception &e) { return std::unexpected(e); }
+    } catch (std::exception& e) {
+        return std::unexpected(e);
+    }
 }
 
-void JwtFilter::doFilter(const HttpRequestPtr &request,
-                         FilterCallback &&fcb,
-                         FilterChainCallback &&fccb) {
-    if (request->getMethod() == HttpMethod::Options) return fccb();
+void JwtFilter::doFilter(HttpRequestPtr const& request,
+                         FilterCallback&& fcb,
+                         FilterChainCallback&& fccb) {
+    if (request->getMethod() == HttpMethod::Options)
+        return fccb();
 
-    auto access_token = drogon_helpers::get_access_token(
-        request, m_options.issuer, m_options.secret);
+    auto access_token =
+        drogon_helpers::get_access_token(request, m_options.issuer, m_options.secret);
     if (!access_token.has_value()) {
-        return fcb(drogon_helpers::make_error_response(access_token.error(),
-                                                       k401Unauthorized));
+        return fcb(drogon_helpers::make_error_response(access_token.error(), k401Unauthorized));
     }
 
-    request->getAttributes()->insert(fmt::format("jwt_{}", Names::UserName),
-                                     access_token->name());
+    request->getAttributes()->insert(fmt::format("jwt_{}", Names::UserName), access_token->name());
 
     return fccb();
 }

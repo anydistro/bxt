@@ -21,32 +21,26 @@ namespace bxt::Core::Domain {
 
 struct PackageVersion {
     struct ParsingError : public bxt::Error {
-        enum class ErrorCode {
-            InvalidFormat,
-            InvalidVersion,
-            InvalidReleaseTag,
-            InvalidEpoch
-        };
+        enum class ErrorCode { InvalidFormat, InvalidVersion, InvalidReleaseTag, InvalidEpoch };
 
         ErrorCode error_code;
 
-        static inline const frozen::map<ErrorCode, frozen::string, 4>
-            error_messages = {
-                {ErrorCode::InvalidFormat, "Invalid format"},
-                {ErrorCode::InvalidVersion, "Invalid version"},
-                {ErrorCode::InvalidReleaseTag, "Invalid release tag"},
-                {ErrorCode::InvalidEpoch, "Invalid epoch"}};
+        static inline frozen::map<ErrorCode, frozen::string, 4> const error_messages = {
+            {ErrorCode::InvalidFormat, "Invalid format"},
+            {ErrorCode::InvalidVersion, "Invalid version"},
+            {ErrorCode::InvalidReleaseTag, "Invalid release tag"},
+            {ErrorCode::InvalidEpoch, "Invalid epoch"}};
 
-        ParsingError(ErrorCode error_code) : error_code(error_code) {
+        ParsingError(ErrorCode error_code)
+            : error_code(error_code) {
             message = error_messages.at(error_code).data();
         }
     };
     using ParseResult = std::expected<PackageVersion, ParsingError>;
 
-    static std::strong_ordering compare(const PackageVersion& lh,
-                                        const PackageVersion& rh);
+    static std::strong_ordering compare(PackageVersion const& lh, PackageVersion const& rh);
 
-    auto operator<=>(const PackageVersion& rh) const {
+    auto operator<=>(PackageVersion const& rh) const {
         return compare(*this, rh);
     };
 
@@ -62,15 +56,12 @@ struct PackageVersion {
 
 namespace bxt {
 template<>
-inline std::string to_string<Core::Domain::PackageVersion>(
-    const Core::Domain::PackageVersion& pv) {
+inline std::string to_string<Core::Domain::PackageVersion>(Core::Domain::PackageVersion const& pv) {
     if (std::string(pv.epoch) != "0" && pv.release) {
-        return fmt::format("{}:{}-{}", std::string(pv.epoch),
-                           std::string(pv.version),
+        return fmt::format("{}:{}-{}", std::string(pv.epoch), std::string(pv.version),
                            pv.release.value_or(Core::Domain::Name("0")));
     } else if (std::string(pv.epoch) != "0") {
-        return fmt::format("{}:{}", std::string(pv.epoch),
-                           std::string(pv.version));
+        return fmt::format("{}:{}", std::string(pv.epoch), std::string(pv.version));
     } else if (pv.release) {
         return fmt::format("{}-{}", std::string(pv.version),
                            pv.release.value_or(Core::Domain::Name("0")));

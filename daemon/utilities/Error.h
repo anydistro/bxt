@@ -16,20 +16,21 @@ namespace bxt {
 struct Error {
     Error() = default;
     explicit Error(std::unique_ptr<bxt::Error>&& source)
-        : source(std::move(source)) {}
+        : source(std::move(source)) {
+    }
 
     Error(Error&& other) noexcept {
         source = std::move(other.source);
         message = std::move(other.message);
     }
 
-    Error(const Error& other) {
+    Error(Error const& other) {
         if (other.source) {
             source = std::make_unique<bxt::Error>(*other.source);
         }
         message = other.message;
     }
-    Error& operator=(const Error& other) {
+    Error& operator=(Error const& other) {
         if (this != &other) {
             if (other.source) {
                 source = std::make_unique<bxt::Error>(*other.source);
@@ -52,9 +53,11 @@ struct Error {
 
     std::unique_ptr<bxt::Error> source = nullptr;
 
-    const std::string what() const noexcept {
+    std::string const what() const noexcept {
         auto result = message;
-        if (source) { result += fmt::format("\nFrom:\n{}\n", source->what()); }
+        if (source) {
+            result += fmt::format("\nFrom:\n{}\n", source->what());
+        }
         return result;
     }
 
@@ -62,8 +65,7 @@ struct Error {
 };
 
 template<typename TError, typename TSource, typename... TArgs>
-std::unexpected<TError> make_error_with_source(TSource&& source,
-                                               TArgs... ctorargs) {
+std::unexpected<TError> make_error_with_source(TSource&& source, TArgs... ctorargs) {
     TError result(ctorargs...);
 
     result.source = std::make_unique<TSource>(std::move(source));
@@ -71,8 +73,7 @@ std::unexpected<TError> make_error_with_source(TSource&& source,
     return std::unexpected(result);
 }
 
-template<typename TError, typename... TArgs>
-std::unexpected<TError> make_error(TArgs... ctorargs) {
+template<typename TError, typename... TArgs> std::unexpected<TError> make_error(TArgs... ctorargs) {
     TError result(ctorargs...);
 
     return std::unexpected(result);

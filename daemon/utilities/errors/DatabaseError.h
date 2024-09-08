@@ -21,13 +21,14 @@ public:
         AlreadyExists,
         InvalidArgument
     };
-    DatabaseError(ErrorType error_type) : error_type(error_type) {
+    DatabaseError(ErrorType error_type)
+        : error_type(error_type) {
         message = messages.at(error_type).data();
     }
 
-    DatabaseError(ErrorType error_type, const bxt::Error&& source)
-        : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-          error_type(error_type) {
+    DatabaseError(ErrorType error_type, bxt::Error const&& source)
+        : bxt::Error(std::make_unique<bxt::Error>(std::move(source)))
+        , error_type(error_type) {
         message = messages.at(error_type).data();
     }
 

@@ -13,12 +13,11 @@
 
 namespace bxt::Persistence {
 coro::task<SectionRepository::TResult>
-    bxt::Persistence::SectionRepository::find_by_id_async(
-        TId id, std::shared_ptr<UnitOfWorkBase> uow) {
-    const auto& sections = m_parser.sections();
-    auto it = std::find_if(
-        sections.begin(), sections.end(),
-        [&id](const auto& section) { return bxt::to_string(section) == id; });
+    bxt::Persistence::SectionRepository::find_by_id_async(TId id,
+                                                          std::shared_ptr<UnitOfWorkBase> uow) {
+    auto const& sections = m_parser.sections();
+    auto it = std::find_if(sections.begin(), sections.end(),
+                           [&id](auto const& section) { return bxt::to_string(section) == id; });
 
     if (it != sections.end()) {
         co_return Section(it->branch, it->repository, it->architecture);
@@ -27,30 +26,31 @@ coro::task<SectionRepository::TResult>
     co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
 }
 
-coro::task<SectionRepository::TResult>
-    bxt::Persistence::SectionRepository::find_first_async(
-        std::function<bool(const Section&)> condition,
-        std::shared_ptr<UnitOfWorkBase> uow) {
-    const auto& sections = m_parser.sections();
+coro::task<SectionRepository::TResult> bxt::Persistence::SectionRepository::find_first_async(
+    std::function<bool(Section const&)> condition, std::shared_ptr<UnitOfWorkBase> uow) {
+    auto const& sections = m_parser.sections();
 
-    for (const auto& section : sections) {
+    for (auto const& section : sections) {
         Section s(section.branch, section.repository, section.architecture);
-        if (condition(s)) { co_return s; }
+        if (condition(s)) {
+            co_return s;
+        }
     }
 
     co_return bxt::make_error<ReadError>(ReadError::EntityNotFound);
 }
 
 coro::task<SectionRepository::TResults>
-    bxt::Persistence::SectionRepository::find_async(
-        std::function<bool(const Section&)> condition,
-        std::shared_ptr<UnitOfWorkBase> uow) {
-    const auto& sections = m_parser.sections();
+    bxt::Persistence::SectionRepository::find_async(std::function<bool(Section const&)> condition,
+                                                    std::shared_ptr<UnitOfWorkBase> uow) {
+    auto const& sections = m_parser.sections();
     std::vector<Section> result;
 
-    for (const auto& section : sections) {
+    for (auto const& section : sections) {
         Section s(section.branch, section.repository, section.architecture);
-        if (condition(s)) { result.push_back(std::move(s)); }
+        if (condition(s)) {
+            result.push_back(std::move(s));
+        }
     }
 
     co_return result;
@@ -58,16 +58,14 @@ coro::task<SectionRepository::TResults>
 
 coro::task<SectionRepository::TResults>
     SectionRepository::all_async(std::shared_ptr<UnitOfWorkBase> uow) {
-    const auto& sections = m_parser.sections();
+    auto const& sections = m_parser.sections();
 
     std::vector<Section> result;
     result.reserve(sections.size());
 
-    std::ranges::transform(
-        sections, std::back_inserter(result), [](const auto& section) {
-            return Section(section.branch, section.repository,
-                           section.architecture);
-        });
+    std::ranges::transform(sections, std::back_inserter(result), [](auto const& section) {
+        return Section(section.branch, section.repository, section.architecture);
+    });
 
     co_return result;
 }

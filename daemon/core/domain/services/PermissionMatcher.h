@@ -10,5 +10,5 @@
 #include <string>
 
 namespace bxt::Core::Domain::PermissionMatcher {
-bool match(const Permission &lh, const Permission &rh);
+bool match(Permission const& lh, Permission const& rh);
 } // namespace bxt::Core::Domain::PermissionMatcher

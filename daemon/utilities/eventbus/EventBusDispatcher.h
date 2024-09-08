@@ -19,11 +19,11 @@ namespace bxt::Utilities {
 class EventBusDispatcher {
 public:
     EventBusDispatcher(std::shared_ptr<dexode::EventBus> evbus)
-        : m_evbus(evbus) {}
+        : m_evbus(evbus) {
+    }
 
     template<typename TEvent> inline void process(TEvent eptr) {
-        if (const auto it =
-                bxt::events::event_map.find(std::type_index(typeid(*eptr)));
+        if (auto const it = bxt::events::event_map.find(std::type_index(typeid(*eptr)));
             it != bxt::events::event_map.cend()) {
             auto tindex = std::type_index(typeid(*eptr));
             auto str = tindex.name();
@@ -32,18 +32,19 @@ public:
     }
 
     template<typename TList> coro::task<void> dispatch_async(TList evlist) {
-        if (!m_evbus) co_return;
+        if (!m_evbus)
+            co_return;
 
-        for (const auto& event : evlist) {
+        for (auto const& event : evlist) {
             process(event);
 
             logt(event->message());
         }
     }
 
-    template<typename TEventBase>
-    coro::task<void> dispatch_single_async(TEventBase event) {
-        if (!m_evbus) co_return;
+    template<typename TEventBase> coro::task<void> dispatch_single_async(TEventBase event) {
+        if (!m_evbus)
+            co_return;
 
         process(event);
 

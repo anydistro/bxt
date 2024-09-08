@@ -17,7 +17,9 @@ template<typename TId = uuids::uuid> class AggregateRoot {
 public:
     virtual ~AggregateRoot() = default;
 
-    const TId &id() const { return m_id; }
+    TId const& id() const {
+        return m_id;
+    }
 
 private:
     TId m_id;

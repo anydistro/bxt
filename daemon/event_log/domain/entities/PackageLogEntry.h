@@ -18,23 +18,31 @@
 namespace bxt::EventLog::Domain {
 class PackageLogEntry {
 public:
-    PackageLogEntry(
-        LogEntryType type,
-        Core::Domain::Section section,
-        std::string name,
-        Core::Domain::PoolLocation location,
-        std::optional<Core::Domain::PackageVersion> version = std::nullopt)
-        : m_type(type),
-          m_section(std::move(section)),
-          m_name(std::move(name)),
-          m_location(location),
-          m_version(std::move(version)) {}
+    PackageLogEntry(LogEntryType type,
+                    Core::Domain::Section section,
+                    std::string name,
+                    Core::Domain::PoolLocation location,
+                    std::optional<Core::Domain::PackageVersion> version = std::nullopt)
+        : m_type(type)
+        , m_section(std::move(section))
+        , m_name(std::move(name))
+        , m_location(location)
+        , m_version(std::move(version)) {
+    }
 
-    LogEntryType type() const { return m_type; }
-    Core::Domain::Section section() const { return m_section; }
-    const std::string& name() const { return m_name; }
-    Core::Domain::PoolLocation location() const { return m_location; }
-    const std::optional<Core::Domain::PackageVersion>& version() const {
+    LogEntryType type() const {
+        return m_type;
+    }
+    Core::Domain::Section section() const {
+        return m_section;
+    }
+    std::string const& name() const {
+        return m_name;
+    }
+    Core::Domain::PoolLocation location() const {
+        return m_location;
+    }
+    std::optional<Core::Domain::PackageVersion> const& version() const {
         return m_version;
     }
 

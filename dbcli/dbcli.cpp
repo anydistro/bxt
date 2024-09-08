@@ -17,12 +17,9 @@
 #include <lmdbxx/lmdb++.h>
 #include <string>
 
-using Serializer = bxt::Utilities::LMDB::CerealSerializer<
-    bxt::Persistence::Box::PackageRecord>;
+using Serializer = bxt::Utilities::LMDB::CerealSerializer<bxt::Persistence::Box::PackageRecord>;
 
-int validate_and_rebuild(lmdb::txn& transaction,
-                         lmdb::dbi& db,
-                         bool rebuild_descfile = false) {
+int validate_and_rebuild(lmdb::txn& transaction, lmdb::dbi& db, bool rebuild_descfile = false) {
     auto cursor = lmdb::cursor::open(transaction, db);
     std::string_view key, value;
 
@@ -33,9 +30,11 @@ int validate_and_rebuild(lmdb::txn& transaction,
         auto record = Serializer::deserialize(std::string(value));
         if (!record) {
             fmt::print(stderr, fg(fmt::terminal_color::red),
-                       "{}: Failed to deserialize record: {}\n",
-                       record->id.to_string(), record.error().what());
-            if (rebuild_descfile) { return 1; }
+                       "{}: Failed to deserialize record: {}\n", record->id.to_string(),
+                       record.error().what());
+            if (rebuild_descfile) {
+                return 1;
+            }
             error_count++;
             continue;
         }
@@ -44,11 +43,12 @@ int validate_and_rebuild(lmdb::txn& transaction,
 
         for (auto& [location, description] : record->descriptions) {
             if (!std::filesystem::exists(description.filepath)) {
-                fmt::print(stderr, fg(fmt::terminal_color::red),
-                           "{} ({}): File not found: {}\n",
+                fmt::print(stderr, fg(fmt::terminal_color::red), "{} ({}): File not found: {}\n",
                            record->id.to_string(), bxt::to_string(location),
                            description.signature_path->string());
-                if (rebuild_descfile) { return 1; }
+                if (rebuild_descfile) {
+                    return 1;
+                }
                 error_count++;
                 continue;
             }
@@ -56,10 +56,11 @@ int validate_and_rebuild(lmdb::txn& transaction,
             if (description.signature_path
                 && !std::filesystem::exists(*description.signature_path)) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),
-                           "{} ({}): Signature file not found: {}\n",
-                           record->id.to_string(), bxt::to_string(location),
-                           description.signature_path->string());
-                if (rebuild_descfile) { return 1; }
+                           "{} ({}): Signature file not found: {}\n", record->id.to_string(),
+                           bxt::to_string(location), description.signature_path->string());
+                if (rebuild_descfile) {
+                    return 1;
+                }
                 error_count++;
                 continue;
             }
@@ -78,36 +79,34 @@ int validate_and_rebuild(lmdb::txn& transaction,
                         std::cerr << "Unable to open signature file: "
                                   << *description.signature_path << std::endl;
                     }
-                } catch (const std::exception& e) {
-                    std::cerr << "Error reading signature file: " << e.what()
-                              << std::endl;
+                } catch (std::exception const& e) {
+                    std::cerr << "Error reading signature file: " << e.what() << std::endl;
                 }
             }
 
-            auto desc_result = bxt::Utilities::AlpmDb::Desc::parse_package(
-                description.filepath, signature);
+            auto desc_result =
+                bxt::Utilities::AlpmDb::Desc::parse_package(description.filepath, signature);
 
             if (!desc_result) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),
-                           "{} ({}): Failed to parse desc-file for: {}\n",
-                           record->id.to_string(), bxt::to_string(location),
-                           description.filepath.string());
-                if (rebuild_descfile) { return 1; }
+                           "{} ({}): Failed to parse desc-file for: {}\n", record->id.to_string(),
+                           bxt::to_string(location), description.filepath.string());
+                if (rebuild_descfile) {
+                    return 1;
+                }
                 error_count++;
                 continue;
             }
 
             if (desc_result->desc != description.descfile.desc) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),
-                           "{} ({}): Desc-file mismatch for: {}\n",
-                           record->id.to_string(), bxt::to_string(location),
-                           description.filepath.string());
+                           "{} ({}): Desc-file mismatch for: {}\n", record->id.to_string(),
+                           bxt::to_string(location), description.filepath.string());
 
                 // Create directory for saving desc files
                 std::filesystem::path report_dir = "dbcli-report";
-                std::filesystem::path package_dir = report_dir
-                                                    / record->id.to_string()
-                                                    / bxt::to_string(location);
+                std::filesystem::path package_dir =
+                    report_dir / record->id.to_string() / bxt::to_string(location);
                 std::filesystem::create_directories(package_dir);
 
                 // Save db desc file
@@ -117,8 +116,7 @@ int validate_and_rebuild(lmdb::txn& transaction,
                     db_file.close();
                 } else {
                     fmt::print(stderr, fg(fmt::terminal_color::red),
-                               "{} ({}): Failed to save db desc file\n",
-                               record->id.to_string(),
+                               "{} ({}): Failed to save db desc file\n", record->id.to_string(),
                                bxt::to_string(location));
                 }
 
@@ -129,28 +127,26 @@ int validate_and_rebuild(lmdb::txn& transaction,
                     pkg_file.close();
                 } else {
                     fmt::print(stderr, fg(fmt::terminal_color::red),
-                               "{} ({}): Failed to save pkg desc file\n",
-                               record->id.to_string(),
+                               "{} ({}): Failed to save pkg desc file\n", record->id.to_string(),
                                bxt::to_string(location));
                 }
 
-                fmt::print(fg(fmt::terminal_color::yellow),
-                           "{} ({}): Desc files saved in {}\n",
-                           record->id.to_string(), bxt::to_string(location),
-                           package_dir.string());
+                fmt::print(fg(fmt::terminal_color::yellow), "{} ({}): Desc files saved in {}\n",
+                           record->id.to_string(), bxt::to_string(location), package_dir.string());
 
                 needs_update = true;
 
-                if (!rebuild_descfile) { error_count++; }
+                if (!rebuild_descfile) {
+                    error_count++;
+                }
 
             } else {
                 fmt::print(fg(fmt::terminal_color::green), "{} ({}): Valid\n",
                            record->id.to_string(), bxt::to_string(location));
             }
             if (rebuild_descfile) {
-                fmt::print("{} ({}): Rebuilding desc-file for: {}\n",
-                           record->id.to_string(), bxt::to_string(location),
-                           record->id.to_string());
+                fmt::print("{} ({}): Rebuilding desc-file for: {}\n", record->id.to_string(),
+                           bxt::to_string(location), record->id.to_string());
                 description.descfile = std::move(*desc_result);
                 needs_update = true;
             }
@@ -160,8 +156,8 @@ int validate_and_rebuild(lmdb::txn& transaction,
             auto serialized = Serializer::serialize(*record);
             if (!serialized) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),
-                           "{}: Failed to serialize record: {}\n",
-                           record->id.to_string(), serialized.error().what());
+                           "{}: Failed to serialize record: {}\n", record->id.to_string(),
+                           serialized.error().what());
                 return 1;
             }
 
@@ -172,13 +168,11 @@ int validate_and_rebuild(lmdb::txn& transaction,
 
                 db.put(transaction, new_key, *serialized);
 
-                fmt::print(fg(fmt::terminal_color::green), "{}: Updated\n",
-                           new_key);
+                fmt::print(fg(fmt::terminal_color::green), "{}: Updated\n", new_key);
 
-            } catch (const std::exception& e) {
+            } catch (std::exception const& e) {
                 fmt::print(stderr, fg(fmt::terminal_color::red),
-                           "{}: Failed to update record: {}\n",
-                           record->id.to_string(), e.what());
+                           "{}: Failed to update record: {}\n", record->id.to_string(), e.what());
                 return 1;
             }
         }
@@ -236,24 +230,23 @@ int main(int argc, char** argv) {
         std::string_view data;
         auto result = db.get(transaction, key, data);
         if (!result) {
-            fmt::print(stderr,
-                       "Failed to retrieve value or value not found.\n");
+            fmt::print(stderr, "Failed to retrieve value or value not found.\n");
             return 1;
         }
 
-        const auto package = Serializer::deserialize(std::string(data));
+        auto const package = Serializer::deserialize(std::string(data));
         if (!package.has_value()) {
             fmt::print(stderr, "Failed to deserialize package.\n");
             return 1;
         }
 
-        fmt::print("{}\nIs any arch: {}\nDescriptions:\n",
-                   package->id.to_string(), package->is_any_architecture);
-        for (const auto& [key, value] : package->descriptions) {
+        fmt::print("{}\nIs any arch: {}\nDescriptions:\n", package->id.to_string(),
+                   package->is_any_architecture);
+        for (auto const& [key, value] : package->descriptions) {
             fmt::print("==={}===\nFilepath: {}\nSignature path: "
                        "{}\nDescfile:\n\n{}\n",
-                       bxt::to_string(key), value.filepath.string(),
-                       value.signature_path->string(), value.descfile.desc);
+                       bxt::to_string(key), value.filepath.string(), value.signature_path->string(),
+                       value.descfile.desc);
         }
     } else if (command == "del") {
         if (argc != 3) {

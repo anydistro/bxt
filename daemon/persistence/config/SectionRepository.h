@@ -17,28 +17,25 @@
 
 namespace bxt::Persistence {
 
-class SectionRepository
-    : public Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section> {
+class SectionRepository : public Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section> {
     using Section = bxt::Core::Domain::Section;
 
 public:
-    SectionRepository(Utilities::RepoSchema::Parser &parser)
-        : m_parser(parser) {}
+    SectionRepository(Utilities::RepoSchema::Parser& parser)
+        : m_parser(parser) {
+    }
 
-    virtual coro::task<TResult>
-        find_by_id_async(TId id, std::shared_ptr<UnitOfWorkBase> uow) override;
-    virtual coro::task<TResult>
-        find_first_async(std::function<bool(const Section &)>,
-                         std::shared_ptr<UnitOfWorkBase> uow) override;
-    virtual coro::task<TResults>
-        find_async(std::function<bool(const Section &)> condition,
-                   std::shared_ptr<UnitOfWorkBase> uow) override;
+    virtual coro::task<TResult> find_by_id_async(TId id,
+                                                 std::shared_ptr<UnitOfWorkBase> uow) override;
+    virtual coro::task<TResult> find_first_async(std::function<bool(Section const&)>,
+                                                 std::shared_ptr<UnitOfWorkBase> uow) override;
+    virtual coro::task<TResults> find_async(std::function<bool(Section const&)> condition,
+                                            std::shared_ptr<UnitOfWorkBase> uow) override;
 
-    virtual coro::task<TResults>
-        all_async(std::shared_ptr<UnitOfWorkBase> uow) override;
+    virtual coro::task<TResults> all_async(std::shared_ptr<UnitOfWorkBase> uow) override;
 
 private:
-    Utilities::RepoSchema::Parser &m_parser;
+    Utilities::RepoSchema::Parser& m_parser;
 };
 
 } // namespace bxt::Persistence

@@ -17,16 +17,21 @@ namespace bxt::EventLog::Domain {
 
 class DeployLogEntry : public EventLogEntryBase {
 public:
-    DeployLogEntry(const time_point& time,
+    DeployLogEntry(time_point const& time,
                    std::string runner_url,
-                   const std::vector<PackageLogEntry>& added)
-        : EventLogEntryBase(EventLogEntryType::Deploy, time),
-          m_runner_url(std::move(runner_url)),
-          m_added(added) {}
+                   std::vector<PackageLogEntry> const& added)
+        : EventLogEntryBase(EventLogEntryType::Deploy, time)
+        , m_runner_url(std::move(runner_url))
+        , m_added(added) {
+    }
 
-    std::string runner_url() const { return m_runner_url; }
+    std::string runner_url() const {
+        return m_runner_url;
+    }
 
-    std::vector<PackageLogEntry> added() const { return m_added; }
+    std::vector<PackageLogEntry> added() const {
+        return m_added;
+    }
 
 private:
     std::string m_runner_url;

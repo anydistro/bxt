@@ -20,7 +20,7 @@ struct LMDBOptions {
     void serialize(Configuration& config) {
         config.set("lmdb-path", lmdb_path.string());
     }
-    void deserialize(const Configuration& config) {
+    void deserialize(Configuration const& config) {
         lmdb_path = config.get<std::string>("lmdb-path").value_or(lmdb_path);
     }
 };

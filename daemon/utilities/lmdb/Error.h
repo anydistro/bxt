@@ -14,7 +14,8 @@
 namespace bxt::Utilities::LMDB {
 
 struct Error : public bxt::Error {
-    Error(const lmdb::error&& error) : error(std::move(error)) {
+    Error(lmdb::error const&& error)
+        : error(std::move(error)) {
         message = error.what();
     }
 
@@ -23,7 +24,9 @@ private:
 };
 
 struct SerializationError : public bxt::Error {
-    SerializationError() { message = "Serialization/deserialization error"; }
+    SerializationError() {
+        message = "Serialization/deserialization error";
+    }
 };
 
 } // namespace bxt::Utilities::LMDB
