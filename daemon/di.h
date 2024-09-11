@@ -72,7 +72,7 @@ namespace Utilities {
         : kgr::single_service<bxt::Utilities::EventBusDispatcher,
                               kgr::dependency<di::Utilities::EventBus>> {};
 
-    struct IOScheduler : kgr::shared_service<coro::io_scheduler> {};
+    struct IOScheduler : kgr::extern_shared_service<coro::io_scheduler> {};
 
     namespace LMDB {
         struct LMDBOptions : kgr::single_service<bxt::Utilities::LMDB::LMDBOptions> {};

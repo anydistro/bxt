@@ -85,7 +85,8 @@ private:
     UnitOfWorkBaseFactory& m_uow_factory;
 
     ArchRepoOptions m_options;
-    coro::io_scheduler tp {{.pool = {.thread_count = 1}}};
+    std::shared_ptr<coro::io_scheduler> tp =
+        coro::io_scheduler::make_shared({.pool = {.thread_count = 1}});
 };
 
 } // namespace bxt::Infrastructure

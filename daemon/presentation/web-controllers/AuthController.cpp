@@ -40,7 +40,7 @@ drogon::Task<drogon::HttpResponsePtr> AuthController::auth(drogon::HttpRequestPt
         response_type = Token::Storage::Cookie;
     } else {
         co_return drogon_helpers::make_error_response(
-            fmt::format("Invalid response type: {}", response_type));
+            fmt::format("Invalid response type: {}", response_type_name));
     }
 
     auto const check_ok = co_await m_service.auth(name, password);

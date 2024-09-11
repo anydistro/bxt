@@ -453,7 +453,7 @@ coro::task<std::optional<httplib::Result>>
         }
 
         logw("Failed to download file: {}, retrying...", path);
-        co_await tp.yield_for(delay);
+        co_await tp->yield_for(delay);
         ++current_retry;
     }
 
@@ -478,7 +478,7 @@ coro::task<std::unique_ptr<httplib::SSLClient>>
     using namespace std::chrono_literals;
     constexpr static auto timeout = 5s;
 
-    co_await tp.schedule();
+    co_await tp->schedule();
 
     auto client_ptr = std::make_unique<httplib::SSLClient>(url);
 

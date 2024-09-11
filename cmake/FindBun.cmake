@@ -1,3 +1,7 @@
+################################################################################
+# Bun Configuration: Find Bun executable and set up related functions
+################################################################################
+
 set(_prev "${BUN_EXECUTABLE}")
 find_program(BUN_EXECUTABLE bun DOC "Path to Bun, the all-in-one JavaScript runtime")
 
@@ -12,6 +16,10 @@ else()
         message(FATAL_ERROR "Failed to find a Bun executable")
     endif()
 endif()
+
+################################################################################
+# Bun Utility Functions: Define functions for running Bun commands
+################################################################################
 
 function(bun_run_command cmd working_dir)
   message(STATUS "Running command: ${BUN_EXECUTABLE} ${cmd} at ${working_dir}")

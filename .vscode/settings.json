@@ -1,5 +1,4 @@
 {
-  "clang-format.executable": "clang-format-17",
-  "clangd.path": "clangd-17",
-  "lldb-dap.executable-path": "/bin/lldb-vscode-17"
+  "clangd.path": "clangd-18",
+  "lldb-dap.executable-path": "/bin/lldb-dap-18"
 }

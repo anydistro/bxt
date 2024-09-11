@@ -69,9 +69,11 @@ toml::table setup_toml_configuration(std::filesystem::path const& config_path) {
 void setup_di_container(kgr::container& container) {
     using namespace bxt;
 
-    container.emplace<di::Utilities::IOScheduler>(coro::io_scheduler::options {
+    auto scheduler = coro::io_scheduler::make_shared({
         .thread_strategy = coro::io_scheduler::thread_strategy_t::manual,
     });
+
+    container.emplace<di::Utilities::IOScheduler>(scheduler);
 
     container.service<di::Utilities::EventBus>();
 
@@ -252,6 +254,7 @@ int main() {
     auto& drogon_app = drogon::app()
                            .setDocumentRoot("./web/")
                            .registerPreRoutingAdvice(serveFrontendAdvice)
+                           .enableCompressedRequest()
                            .addListener("0.0.0.0", 8080)
                            .setUploadPath("/tmp/bxt/")
                            .setClientMaxBodySize(256 * 1024 * 1024)
