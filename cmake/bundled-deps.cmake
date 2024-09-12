@@ -14,12 +14,17 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 
+# Related PR: https://github.com/gelldur/EventBus/pull/55
+set(eventbus_patch git apply ${CMAKE_CURRENT_LIST_DIR}/patches/eventbus.patch)
+
 FetchContent_Declare(
     event-bus
     GIT_REPOSITORY https://github.com/gelldur/EventBus.git
     GIT_TAG        v3.1.2
     EXCLUDE_FROM_ALL
     GIT_PROGRESS TRUE
+    PATCH_COMMAND ${eventbus_patch}
+    UPDATE_DISCONNECTED 1
     SOURCE_SUBDIR non_existent_subdir # Prevent FetchContent_MakeAvailable() from calling add_subdirectory()
                                       # https://discourse.cmake.org/t/fetchcontent-a-directory-but-add-a-subdirectory/8603/15
 )

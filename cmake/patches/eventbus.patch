@@ -1,0 +1,12 @@
+diff --git a/lib/src/dexode/eventbus/stream/ProtectedEventStream.hpp b/lib/src/dexode/eventbus/stream/ProtectedEventStream.hpp
+index b6c0eda..21c10d9 100644
+--- a/lib/src/dexode/eventbus/stream/ProtectedEventStream.hpp
++++ b/lib/src/dexode/eventbus/stream/ProtectedEventStream.hpp
+@@ -4,6 +4,7 @@
+ #include <cassert>
+ #include <functional>
+ #include <iterator>
++#include <mutex>
+ #include <shared_mutex>
+ #include <vector>
+ 
