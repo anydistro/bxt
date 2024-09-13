@@ -14,7 +14,7 @@ SPDX-License-Identifier: MIT
 
 ## Dev Setup
 ### Prerequisits
-- Docker or Podman (not tested)
+- Docker with Buildx or Podman (not tested)
 - For VS Code the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
 ### VS Code

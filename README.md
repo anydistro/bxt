@@ -19,7 +19,7 @@ This repository contains following projects:
 - **daemon**: a server side backend application that handles all the repository work aspects.
 - **frontend**: a client web application allowing users to interact with the server in a convenient manner.
 
-### Features:
+## Features
 
 - **Clear Structure**: Box consists of sections, a branch/repository/architecture triplet (e.g., stable/core/x86_64) allowing straightforward navigation in a file manager-like UI;
 - **Simple Package Management**: packages can be added, removed and updated using a plain drag-and-drop;
@@ -28,9 +28,9 @@ This repository contains following projects:
 - **User Management**: bxt is made to have a hierarchical multi-user system with per-user granular permission control;
 - **Candidates System**: the package's source (either sync or manual/automatic push) preference is fully configurable;
 
-### Setup:
+## Setup
 
-To build and run this application you can use Docker
+To build and run this application you can use Docker (with Buildx):
 
 ```bash
 # copy example configs
