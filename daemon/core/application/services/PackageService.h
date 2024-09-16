@@ -45,6 +45,10 @@ public:
 
         std::vector<TransferAction> to_move;
         std::vector<TransferAction> to_copy;
+
+        bool empty() const {
+            return to_add.empty() && to_delete.empty() && to_move.empty() && to_copy.empty();
+        }
     };
 
     virtual coro::task<Result<void>> commit_transaction(Transaction const transaction) = 0;

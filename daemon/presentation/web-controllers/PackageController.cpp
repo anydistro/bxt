@@ -47,10 +47,16 @@ drogon::Task<HttpResponsePtr> PackageController::sync(drogon::HttpRequestPtr req
 drogon::Task<drogon::HttpResponsePtr>
     PackageController::commit_transaction(drogon::HttpRequestPtr req) {
     MultiPartParser file_upload;
-    file_upload.parse(req);
+    if (file_upload.parse(req) == -1) {
+        co_return drogon_helpers::make_error_response("Failed to parse multipart request");
+    }
 
     auto const files_map = file_upload.getFilesMap();
     auto const params_map = file_upload.getParameters();
+
+    if (files_map.empty() && params_map.empty()) {
+        co_return drogon_helpers::make_error_response("Empty request");
+    }
 
     std::map<int, PackageDTO> packages;
 
@@ -199,6 +205,12 @@ drogon::Task<drogon::HttpResponsePtr>
         }
     }
 #endif
+
+    if (transaction.empty()) {
+        co_return drogon_helpers::make_error_response(
+            "Resulting transaction is empty. Check if you have permissions to commit packages or "
+            "you request is formed correctly");
+    }
 
     auto result = co_await m_package_service.push(
         transaction,
