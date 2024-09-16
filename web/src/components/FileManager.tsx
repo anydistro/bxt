@@ -16,7 +16,7 @@ import {
     ChonkyActions,
     ChonkyFileActionData
 } from "chonky";
-import { Button, Loading } from "react-daisyui";
+import { Button, Card, Loading, Progress } from "react-daisyui";
 import Dropzone from "react-dropzone-esm";
 import { usePushCommitsHandler, useSections } from "../hooks/BxtHooks";
 import { usePackageDropHandler } from "../hooks/DragNDropHooks";
@@ -47,6 +47,7 @@ import {
 } from "../fmActions/PackageActions";
 import { createCommit, mergeCommits } from "../utils/CommitUtils";
 import { useFilePicker } from "use-file-picker";
+import { debounce } from "lodash";
 
 export type FileManagerProps = {
     path: string[];
@@ -317,10 +318,19 @@ export default function FileManager(props: FileManagerProps) {
                 )}
 
                 {progress && (
-                    <Button disabled={true} color="accent">
-                        <Loading />
-                        Upload in progress...
-                    </Button>
+                    <Card bordered={false} className="h-[3rem]">
+                        <Progress
+                            className="w-full h-full"
+                            value={progress}
+                            max={1.0}
+                            color="primary"
+                        />
+                        <p className="absolute h-full w-full flex items-center justify-center">
+                            {progress === 1
+                                ? "Finishing..."
+                                : `Uploading${progress ? ` ${Math.floor(progress! * 100)}%` : ""}...`}
+                        </p>
+                    </Card>
                 )}
             </div>
         </CommitDrawer>
