@@ -216,6 +216,12 @@ export const usePushCommitsHandler = (
             return;
         }
         try {
+            // We can't allow requests without a valid token since the backend
+            // processes all files before responding. An invalid token would
+            // cause a full package upload resulting in an error and requiring
+            // the entire process to be repeated.
+            await axios.get("/api/auth/refresh");
+
             const result = await axios.post(`/api/packages/commit`, form, {
                 onUploadProgress: (p) => {
                     const progress = p.loaded / (p.total || 1);
