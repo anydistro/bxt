@@ -7,12 +7,13 @@
 
 #include "Token.h"
 
+#include <chrono>
 #include <fmt/format.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
 namespace bxt::Presentation {
 
-constexpr auto AccessTokenExpiration = std::chrono::minutes {15};
+constexpr auto AccessTokenExpiration = std::chrono::hours {2};
 constexpr auto RefreshTokenExpiration = std::chrono::weeks {2};
 
 std::expected<Token, std::string> bxt::Presentation::Token::verify_jwt(std::string const& jwt,
