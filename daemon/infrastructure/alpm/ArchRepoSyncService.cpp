@@ -203,7 +203,7 @@ std::optional<ArchRepoSyncService::PackageInfo> parse_descfile(auto& entry) {
         return {};
     }
 
-    Utilities::AlpmDb::Desc desc(reinterpret_cast<char*>(contents->data()));
+    Utilities::AlpmDb::Desc desc({contents->begin(), contents->end()});
 
     auto const filename = desc.get("FILENAME");
     if (!filename.has_value()) {

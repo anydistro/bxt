@@ -12,8 +12,11 @@
 
 namespace bxt::Utilities {
 
+// For buffer size calculation details see https://docs.openssl.org/master/man3/EVP_EncodeInit
+
 inline std::string b64_encode(std::string const& input) {
-    std::vector<unsigned char> output((input.size() + 2) / 3 * 4);
+    size_t output_size = ((input.size() + 2) / 3) * 4 + 1;
+    std::vector<unsigned char> output(output_size);
     int encoded_length =
         EVP_EncodeBlock(output.data(), reinterpret_cast<unsigned char const*>(input.data()),
                         static_cast<int>(input.size()));
@@ -21,7 +24,8 @@ inline std::string b64_encode(std::string const& input) {
 }
 
 inline std::string b64_decode(std::string_view input) {
-    std::vector<unsigned char> output((input.size() + 3) / 4 * 3);
+    size_t output_size = 3 * input.size() / 4 + 1;
+    std::vector<unsigned char> output(output_size);
     int decoded_length =
         EVP_DecodeBlock(output.data(), reinterpret_cast<unsigned char const*>(input.data()),
                         static_cast<int>(input.size()));
