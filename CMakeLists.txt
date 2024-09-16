@@ -14,6 +14,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 set(FETCHCONTENT_QUIET FALSE)
 
+option(BXT_EXPERIMENTAL_COPY_MOVE "Enable experimental copy/move operations" OFF)
+
 ################################################################################
 # Dependencies: Fetch and configure external libraries not available in Conan
 ################################################################################

@@ -151,6 +151,7 @@ drogon::Task<drogon::HttpResponsePtr>
         }
     }
 
+#ifdef BXT_EXPERIMENTAL_COPY_MOVE
     auto to_move_it = params_map.find("to_move");
     if (to_move_it != params_map.end()) {
         auto to_move = rfl::json::read<std::vector<PackageService::Transaction::TransferAction>>(
@@ -197,6 +198,7 @@ drogon::Task<drogon::HttpResponsePtr>
             transaction.to_copy.emplace_back(action);
         }
     }
+#endif
 
     auto result = co_await m_package_service.push(
         transaction,
