@@ -1,0 +1,26 @@
+name: Run CTest
+on: workflow_call
+
+jobs:
+  run-ctest:
+    name: Run CTest
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Docker image from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bxt-development-image
+          path: distfiles
+      - name: Load Docker image
+        run: docker load -i distfiles/bxt-development.tar
+      - uses: addnab/docker-run-action@v3
+        with:
+          image: anydistro/bxt-development:latest
+          options: -v ${{ github.workspace }}:/src
+          run: |
+            cmake -S /src --preset release
+            cmake --build /src/build/release
+            cd /src/build/release
+            ctest --output-on-failure

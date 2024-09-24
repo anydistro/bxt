@@ -52,6 +52,7 @@ public:
     std::string string() const {
         return fmt::format("{}/{}/{}", branch(), repository(), architecture());
     }
+    auto operator<=>(Section const& other) const = default;
 
 private:
     Name m_branch;

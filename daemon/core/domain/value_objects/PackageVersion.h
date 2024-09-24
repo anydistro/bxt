@@ -44,6 +44,10 @@ struct PackageVersion {
         return compare(*this, rh);
     };
 
+    auto operator==(PackageVersion const& rh) const {
+        return compare(*this, rh) == 0;
+    }
+
     static ParseResult from_string(std::string_view str);
     std::string string() const;
 

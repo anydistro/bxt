@@ -30,6 +30,10 @@ jobs:
     uses: ./.github/workflows/analysis.yml
     needs: dev-build
     secrets: inherit
+  test:
+    uses: ./.github/workflows/test.yml
+    needs: dev-build
+    secrets: inherit
   deploy:
     uses: ./.github/workflows/deploy.yml
     needs: prod-build

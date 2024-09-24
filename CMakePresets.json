@@ -12,7 +12,9 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "/cmake-conan/conan_provider.cmake"
+        "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "/cmake-conan/conan_provider.cmake",
+        "CONAN_INSTALL_ARGS": "--build=missing;-o testing=True",
+        "BUILD_TESTING": "ON"
       }
     },
     {
@@ -27,7 +29,8 @@
       "name": "clang-tidy",
       "inherits": "debug",
       "cacheVariables": {
-        "ENABLE_CLANG_TIDY": "ON"
+        "ENABLE_CLANG_TIDY": "ON",
+        "BUILD_TESTING": "ON"
       }
     },
     {

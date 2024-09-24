@@ -26,6 +26,8 @@ public:
         return previous_package_log_entry;
     }
 
+    bool operator==(PackageUpdateLogEntry const& other) const = default;
+
 private:
     PackageLogEntry package_log_entry;
     PackageLogEntry previous_package_log_entry;

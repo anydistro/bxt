@@ -6,6 +6,8 @@
  */
 #include "PermissionMatcher.h"
 
+#include <algorithm>
+
 namespace bxt::Core::Domain::PermissionMatcher {
 
 bool match(Permission const& lh, Permission const& rh) {
@@ -21,6 +23,11 @@ bool match(Permission const& lh, Permission const& rh) {
         if (ltags[i] != rtags[i]) {
             return false;
         }
+    }
+
+    if (ltags.size() != rtags.size() && !std::ranges::contains(ltags, "*")
+        && !std::ranges::contains(rtags, "*")) {
+        return false;
     }
 
     return true;

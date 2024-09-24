@@ -9,7 +9,12 @@ project(bxtd LANGUAGES CXX)
 ################################################################################
 add_subdirectory(swagger)
 
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
+list(FILTER SOURCES EXCLUDE REGEX "tests/.*")
 
 ################################################################################
 # Executable Configuration
@@ -41,4 +46,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     reflectcpp
 )
 
-add_dependencies(${PROJECT_NAME} deploy_swagger)
+add_dependencies(${PROJECT_NAME} deploy_swagger daemon_tests)

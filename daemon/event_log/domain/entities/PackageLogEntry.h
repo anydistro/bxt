@@ -46,6 +46,8 @@ public:
         return m_version;
     }
 
+    bool operator==(PackageLogEntry const& other) const = default;
+
 private:
     LogEntryType m_type;
     Core::Domain::Section m_section;

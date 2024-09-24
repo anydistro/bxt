@@ -5,7 +5,13 @@ import os
 class BxtConanFile(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps"
-
+    options = {
+        "testing": [True, False],
+    }
+    default_options = {
+        "testing": False,
+    }
+    
     def requirements(self):
         # to link to them you need to change cmake/deps.cmake
         self.requires("openssl/3.3.1")
@@ -27,6 +33,10 @@ class BxtConanFile(ConanFile):
         self.requires("cereal/1.3.2")
         self.requires("libcoro/0.12.1")
         self.requires("scope-lite/0.2.0")
+        
+        if self.options.testing:
+            print("Testing enabled")
+            self.requires("catch2/3.7.0")
 
     def configure(self):
         self.options["boost/*"].shared = True
