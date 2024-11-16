@@ -14,6 +14,7 @@
 #include "utilities/Error.h"
 
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <cctype>
 #include <filesystem>
@@ -48,16 +49,18 @@ bool check_valid_name(std::string_view name) {
 namespace bxt::Core::Domain {
 
 std::optional<std::string> Package::parse_file_name(std::string const& filename) {
+    auto pkg_name = filename.substr(0, filename.find(".pkg.tar"));
+
     std::vector<std::string> substrings;
-    boost::split(substrings, filename, boost::is_any_of("-"));
+    boost::split(substrings, pkg_name, boost::is_any_of("-"));
 
     if (substrings.size() < 4) {
         return {};
     }
 
-    auto version_pos = filename.find(substrings[substrings.size() - 3]);
-    std::string name = filename.substr(0, version_pos - 1);
+    auto name_parts = std::vector<std::string>(substrings.begin(), substrings.end() - 3);
 
+    std::string name = boost::join(name_parts, "-");
     if (!check_valid_name(name)) {
         return {};
     }

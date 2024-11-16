@@ -17,6 +17,10 @@ TEST_CASE("Package", "[core][domain][entities]") {
         REQUIRE(Package::parse_file_name("package-1.0.0-1-any.pkg.tar.zst").value() == "package");
         REQUIRE(Package::parse_file_name("lib32-package-1.0.0-1-x86_64.pkg.tar.zst").value()
                 == "lib32-package");
+        REQUIRE(Package::parse_file_name("autoconf2.13-2.13-8-any.pkg.tar.zst").value()
+                == "autoconf2.13");
+        REQUIRE(Package::parse_file_name("lib32-libudev0-shim-2-1-x86_64.pkg.tar.zst").value()
+                == "lib32-libudev0-shim");
 
         // Invalid cases
         REQUIRE(Package::parse_file_name("package.pkg.tar.zst") == std::nullopt);
