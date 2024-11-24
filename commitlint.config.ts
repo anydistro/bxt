@@ -14,7 +14,7 @@ module.exports = {
       'always',
       [
         'daemon',
-        'dbcli',
+        'db-cli',
         'web',
       ]
     ],

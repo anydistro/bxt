@@ -10,7 +10,7 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(deps INTERFACE openssl::openssl)
 
 find_package(Boost REQUIRED)
-target_link_libraries(deps INTERFACE Boost::boost)
+target_link_libraries(deps INTERFACE boost::boost)
 
 find_package(date REQUIRED)
 target_link_libraries(deps INTERFACE date::date)

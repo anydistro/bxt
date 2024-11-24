@@ -48,4 +48,4 @@ endif()
 ################################################################################
 add_subdirectory(daemon)
 add_subdirectory(web)
-add_subdirectory(dbcli)
+add_subdirectory(db-cli)
