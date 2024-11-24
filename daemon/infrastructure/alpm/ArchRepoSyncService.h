@@ -86,7 +86,7 @@ private:
 
     ArchRepoOptions m_options;
     std::shared_ptr<coro::io_scheduler> tp =
-        coro::io_scheduler::make_shared({.pool = {.thread_count = 1}});
+        coro::io_scheduler::make_shared({.pool = {.thread_count = 4}});
 };
 
 } // namespace bxt::Infrastructure

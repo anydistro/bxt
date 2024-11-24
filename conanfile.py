@@ -42,6 +42,15 @@ class BxtConanFile(ConanFile):
         self.options["boost/*"].shared = True
         self.options["c-ares/*"].shared = True
 
+        # libarchive needs to be linked against all these compression libraries as
+        # otherwise will be broken for parallel (de)compression
+        self.options["libarchive/*"].with_zstd = True   # For .zst (current default)
+        self.options["libarchive/*"].with_lzma = True   # For .xz
+        self.options["libarchive/*"].with_bz2 = True    # For .bz2
+        self.options["libarchive/*"].with_zlib = True   # For .gz
+        self.options["libarchive/*"].with_lz4 = True    # For .lz4
+        self.options["libarchive/*"].with_lzo = True    # For .lzo
+
     def generate(self):
          for dep in self.dependencies.values():
             if not dep.cpp_info.libdirs:
