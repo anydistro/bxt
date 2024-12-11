@@ -26,6 +26,7 @@
 #include "utilities/configuration/Configuration.h"
 #include "utilities/Error.h"
 #include "utilities/errors/DatabaseError.h"
+#include "utilities/MemoryLiterals.h"
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup.hpp>
@@ -38,6 +39,17 @@
 #include <system_error>
 #include <toml++/toml.h>
 #include <vector>
+
+namespace {
+using namespace bxt::MemoryLiterals;
+
+constexpr auto LmdbMaxDbs = 128;
+constexpr auto LmdbMapSize = 50_GiB;
+constexpr auto DrogonPort = 8080;
+constexpr auto DrogonHost = "0.0.0.0";
+constexpr auto DrogonMaxBodySize = 20_GiB;
+constexpr auto DrogonMaxMemoryBodySize = 5_MiB;
+} // namespace
 
 void setup_logger() {
     using namespace boost::log;
@@ -108,8 +120,8 @@ void setup_di_container(kgr::container& container) {
 
     container.invoke<di::Utilities::LMDB::Environment, di::Utilities::LMDB::LMDBOptions>(
         [](auto lmdbenv, auto& options) {
-            lmdbenv->env().set_mapsize(50UL * 1024UL * 1024UL * 1024UL);
-            lmdbenv->env().set_max_dbs(128);
+            lmdbenv->env().set_mapsize(LmdbMapSize);
+            lmdbenv->env().set_max_dbs(LmdbMaxDbs);
 
             std::error_code ec;
             if (std::filesystem::create_directories(options.lmdb_path, ec); ec.value()) {
@@ -255,15 +267,14 @@ int main() {
                            .setDocumentRoot("./web/")
                            .registerPreRoutingAdvice(serveFrontendAdvice)
                            .enableCompressedRequest()
-                           .addListener("0.0.0.0", 8080)
+                           .addListener(DrogonHost, DrogonPort)
                            .setUploadPath("/tmp/bxt/")
-                           .setClientMaxBodySize(256 * 1024 * 1024)
-                           .setClientMaxMemoryBodySize(1024 * 1024);
+                           .setClientMaxBodySize(DrogonMaxBodySize)
+                           .setClientMaxMemoryBodySize(DrogonMaxMemoryBodySize);
 
     setup_scheduler(drogon_app, container.service<bxt::di::Utilities::IOScheduler>(),
                     container.service<bxt::di::Utilities::EventBus>());
     setup_controllers(drogon_app, container);
-
     drogon_app.run();
 
     return 0;
