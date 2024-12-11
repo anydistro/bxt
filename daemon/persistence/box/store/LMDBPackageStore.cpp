@@ -66,7 +66,8 @@ coro::task<std::expected<void, DatabaseError>>
             std::move(result.error()), DatabaseError::ErrorType::InvalidArgument);
     }
 
-    lmdb_uow->hook([this, package = std::move(package)] { m_pool.move_to(std::move(package)); });
+    lmdb_uow->pre_hook(
+        [this, package = std::move(package)] { m_pool.move_to(std::move(package)); });
 
     co_return {};
 }
@@ -99,7 +100,7 @@ coro::task<std::expected<void, DatabaseError>>
         co_return bxt::make_error_with_source<DatabaseError>(
             std::move(result.error()), DatabaseError::ErrorType::InvalidArgument);
     }
-    lmdb_uow->hook([this, package_to_delete = std::move(*package_to_delete)] {
+    lmdb_uow->pre_hook([this, package_to_delete = std::move(*package_to_delete)] {
         return m_pool.remove(std::move(package_to_delete)).has_value();
     });
 
@@ -147,7 +148,7 @@ coro::task<std::expected<void, DatabaseError>>
             std::move(result.error()), DatabaseError::ErrorType::InvalidArgument);
     }
 
-    lmdb_uow->hook([this, package, moved_package_path, existing_package] {
+    lmdb_uow->pre_hook([this, package, moved_package_path, existing_package] {
         auto tmp_package = package;
         for (auto const& desc : moved_package_path->descriptions) {
             if (package.descriptions.contains(desc.first)

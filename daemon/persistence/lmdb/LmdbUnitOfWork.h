@@ -24,17 +24,24 @@ public:
     virtual ~LmdbUnitOfWork() = default;
 
     coro::task<Result<void>> commit_async() override {
-        for (auto const& [name, hook] : m_hooks) {
+        for (auto const& [name, hook] : m_pre_hooks) {
             hook();
         }
-        m_hooks.clear();
+        m_pre_hooks.clear();
 
         m_txn->value.commit();
+        m_txn->lock.unlock();
+
+        for (auto const& [name, hook] : m_post_hooks) {
+            hook();
+        }
+
+        m_post_hooks.clear();
         co_return {};
     }
 
     coro::task<Result<void>> rollback_async() override {
-        m_hooks = {};
+        m_pre_hooks = {};
 
         m_txn->value.abort();
         co_return {};
@@ -50,11 +57,19 @@ public:
         co_return {};
     }
 
-    void hook(std::function<void()>&& hook, std::string const& name = "") override {
+    void pre_hook(std::function<void()>&& hook, std::string const& name = "") override {
         if (name.empty()) {
-            m_hooks[m_hooks.size()] = std::move(hook);
+            m_pre_hooks[m_pre_hooks.size()] = std::move(hook);
         } else {
-            m_hooks[name] = std::move(hook);
+            m_pre_hooks[name] = std::move(hook);
+        }
+    }
+
+    void post_hook(std::function<void()>&& hook, std::string const& name = "") override {
+        if (name.empty()) {
+            m_post_hooks[m_post_hooks.size()] = std::move(hook);
+        } else {
+            m_post_hooks[name] = std::move(hook);
         }
     }
 
@@ -65,7 +80,8 @@ public:
 private:
     using HookKeyType = std::variant<size_t, std::string>;
 
-    std::map<HookKeyType, std::function<void()>> m_hooks;
+    std::map<HookKeyType, std::function<void()>> m_pre_hooks;
+    std::map<HookKeyType, std::function<void()>> m_post_hooks;
     std::shared_ptr<Utilities::LMDB::Environment> m_env;
     std::unique_ptr<Utilities::locked<lmdb::txn>> m_txn;
 };
