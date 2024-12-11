@@ -59,8 +59,15 @@ export const CommitModal = forwardRef<HTMLDialogElement, CommitModalProps>(
         const { toAdd, toDelete, toMove, toCopy } = commit || {};
 
         const commitCallback = useCallback(() => {
-            if (props.onCommitSubmit && commit && section)
+            if (props.onCommitSubmit && commit && section) {
+                if (toAdd) {
+                    for (const [_, pkg] of toAdd) {
+                        pkg.section = section;
+                    }
+                }
+
                 props.onCommitSubmit(section, commit);
+            }
         }, [commit, props, section]);
 
         const packageDropHandler = usePackageDropHandler(section, (_, toAdd) =>

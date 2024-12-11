@@ -48,14 +48,8 @@ void BoxRepository::make_writeback_hook(Section const section,
                                         std::shared_ptr<UnitOfWorkBase> uow) {
     m_exporter.add_dirty_sections({SectionDTOMapper::to_dto(section)});
 
-    uow->hook(
-        [this, section = SectionDTOMapper::to_dto(section)] {
-            coro::sync_wait(m_scheduler.schedule([](auto self, auto section) -> coro::task<void> {
-                co_await self->m_exporter.export_to_disk();
-                co_return;
-            }(this, section)));
-        },
-        "Box::Exporter::WriteBack");
+    uow->post_hook([this]() { coro::sync_wait(m_exporter.export_to_disk()); },
+                   "Box::Exporter::WriteBack");
 }
 
 coro::task<BoxRepository::TResult>

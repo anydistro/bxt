@@ -278,7 +278,7 @@ drogon::Task<drogon::HttpResponsePtr>
 }
 
 drogon::Task<drogon::HttpResponsePtr> PackageController::snap(drogon::HttpRequestPtr req) {
-    auto const snap_request = rfl::json::read<SnapRequest>(std::string(req->getBody()));
+    auto const snap_request = drogon_helpers::get_request_json<SnapRequest>(req);
 
     if (snap_request.error()) {
         co_return drogon_helpers::make_error_response("Invalid arguments");
@@ -315,7 +315,7 @@ drogon::Task<drogon::HttpResponsePtr> PackageController::snap(drogon::HttpReques
 }
 
 drogon::Task<drogon::HttpResponsePtr> PackageController::snap_branch(drogon::HttpRequestPtr req) {
-    auto const snap_request = rfl::json::read<SnapBranchRequest>(std::string(req->getBody()));
+    auto const snap_request = drogon_helpers::get_request_json<SnapBranchRequest>(req);
 
     if (snap_request.error()) {
         co_return drogon_helpers::make_error_response("Invalid arguments");
