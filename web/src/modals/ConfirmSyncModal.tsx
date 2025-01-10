@@ -8,6 +8,7 @@ import { forwardRef } from "react";
 import { Button, Modal } from "react-daisyui";
 
 export interface IConfirmSyncModal {
+    architecture: string;
     onConfirm?: () => void;
     onCancel?: () => void;
 }
@@ -26,7 +27,7 @@ export const ConfirmSyncModal = forwardRef<
     ) => {
         return (
             <Modal {...props} backdrop={true} ref={ref}>
-                <Modal.Header>Warning</Modal.Header>
+                <Modal.Header>Sync {props.architecture} - Warning</Modal.Header>
                 <Modal.Body>
                     Performing a synchronization from the remote repository is a
                     lengthy operation and may disrupt dependencies of overlay
@@ -41,7 +42,7 @@ export const ConfirmSyncModal = forwardRef<
                         }}
                         color="ghost"
                     >
-                        Do the sync
+                        Do the sync of {props.architecture}
                     </Button>
 
                     <Button

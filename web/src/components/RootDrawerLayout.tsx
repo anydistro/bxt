@@ -23,8 +23,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import useLocalStorage from "../hooks/useLocalStorage";
 
-const triggerSync = async () => {
-    await axios.post("/api/packages/sync");
+const triggerSync = async (architecture: string) => {
+    await axios.post("/api/packages/sync", {
+        architecture
+    });
 };
 
 export default function RootDrawerLayout() {
@@ -38,9 +40,15 @@ export default function RootDrawerLayout() {
 
     const syncInProgress = useSyncMessage()?.started;
 
-    const handleShow = useCallback(() => {
-        modalRef.current?.showModal();
-    }, [modalRef]);
+    const [syncArchitecture, setSyncArchitecture] = useState("x86_64");
+
+    const handleShow = useCallback(
+        (syncArchitecture: string) => {
+            setSyncArchitecture(syncArchitecture);
+            modalRef.current?.showModal();
+        },
+        [modalRef]
+    );
 
     const routes = useMemo(
         () => [
@@ -91,6 +99,7 @@ export default function RootDrawerLayout() {
                     ))}
 
                     <div className="grow"></div>
+                    <div className="font-bold text-center">Sync</div>
 
                     {syncInProgress ? (
                         <div className="font-bold text-center">
@@ -98,10 +107,24 @@ export default function RootDrawerLayout() {
                             <Progress />
                         </div>
                     ) : (
-                        <Button size="sm" onClick={handleShow} color="accent">
-                            <FontAwesomeIcon icon={faCircleDown} />
-                            Sync
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                onClick={() => handleShow("aarch64")}
+                                color="accent"
+                            >
+                                <FontAwesomeIcon icon={faCircleDown} />
+                                aarch64
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={() => handleShow("x86_64")}
+                                color="accent"
+                            >
+                                <FontAwesomeIcon icon={faCircleDown} />
+                                x86_64
+                            </Button>
+                        </div>
                     )}
 
                     <div className="h-5 flex flex-col place-content-center">
@@ -126,9 +149,10 @@ export default function RootDrawerLayout() {
             <ConfirmSyncModal
                 onCancel={() => modalRef.current?.close()}
                 onConfirm={() => {
-                    triggerSync();
+                    triggerSync(syncArchitecture);
                     modalRef.current?.close();
                 }}
+                architecture={syncArchitecture}
                 ref={modalRef}
             />
             <Button
