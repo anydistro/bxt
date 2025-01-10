@@ -215,6 +215,12 @@ paths:
     post:
       summary: Synchronize packages
       operationId: sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
       responses:
         "200":
           description: Packages synchronized successfully
@@ -565,6 +571,14 @@ components:
 
     SectionResponse:
       $ref: "#/components/schemas/PackageSection"
+
+    SyncRequest:
+      type: object
+      properties:
+        architecture:
+          type: string
+      required:
+        - architecture
 
     SnapRequest:
       type: object

@@ -40,7 +40,8 @@ public:
 
     virtual coro::task<Result<void>> sync(PackageSectionDTO const section,
                                           RequestContext const context) = 0;
-    virtual coro::task<Result<void>> sync_all(RequestContext const context) = 0;
+    virtual coro::task<Result<void>> sync_all(RequestContext const context,
+                                              std::string const& architecture) = 0;
 };
 
 } // namespace bxt::Core::Application

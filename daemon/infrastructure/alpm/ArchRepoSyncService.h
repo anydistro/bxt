@@ -58,7 +58,8 @@ public:
 
     coro::task<SyncService::Result<void>> sync(PackageSectionDTO const section,
                                                RequestContext const context) override;
-    coro::task<SyncService::Result<void>> sync_all(RequestContext const context) override;
+    coro::task<SyncService::Result<void>> sync_all(RequestContext const context,
+                                                   std::string const& architecture) override;
 
 protected:
     coro::task<SyncService::Result<std::vector<Package>>>

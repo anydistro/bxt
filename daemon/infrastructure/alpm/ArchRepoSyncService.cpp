@@ -65,11 +65,14 @@ coro::task<SyncService::Result<void>> ArchRepoSyncService::sync(PackageSectionDT
     co_return {};
 }
 
-coro::task<SyncService::Result<void>> ArchRepoSyncService::sync_all(RequestContext const context) {
+coro::task<SyncService::Result<void>>
+    ArchRepoSyncService::sync_all(RequestContext const context, std::string const& architecture) {
     using namespace Core::Application::Events;
 
     auto tasks =
-        m_options.sources
+        m_options.sources | std::views::filter([&](auto const& src) {
+            return src.first.architecture == architecture;
+        })
         | std::views::transform([this](auto const& src) { return sync_section(src.first); })
         | std::ranges::to<std::vector>();
 

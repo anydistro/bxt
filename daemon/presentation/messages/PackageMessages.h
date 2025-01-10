@@ -14,6 +14,10 @@
 
 namespace bxt::Presentation {
 
+struct SyncRequest {
+    std::string architecture;
+};
+
 struct SnapRequest {
     SectionRequest source;
     SectionRequest target;
