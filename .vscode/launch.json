@@ -10,7 +10,8 @@
       "cwd": "${command:cmake.getLaunchTargetDirectory}",
       "env": [
         "LD_LIBRARY_PATH=./libs/",
-        "PATH=${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
+        "PATH=${env:PATH}:${command:cmake.getLaunchTargetDirectory}",
+        "LLVM_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-18"
       ],
       "disableASLR": false,
       "initCommands": ["settings set target.disable-aslr false"]

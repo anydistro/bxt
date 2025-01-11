@@ -34,6 +34,7 @@ class BxtConanFile(ConanFile):
         self.requires("libcoro/0.12.1")
         self.requires("scope-lite/0.2.0")
         self.requires("cli11/2.4.2")
+        self.requires("cpptrace/0.7.3")
         
         if self.options.testing:
             print("Testing enabled")
