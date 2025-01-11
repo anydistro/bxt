@@ -14,6 +14,7 @@
 #include "drogon/utils/FunctionTraits.h"
 #include "utilities/drogon/Macro.h"
 
+#include <drogon/CacheMap.h>
 #include <drogon/drogon.h>
 #include <kangaru/autowire.hpp>
 #include <string>
@@ -45,6 +46,22 @@ public:
                           "/api/packages/snap/branch",
                           drogon::Post);
 
+    BXT_JWT_ADD_METHOD_TO(PackageController::commit_start,
+                          "/api/packages/commit/start",
+                          drogon::Post);
+
+    BXT_JWT_ADD_METHOD_TO(PackageController::commit_chunk,
+                          "/api/packages/commit/{1}/chunk",
+                          drogon::Post);
+
+    BXT_JWT_ADD_METHOD_TO(PackageController::commit_end,
+                          "/api/packages/commit/{1}/end",
+                          drogon::Post);
+
+    BXT_JWT_ADD_METHOD_TO(PackageController::commit_status,
+                          "/api/packages/commit/{1}/status",
+                          drogon::Get);
+
     // Methods for advanced operations. These are not exposed to the frontend.
     BXT_JWT_ADD_METHOD_TO(PackageController::snap, "/api/advanced/packages/snap", drogon::Post);
     METHOD_LIST_END
@@ -61,6 +78,17 @@ public:
     drogon::Task<drogon::HttpResponsePtr> snap(drogon::HttpRequestPtr req);
 
     drogon::Task<drogon::HttpResponsePtr> snap_branch(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr> commit_start(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr> commit_chunk(drogon::HttpRequestPtr req,
+                                                       std::string const& id);
+
+    drogon::Task<drogon::HttpResponsePtr> commit_end(drogon::HttpRequestPtr req,
+                                                     std::string const& id);
+
+    drogon::Task<drogon::HttpResponsePtr> commit_status(drogon::HttpRequestPtr req,
+                                                        std::string const& id);
 
 private:
     Core::Application::PackageService& m_package_service;

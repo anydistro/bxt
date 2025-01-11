@@ -9,6 +9,7 @@
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/PackageService.h"
+#include "core/application/services/SyncService.h"
 #include "core/domain/enums/PoolLocation.h"
 #include "presentation/messages/PackageMessages.h"
 #include "presentation/Names.h"
@@ -22,6 +23,7 @@
 #include <drogon/HttpResponse.h>
 #include <drogon/MultiPart.h>
 #include <drogon/utils/FunctionTraits.h>
+#include <fmt/format.h>
 #include <json/value.h>
 #include <map>
 #include <ranges>
@@ -36,9 +38,22 @@ using namespace drogon;
 
 drogon::Task<HttpResponsePtr> PackageController::sync(drogon::HttpRequestPtr req) {
     BXT_JWT_CHECK_PERMISSIONS("packages.sync", req)
-    drogon::async_run([this, req]() -> drogon::Task<void> {
+
+    auto const request_json = drogon_helpers::get_request_json<SyncRequest>(req);
+
+    if (!request_json) {
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Failed to parse request: {}", request_json.error()->what()));
+    }
+    auto const architecture = request_json.value().architecture;
+    if (!(architecture == "aarch64" || architecture == "x86_64")) {
+        co_return drogon_helpers::make_error_response(
+            fmt::format("Unsupported architecture: {}", architecture));
+    }
+    drogon::async_run([this, req, architecture]() -> drogon::Task<void> {
         co_await m_sync_service.sync_all({.user_name = req->attributes()->get<std::string>(
-                                              fmt::format("jwt_{}", Names::UserName))});
+                                              fmt::format("jwt_{}", Names::UserName))},
+                                         architecture);
         co_return;
     });
 
@@ -338,6 +353,24 @@ drogon::Task<drogon::HttpResponsePtr> PackageController::snap_branch(drogon::Htt
             fmt::format("Snap section failed: {}", snap_ok.error().what()));
     }
 
+    co_return drogon_helpers::make_ok_response();
+}
+drogon::Task<drogon::HttpResponsePtr> PackageController::commit_start(drogon::HttpRequestPtr req) {
+    co_return drogon_helpers::make_ok_response();
+}
+
+drogon::Task<drogon::HttpResponsePtr> PackageController::commit_chunk(drogon::HttpRequestPtr req,
+                                                                      std::string const& id) {
+    co_return drogon_helpers::make_ok_response();
+}
+
+drogon::Task<drogon::HttpResponsePtr> PackageController::commit_end(drogon::HttpRequestPtr req,
+                                                                    std::string const& id) {
+    co_return drogon_helpers::make_ok_response();
+}
+
+drogon::Task<drogon::HttpResponsePtr> PackageController::commit_status(drogon::HttpRequestPtr req,
+                                                                       std::string const& id) {
     co_return drogon_helpers::make_ok_response();
 }
 } // namespace bxt::Presentation
