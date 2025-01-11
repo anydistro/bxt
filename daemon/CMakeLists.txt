@@ -14,7 +14,7 @@ if(BUILD_TESTING)
 endif()
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
-list(FILTER SOURCES EXCLUDE REGEX "tests/.*")
+list(FILTER SOURCES EXCLUDE REGEX "(tests/.*|signal_tracer\.cpp)")
 
 ################################################################################
 # Executable Configuration
@@ -46,4 +46,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     reflectcpp
 )
 
-add_dependencies(${PROJECT_NAME} deploy_swagger daemon_tests)
+add_executable(signal_tracer ${CMAKE_CURRENT_SOURCE_DIR}/signal_tracer.cpp)
+target_link_libraries(signal_tracer PRIVATE cpptrace::cpptrace)
+
+add_dependencies(${PROJECT_NAME} deploy_swagger daemon_tests signal_tracer)

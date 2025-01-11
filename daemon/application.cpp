@@ -23,6 +23,7 @@
 #include "presentation/cli-controllers/DeploymentOptions.h"
 #include "presentation/JwtOptions.h"
 #include "presentation/web-controllers/SectionController.h"
+#include "sigtrace.h"
 #include "utilities/configuration/Configuration.h"
 #include "utilities/Error.h"
 #include "utilities/errors/DatabaseError.h"
@@ -227,6 +228,9 @@ void setup_defaults(kgr::container& container) {
 }
 
 int main() {
+    register_signal_handler();
+    cpptrace::register_terminate_handler();
+
     setup_logger();
 
     kgr::container container;

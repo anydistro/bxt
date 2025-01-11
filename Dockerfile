@@ -55,6 +55,7 @@ ENV PATH="/root/.bun/bin:/root/.local/bin:${PATH}"
 RUN pipx install conan==2.7.0
 
 RUN conan profile detect --force --name default && \
+    conan remote update conancenter --url https://center2.conan.io && \
     cat <<EOF >> /root/.conan2/profiles/default
 compiler=clang
 compiler.version=18
@@ -120,6 +121,7 @@ rm -rf /var/lib/apt/lists/*
 EOF
 
 COPY --from=production-build /build/bin /app
+COPY --from=production-build /src /src
 
 RUN <<EOF
 mkdir -p /app/persistence/

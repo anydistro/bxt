@@ -62,3 +62,6 @@ target_link_libraries(deps INTERFACE libcoro::libcoro)
 
 find_package(scope-lite REQUIRED)
 target_link_libraries(deps INTERFACE nonstd::scope-lite)
+
+find_package(cpptrace REQUIRED)
+target_link_libraries(deps INTERFACE cpptrace::cpptrace)
