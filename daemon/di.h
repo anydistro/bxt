@@ -8,6 +8,7 @@
 
 #include "core/application/services/AuthService.h"
 #include "core/application/services/CompareService.h"
+#include "core/application/services/MaintenanceService.h"
 #include "core/application/services/PackageService.h"
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/SectionService.h"
@@ -45,6 +46,7 @@
 #include "presentation/web-controllers/AuthController.h"
 #include "presentation/web-controllers/CompareController.h"
 #include "presentation/web-controllers/LogController.h"
+#include "presentation/web-controllers/MaintenanceController.h"
 #include "presentation/web-controllers/PackageController.h"
 #include "presentation/web-controllers/SectionController.h"
 #include "presentation/web-controllers/UserController.h"
@@ -294,6 +296,13 @@ namespace Persistence {
     } // namespace Box
 } // namespace Persistence
 
+namespace Core::Application {
+    struct MaintenanceService
+        : kgr::single_service<bxt::Core::Application::MaintenanceService,
+                              kgr::dependency<di::Persistence::Box::ExporterBase,
+                                              di::Core::Application::SectionService>> {};
+} // namespace Core::Application
+
 namespace Presentation {
 
     struct JwtOptions : kgr::single_service<bxt::Presentation::JwtOptions> {};
@@ -337,6 +346,11 @@ namespace Presentation {
     struct SectionController
         : kgr::shared_service<bxt::Presentation::SectionController,
                               kgr::dependency<di::Core::Application::SectionService,
+                                              di::Core::Application::PermissionService>> {};
+
+    struct MaintenanceController
+        : kgr::shared_service<bxt::Presentation::MaintenanceController,
+                              kgr::dependency<di::Core::Application::MaintenanceService,
                                               di::Core::Application::PermissionService>> {};
 
     struct JwtFilter

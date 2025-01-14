@@ -182,6 +182,7 @@ void setup_controllers(drogon::HttpAppFramework& app, kgr::container& container)
         .registerController(container.service<UserController>())
         .registerController(container.service<LogController>())
         .registerController(container.service<SectionController>())
+        .registerController(container.service<MaintenanceController>())
         .registerController(container.service<bxt::di::Infrastructure::WSController>())
         .registerFilter(container.service<JwtFilter>());
 }
