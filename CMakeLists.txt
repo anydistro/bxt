@@ -46,6 +46,8 @@ endif()
 ################################################################################
 # Project Structure: Add subdirectories for different components
 ################################################################################
-add_subdirectory(daemon)
+# add_subdirectory(daemon)
 add_subdirectory(web)
-add_subdirectory(db-cli)
+# add_subdirectory(db-cli)
+
+add_subdirectory(vertical/src)

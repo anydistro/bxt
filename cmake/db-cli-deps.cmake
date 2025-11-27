@@ -10,7 +10,7 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(db-cli-deps INTERFACE openssl::openssl)
 
 find_package(fmt REQUIRED)
-target_link_libraries(db-cli-deps INTERFACE fmt::fmt)
+target_link_libraries(db-cli-deps INTERFACE fmt::fmt-header-only)
 
 find_package(CLI11 REQUIRED)
 target_link_libraries(db-cli-deps INTERFACE CLI11::CLI11)

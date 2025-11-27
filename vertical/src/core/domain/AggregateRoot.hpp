@@ -1,0 +1,16 @@
+/* === This file is part of bxt ===
+ *
+ *   SPDX-FileCopyrightText: 2025 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ */
+#pragma once
+
+#include <percpptency/core/AggregateRoot.hpp>
+#include <percpptency/core/AggregateReflector.hpp>
+
+namespace bxt::domain {
+
+using percpptency::AggregateRoot;
+
+} // namespace bxt::domain

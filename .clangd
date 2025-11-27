@@ -1,6 +1,14 @@
 CompileFlags:
-  CompilationDatabase: "build/debug"
+  CompilationDatabase: ".vscode/"
   Add:
     - "-std=c++23"
+    - "-Wunused-variable"
+    - "-Wunused-parameter"
+    - "-Wunused-function"
+    - "-Wunused-value"
+    - "-Wunused-result"
+    - "-Wunused-local-typedefs"
+    - "-Wunused-private-field"
+    - "-Wunused-but-set-variable"
   Remove:
     - "-fconcepts"

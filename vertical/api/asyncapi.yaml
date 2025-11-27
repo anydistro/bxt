@@ -1,0 +1,280 @@
+asyncapi: 3.0.0
+info:
+  title: BXT WebSocket API
+  version: 1.0.0
+  description: |
+    WebSocket API for real-time updates in BXT (Box Tool).
+    Provides live notifications for package synchronization progress and other events.
+    
+    **Connection URL**: `ws(s)://host:port/api/ws`
+    
+    **Authentication**: JWT token via cookie (set by `/api/auth` endpoint) or connection string parameter
+    
+    **Use Cases**:
+    - Real-time sync progress monitoring
+    - Package update notifications
+    - Multi-architecture sync coordination
+    
+  contact:
+    name: BXT Team
+    url: https://github.com/LordTermor/bxt
+  license:
+    name: AGPL-3.0-or-later
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+
+servers:
+  production:
+    host: "{host}"
+    pathname: /api/ws
+    protocol: wss
+    description: Production WebSocket server (secure HTTPS/WSS)
+    variables:
+      host:
+        description: The server hostname and port
+        default: localhost:8080
+        examples:
+          - localhost:8080
+          - bxt.example.com
+  development:
+    host: "{host}"
+    pathname: /api/ws
+    protocol: ws
+    description: Development WebSocket server (insecure HTTP/WS)
+    variables:
+      host:
+        description: The server hostname and port
+        default: localhost:8080
+        examples:
+          - localhost:8080
+          - 127.0.0.1:8080
+
+channels:
+  sync:
+    address: /api/ws
+    description: Channel for package synchronization events
+    messages:
+      syncStarted:
+        $ref: "#/components/messages/SyncStarted"
+      syncCompleted:
+        $ref: "#/components/messages/SyncCompleted"
+      syncProgress:
+        $ref: "#/components/messages/SyncProgress"
+
+operations:
+  onSyncEvent:
+    action: receive
+    channel:
+      $ref: "#/channels/sync"
+    summary: Receive synchronization events
+    description: |
+      Client receives real-time updates about package synchronization.
+      Events include sync start/completion and per-package progress updates.
+    messages:
+      - $ref: "#/components/messages/SyncStarted"
+      - $ref: "#/components/messages/SyncCompleted"
+      - $ref: "#/components/messages/SyncProgress"
+
+components:
+  messages:
+    SyncStarted:
+      name: SyncStarted
+      title: Sync Started Event
+      summary: Sent when a synchronization operation begins for an architecture
+      description: |
+        This message is broadcast to all connected clients when a sync operation starts.
+        Only one sync per architecture can be active at a time; starting a new sync 
+        cancels any existing sync for that architecture.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/SyncMessage"
+      examples:
+        - name: x86_64 sync started
+          summary: Example of sync start for x86_64 architecture
+          payload:
+            type: sync
+            when: "2025-11-11T10:30:00.000Z"
+            architecture: x86_64
+            started: true
+        - name: aarch64 sync started
+          summary: Example of sync start for aarch64 architecture
+          payload:
+            type: sync
+            when: "2025-11-11T10:30:00.000Z"
+            architecture: aarch64
+            started: true
+
+    SyncCompleted:
+      name: SyncCompleted
+      title: Sync Completed Event
+      summary: Sent when a synchronization operation finishes (successfully or cancelled)
+      description: |
+        This message is broadcast when a sync completes, either successfully or 
+        when cancelled by a new sync request. Check the architecture to determine
+        which sync completed.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/SyncMessage"
+      examples:
+        - name: x86_64 sync completed
+          summary: Example of sync completion for x86_64 architecture
+          payload:
+            type: sync
+            when: "2025-11-11T10:45:00.000Z"
+            architecture: x86_64
+            started: false
+
+    SyncProgress:
+      name: SyncProgress
+      title: Sync Progress Event
+      summary: Sent for each package being synchronized
+      description: |
+        Progress updates are sent as each package is processed during sync.
+        Use current/total to calculate progress percentage.
+        Packages are processed in the order they appear in the database.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/SyncProgressMessage"
+      examples:
+        - name: Package sync progress
+          summary: Example of progress update for a single package
+          payload:
+            type: sync_progress
+            when: "2025-11-11T10:32:15.000Z"
+            architecture: x86_64
+            packageName: linux
+            packageVersion: 6.11.5-1
+            current: 42
+            total: 1250
+        - name: First package
+          summary: First package in sync sequence
+          payload:
+            type: sync_progress
+            when: "2025-11-11T10:30:01.000Z"
+            architecture: x86_64
+            packageName: acl
+            packageVersion: 2.3.2-1
+            current: 1
+            total: 1250
+        - name: Last package
+          summary: Last package in sync sequence
+          payload:
+            type: sync_progress
+            when: "2025-11-11T10:44:59.000Z"
+            architecture: x86_64
+            packageName: zstd
+            packageVersion: 1.5.6-1
+            current: 1250
+            total: 1250
+
+  schemas:
+    SyncMessage:
+      type: object
+      description: Message indicating sync start or completion
+      required:
+        - type
+        - when
+        - architecture
+        - started
+      properties:
+        type:
+          type: string
+          const: sync
+          description: Message type identifier for sync state changes
+        when:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the event occurred
+          examples:
+            - "2025-11-11T10:30:00.000Z"
+            - "2025-11-12T15:45:30.123Z"
+        architecture:
+          type: string
+          enum:
+            - x86_64
+            - aarch64
+          description: CPU architecture being synchronized
+        started:
+          type: boolean
+          description: |
+            true when sync begins, false when sync completes or is cancelled.
+            A false value may indicate successful completion or cancellation by a new sync.
+
+    SyncProgressMessage:
+      type: object
+      description: Progress update for individual package synchronization
+      required:
+        - type
+        - when
+        - architecture
+        - packageName
+        - packageVersion
+        - current
+        - total
+      properties:
+        type:
+          type: string
+          const: sync_progress
+          description: Message type identifier for progress updates
+        when:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the package was processed
+          examples:
+            - "2025-11-11T10:32:15.000Z"
+            - "2025-11-12T15:45:30.500Z"
+        architecture:
+          type: string
+          enum:
+            - x86_64
+            - aarch64
+          description: CPU architecture being synchronized
+        packageName:
+          type: string
+          description: Name of the package being synchronized (without version suffix)
+          examples:
+            - linux
+            - firefox
+            - systemd
+            - gcc
+            - python
+        packageVersion:
+          type: string
+          description: Version string of the package (Arch Linux versioning format)
+          examples:
+            - 6.11.5-1
+            - 131.0-1
+            - 257.1-1
+            - 14.2.1-3
+            - 3.12.7-1
+        current:
+          type: integer
+          minimum: 1
+          description: Number of packages processed so far (1-indexed, inclusive)
+          examples:
+            - 1
+            - 42
+            - 1250
+        total:
+          type: integer
+          minimum: 1
+          description: Total number of packages to synchronize for this architecture
+          examples:
+            - 1250
+            - 3500
+            - 100
+
+  securitySchemes:
+    cookieAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Authentication via JWT token stored in HTTP-only cookie.
+        Token is obtained via POST /api/auth endpoint with response_type=cookie.
+        The cookie is automatically sent with WebSocket upgrade request.
+
+tags:
+  - name: sync
+    description: Package synchronization operations and real-time progress updates
+  - name: websocket
+    description: WebSocket connection and message handling

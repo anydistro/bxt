@@ -10,6 +10,7 @@
     "twxs.cmake",
     "llvm-vs-code-extensions.lldb-dap",
     "42crunch.vscode-openapi",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "tboox.xmake-vscode"
   ]
 }

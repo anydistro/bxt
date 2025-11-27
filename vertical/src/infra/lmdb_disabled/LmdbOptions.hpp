@@ -1,0 +1,28 @@
+/* === This file is part of bxt ===
+ *
+ *   SPDX-FileCopyrightText: 2024 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ */
+
+#pragma once
+
+#include <filesystem>
+
+#include "utilities/configuration/Configuration.h"
+namespace bxt::Utilities::LMDB {
+
+// Injectable options used by LMDB-related services
+struct LmdbOptions {
+    virtual ~LmdbOptions() = default;
+    std::filesystem::path lmdb_path = "bxtd.lmdb";
+
+    void serialize(Configuration& config) {
+        config.set("lmdb-path", lmdb_path.string());
+    }
+    void deserialize(Configuration const& config) {
+        lmdb_path = config.get<std::string>("lmdb-path").value_or(lmdb_path);
+    }
+};
+
+} // namespace bxt::Utilities::LMDB

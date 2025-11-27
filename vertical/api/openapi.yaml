@@ -1,0 +1,1399 @@
+openapi: 3.0.0
+info:
+  title: b[x]t API
+  description: API for the b[x]t repository management service.
+  version: "MVP"
+servers:
+  - url: "/"
+
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+
+paths:
+  /api/auth/session:
+    post:
+      summary: Authenticate user (cookie-based session)
+      description: For web browsers - returns tokens and sets httpOnly cookie
+      operationId: authSession
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: Authentication successful, JWT token set in httpOnly cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/auth/token:
+    post:
+      summary: Authenticate user (bearer token)
+      description: For CLI/API clients - returns tokens in response body only
+      operationId: authToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: Authentication successful, tokens returned in response body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/auth/refresh:
+    get:
+      summary: Refresh JWT token
+      operationId: refresh
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "JWT refresh token"
+      responses:
+        "200":
+          description: Token refresh successful, new JWT token set in cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+
+  /api/auth/revoke:
+    post:
+      summary: Revoke refresh token
+      operationId: revoke
+      responses:
+        "200":
+          description: Token successfully revoked
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+  /api/log:
+    get:
+      summary: Get activity log
+      description: Retrieve activity log entries (commits, syncs, deployments) across all sections
+      operationId: getLog
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Start time for log entries (defaults to 24 hours ago)
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: End time for log entries (defaults to now)
+        - name: text
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter logs by text search (package name, user, etc.)
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [commit, sync, deploy]
+          description: Filter by log entry type
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: List of log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/log/{branch}/{repository}/{architecture}:
+    get:
+      summary: Get section-specific activity log
+      description: Retrieve activity log for a specific section
+      operationId: getSectionLog
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: architecture
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Section log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/log/{branch}/{repository}/{architecture}/{package_name}:
+    get:
+      summary: Get package-specific history
+      description: Retrieve history of all operations for a specific package
+      operationId: getPackageLog
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: architecture
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: package_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Package name (e.g., "linux", "firefox")
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Package history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageHistoryResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+        "404":
+          description: Package not found
+  /api/pivot:
+    post:
+      summary: Pivot package versions across sections
+      description: Compare package versions across multiple sections in a pivot table view
+      operationId: pivot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PivotRequest"
+      responses:
+        "200":
+          description: Pivot table result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PivotResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/packages/commit:
+    post:
+      summary: Commit package transaction
+      description: |
+        Commit a package transaction. This operation allows adding, deleting, moving, and copying packages.
+        Each package is identified by a number in the form data (e.g., package1, package1.signature, package1.section).
+      operationId: commitTransaction
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            encoding:
+              package{n}.section:
+                contentType: application/json
+              to_delete:
+                contentType: application/json
+              to_move:
+                contentType: application/json
+              to_copy:
+                contentType: application/json
+
+            schema:
+              type: object
+              properties:
+                package{n}.filepath:
+                  type: string
+                  format: binary
+                  description: "Package file"
+                package{n}.signature:
+                  type: string
+                  format: binary
+                  description: "Package signature file"
+                package{n}.section:
+                  $ref: "#/components/schemas/PackageSection"
+                to_delete:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PackageAction"
+                to_move:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TransferAction"
+                to_copy:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TransferAction"
+      responses:
+        "200":
+          description: Transaction committed successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/packages/{branch}/{repository}/{architecture}:
+    get:
+      summary: Get packages in a section
+      description: List all packages in the specified section (branch/repository/architecture)
+      operationId: getPackages
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema:
+            type: string
+          example: stable
+        - name: repository
+          in: path
+          required: true
+          schema:
+            type: string
+          example: core
+        - name: architecture
+          in: path
+          required: true
+          schema:
+            type: string
+          example: x86_64
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 500
+          description: Number of packages per page
+      responses:
+        "200":
+          description: List of packages in the section
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageListResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+        "404":
+          description: Section not found
+  /api/packages/sync:
+    post:
+      summary: Synchronize packages
+      operationId: sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+      responses:
+        "200":
+          description: Packages synchronized successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/advanced/packages/snap:
+    post:
+      summary: Snap packages between sections
+      description: Note that this operation marked as "advanced".
+      operationId: snap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnapRequest"
+      responses:
+        "200":
+          description: Packages snapped successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/packages/snap/branch:
+    post:
+      summary: Snap packages between branches
+      operationId: snapBranch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnapBranchRequest"
+      responses:
+        "200":
+          description: Packages snapped successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/sections:
+    get:
+      summary: Get sections
+      operationId: getSections
+      responses:
+        "200":
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SectionResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/users:
+    get:
+      summary: Get list of users
+      operationId: getUsers
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+    post:
+      summary: Add a new user
+      operationId: addUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddUserRequest"
+      responses:
+        "200":
+          description: User added successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/users/{user_name}:
+    put:
+      summary: Update an existing user
+      operationId: updateUser
+      parameters:
+        - name: user_name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: User updated successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+    delete:
+      summary: Remove a user
+      operationId: removeUser
+      parameters:
+        - name: user_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User removed successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/workflows:
+    get:
+      summary: Get list of workflows
+      description: List all configured CI/CD workflows
+      operationId: getWorkflows
+      responses:
+        "200":
+          description: List of workflows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkflowResponse"
+        "403":
+          description: No permissions
+    post:
+      summary: Create a new workflow
+      description: Create a new CI/CD workflow with an API key
+      operationId: createWorkflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkflowRequest"
+      responses:
+        "200":
+          description: Workflow created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowCreatedResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/workflows/{workflow_id}:
+    get:
+      summary: Get workflow details
+      operationId: getWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Workflow details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResponse"
+        "404":
+          description: Workflow not found
+        "403":
+          description: No permissions
+    put:
+      summary: Update workflow
+      operationId: updateWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkflowRequest"
+      responses:
+        "200":
+          description: Workflow updated successfully
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+        "404":
+          description: Workflow not found
+    delete:
+      summary: Delete workflow
+      description: Delete workflow and revoke its API key
+      operationId: deleteWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Workflow deleted successfully
+        "403":
+          description: No permissions
+        "404":
+          description: Workflow not found
+  /api/workflows/{workflow_id}/regenerate-key:
+    post:
+      summary: Regenerate workflow API key
+      description: Generate a new API key for the workflow (revokes the old one)
+      operationId: regenerateWorkflowKey
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: New API key generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyResponse"
+        "403":
+          description: No permissions
+        "404":
+          description: Workflow not found
+  /api/search:
+    get:
+      summary: Search packages across all sections
+      description: Global package search with filtering and pagination
+      operationId: searchPackages
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term (package name)
+          example: linux
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageSearchResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /api/search/{branch}/{repository}/{architecture}:
+    get:
+      summary: Search packages within a section
+      description: Section-specific package search
+      operationId: searchPackagesInSection
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: architecture
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageSearchResponse"
+        "400":
+          description: Invalid request
+        "403":
+          description: No permissions
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the service for monitoring and load balancers
+      operationId: healthCheck
+      security: [] # No authentication required
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/metrics:
+    get:
+      summary: Get service metrics
+      description: Returns various metrics about the service (package counts, database size, etc.)
+      operationId: getMetrics
+      responses:
+        "200":
+          description: Service metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsResponse"
+        "403":
+          description: No permissions
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Workflow API key for CI/CD deployments
+
+  schemas:
+    AuthRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+      required:
+        - name
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+
+    PivotRequest:
+      type: array
+      items:
+        $ref: "#/components/schemas/PackageSection"
+      description: Array of sections to compare
+
+    PivotResponse:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageSection"
+          description: Sections that were compared
+        compareTable:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+              nullable: true
+          description: "Map of package name to section key to version. Section key format: branch/repository/architecture"
+          example:
+            linux:
+              stable/core/x86_64: "6.11.5-1"
+              testing/core/x86_64: "6.12.0-1"
+              stable/core/aarch64: null
+    LogResponse:
+      type: object
+      description: Activity log entries with pagination
+      properties:
+        entries:
+          type: object
+          properties:
+            commits:
+              type: array
+              items:
+                $ref: "#/components/schemas/CommitLogEntryResponse"
+            syncs:
+              type: array
+              items:
+                $ref: "#/components/schemas/SyncLogEntryResponse"
+            deploys:
+              type: array
+              items:
+                $ref: "#/components/schemas/DeployLogEntryResponse"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+
+    PackageHistoryResponse:
+      type: object
+      description: Historical events for a specific package
+      properties:
+        package:
+          type: string
+          description: Package name
+        section:
+          $ref: "#/components/schemas/PackageSection"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageHistoryEvent"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+
+    PackageHistoryEvent:
+      type: object
+      description: A single historical event for a package
+      properties:
+        time:
+          type: string
+          format: date-time
+          description: When the event occurred
+        type:
+          type: string
+          enum: [added, updated, removed, moved, copied]
+          description: Type of operation
+        version:
+          type: string
+          nullable: true
+          description: Package version (if applicable)
+        location:
+          type: string
+          description: File location
+        user:
+          type: string
+          nullable: true
+          description: User who performed the action (if applicable)
+        details:
+          type: object
+          description: Additional event-specific details
+          properties:
+            fromSection:
+              $ref: "#/components/schemas/PackageSection"
+            toSection:
+              $ref: "#/components/schemas/PackageSection"
+            previousVersion:
+              type: string
+
+    CommitLogEntryResponse:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        commiterUsername:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+        deleted:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+        moved:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+              to:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+        copied:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+              to:
+                $ref: "#/components/schemas/PackageLogEntryResponse"
+
+    SyncLogEntryResponse:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        syncTriggerUsername:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+        deleted:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+
+    DeployLogEntryResponse:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        runnerUrl:
+          type: string
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageLogEntryResponse"
+
+    PackageLogEntryResponse:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/LogEntryType"
+        section:
+          $ref: "#/components/schemas/PackageSection"
+        name:
+          type: string
+        location:
+          type: string
+        version:
+          type: string
+          nullable: true
+
+    LogEntryType:
+      type: string
+      enum:
+        - Add
+        - Remove
+        - Update
+        - Move
+        - Copy
+
+    PackageAction:
+      type: object
+      properties:
+        section:
+          $ref: "#/components/schemas/PackageSection"
+        name:
+          type: string
+          description: Name of the package (not the filename e.g. for arch-install-scripts-28-1-any.pkg.tar.zst it will be arch-install-scripts)
+
+    TransferAction:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the package (not the filename e.g. for arch-install-scripts-28-1-any.pkg.tar.zst it will be arch-install-scripts)
+        from_section:
+          $ref: "#/components/schemas/PackageSection"
+        to_section:
+          $ref: "#/components/schemas/PackageSection"
+
+    PackageResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Package name
+          example: linux
+        section:
+          type: string
+          description: Section path (branch/repository/architecture)
+          example: stable/core/x86_64
+        candidates:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PackageCandidateResponse"
+          description: |
+            Available package candidates from different locations, keyed by location name.
+            Locations: 'overlay' (manual uploads), 'sync' (synchronized from upstream), 'automated' (CI/CD builds)
+          example:
+            sync:
+              version: "6.11.5-1"
+              hasSignature: true
+              filepath: "pool/stable/core/x86_64/linux-6.11.5-1-x86_64.pkg.tar.zst"
+              signaturePath: "pool/stable/core/x86_64/linux-6.11.5-1-x86_64.pkg.tar.zst.sig"
+            overlay:
+              version: "6.12.0-rc1"
+              hasSignature: true
+              filepath: "pool/stable/core/x86_64/linux-6.12.0-rc1-x86_64.pkg.tar.zst"
+              signaturePath: "pool/stable/core/x86_64/linux-6.12.0-rc1-x86_64.pkg.tar.zst.sig"
+        selectedCandidate:
+          type: string
+          description: Which location is currently selected for this package
+          enum: [sync, overlay, automated]
+          example: sync
+
+    PackageCandidateResponse:
+      type: object
+      description: A specific version candidate of a package (without location key, as it's used as the object key)
+      properties:
+        version:
+          type: string
+          description: Package version string (Arch Linux format)
+          example: "6.11.5-1"
+        hasSignature:
+          type: boolean
+          description: Whether a signature file exists
+        filepath:
+          type: string
+          description: Full path to package file
+          example: "pool/stable/core/x86_64/linux-6.11.5-1-x86_64.pkg.tar.zst"
+        signaturePath:
+          type: string
+          nullable: true
+          description: Full path to signature file (if available)
+          example: "pool/stable/core/x86_64/linux-6.11.5-1-x86_64.pkg.tar.zst.sig"
+
+    PackageListResponse:
+      type: object
+      description: Paginated list of packages
+      properties:
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageResponse"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+
+    PackageSearchResponse:
+      type: object
+      description: Package search results with pagination
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageResponse"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        query:
+          type: string
+          description: The search query that was executed
+
+    PaginationInfo:
+      type: object
+      description: Pagination metadata
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 50
+        total:
+          type: integer
+          description: Total number of items
+          example: 1250
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 25
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+
+    PackageSection:
+      type: object
+      properties:
+        branch:
+          type: string
+        repository:
+          type: string
+        architecture:
+          type: string
+      required:
+        - branch
+        - repository
+        - architecture
+
+    SyncRequest:
+      type: object
+      properties:
+        architecture:
+          type: string
+      required:
+        - architecture
+
+    SnapRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/PackageSection"
+        target:
+          $ref: "#/components/schemas/PackageSection"
+      required:
+        - source
+        - target
+
+    AddUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          nullable: true
+        permissions:
+          type: array
+          items:
+            type: string
+
+    UserResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    SnapBranchRequest:
+      type: object
+      properties:
+        source_branch:
+          type: string
+        target_branch:
+          type: string
+        architecture:
+          type: string
+      required:
+        - source_branch
+        - target_branch
+        - architecture
+    
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+          description: Overall health status
+        timestamp:
+          type: string
+          format: date-time
+          description: Time of health check
+        components:
+          type: object
+          description: Health status of individual components
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+            filesystem:
+              type: string
+              enum: [ok, error]
+          additionalProperties:
+            type: string
+        version:
+          type: string
+          description: Service version
+    
+    MetricsResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        packageCount:
+          type: object
+          description: Number of packages per section
+          additionalProperties:
+            type: integer
+        totalPackages:
+          type: integer
+          description: Total number of packages across all sections
+        databaseSize:
+          type: integer
+          format: int64
+          description: Database size in bytes
+        poolSize:
+          type: integer
+          format: int64
+          description: Pool directory size in bytes
+        activeSyncs:
+          type: array
+          items:
+            type: object
+            properties:
+              architecture:
+                type: string
+              startTime:
+                type: string
+                format: date-time
+              progress:
+                type: object
+                properties:
+                  current:
+                    type: integer
+                  total:
+                    type: integer
+        uptime:
+          type: integer
+          format: int64
+          description: Service uptime in seconds
+    
+    SectionResponse:
+      type: object
+      properties:
+        branch:
+          type: string
+        repository:
+          type: string
+        architecture:
+          type: string
+      required:
+        - branch
+        - repository
+        - architecture
+    
+    WorkflowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Workflow unique identifier
+        name:
+          type: string
+          description: Workflow name
+        description:
+          type: string
+          nullable: true
+          description: Optional description
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageSection"
+          description: Sections this workflow can deploy to
+        created_at:
+          type: string
+          format: date-time
+        last_used:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last time this workflow was used
+        is_active:
+          type: boolean
+          description: Whether the workflow is enabled
+      required:
+        - id
+        - name
+        - sections
+        - created_at
+        - is_active
+    
+    CreateWorkflowRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Workflow name
+        description:
+          type: string
+          nullable: true
+          description: Optional description
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageSection"
+          description: Sections this workflow can deploy to
+      required:
+        - name
+        - sections
+    
+    UpdateWorkflowRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageSection"
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+          description: Enable or disable the workflow
+    
+    WorkflowCreatedResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Workflow unique identifier
+        name:
+          type: string
+        api_key:
+          type: string
+          description: API key for this workflow (shown only once!)
+      required:
+        - id
+        - name
+        - api_key
+    
+    ApiKeyResponse:
+      type: object
+      properties:
+        api_key:
+          type: string
+          description: The API key (shown only once!)
+      required:
+        - api_key

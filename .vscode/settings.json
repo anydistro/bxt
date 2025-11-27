@@ -1,4 +1,4 @@
 {
-  "clangd.path": "clangd-18",
-  "lldb-dap.executable-path": "/bin/lldb-dap-18"
+  "clangd.path": "clangd-20",
+  "lldb-dap.executable-path": "/bin/lldb-dap-20"
 }

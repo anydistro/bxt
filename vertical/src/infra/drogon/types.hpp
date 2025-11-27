@@ -1,0 +1,17 @@
+/* === This file is part of bxt ===
+ *
+ *   SPDX-FileCopyrightText: 2025 Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ */
+#pragma once
+
+#include <drogon/HttpResponse.h>
+#include <drogon/utils/coroutine.h>
+
+namespace bxt {
+
+// Drogon-specific HTTP types
+using ResponseTask = drogon::Task<drogon::HttpResponsePtr>;
+
+} // namespace bxt

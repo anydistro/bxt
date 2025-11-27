@@ -5,8 +5,22 @@
       "name": "(lldb) Daemon",
       "type": "lldb-dap",
       "request": "launch",
-      "program": "${command:cmake.launchTargetPath}",
+      "program": "${workspaceFolder}/build/bin/bxtnext",
       "args": [],
+      "cwd": "${workspaceFolder}/build/bin/",
+      "env": [
+        "LD_LIBRARY_PATH=./libs/",
+        "PATH=${env:PATH}:${workspaceFolder}/build/bin/"
+      ],
+      "disableASLR": false,
+      "initCommands": ["settings set target.disable-aslr false"]
+    },
+    {
+      "name": "(lldb) Tests",
+      "type": "lldb-dap",
+      "request": "launch",
+      "program": "${cmake.testProgram}",
+      "args": ["${cmake.testArgs}"],
       "cwd": "${command:cmake.getLaunchTargetDirectory}",
       "env": [
         "LD_LIBRARY_PATH=./libs/",

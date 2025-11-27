@@ -1,7 +1,26 @@
 {
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".",
-    "target": "development"
+  "name": "bxt Development",
+  "dockerComposeFile": "./docker-compose.dev.yml",
+  "service": "development",
+  "workspaceFolder": "/home/${localEnv:USER:developer}/workspace",
+  "remoteUser": "${localEnv:USER:developer}",
+
+  "shutdownAction": "stopContainer",
+  "customizations": {
+    "vscode": {
+      "extensions":[
+        "esbenp.prettier-vscode",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cmake-tools",
+        "tamasfe.even-better-toml",
+        "twxs.cmake",
+        "llvm-vs-code-extensions.lldb-dap",
+        "42crunch.vscode-openapi",
+        "redhat.vscode-yaml",
+        "tdennis4496.cmantic",
+        "tboox.xmake-vscode"
+      ]
+    }
   }
+  
 }

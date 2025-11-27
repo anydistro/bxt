@@ -4,23 +4,41 @@ services:
     build:
       context: .
       target: development
+      args:
+        - USERNAME=${USER:-developer}
+        - USER_UID=${UID:-1000}
+        - USER_GID=${GID:-1000}
+        - LLVM_VERSION=${LLVM_VERSION:-20}
     ports:
       - "8080:8080"
+      - "3000:3000"
+    volumes:
+      - .:/home/${USER:-developer}/workspace # Mount current directory to workspace
+      - /home/${USER}/.gitconfig:/home/${USER:-developer}/.gitconfig:ro # Git config
+      - /home/${USER}/.ssh:/home/${USER:-developer}/.ssh:ro
+    environment:
+      - DISPLAY=${DISPLAY:-}
     security_opt:
       - seccomp:unconfined
     cap_add:
       - SYS_PTRACE
+    stdin_open: true
+    tty: true
 
   production:
     image: anydistro/bxt:latest
     build:
       context: .
       target: production
+      args:
+        - LLVM_VERSION=${LLVM_VERSION:-20}
     ports:
       - "80:8080"
     volumes:
       - persistence_volume:/app/persistence/
       - /etc/bxtd/box.yml:/app/box.yml
       - /etc/bxtd/config.toml:/app/config.toml
+    restart: unless-stopped
+
 volumes:
   persistence_volume:

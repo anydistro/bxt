@@ -1,11 +1,59 @@
+# Build directories
 build/
 .cache/
 
+# VS Code settings (keep some, ignore others)
 .vscode/**/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# CMake (deprecated, kept for migration reference only)
 CMakeLists.txt.user
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+
+# XMake build system files
+.xmake/
+**/.xmake/
+*.xmake
+
+# Conan package manager
+conan.lock
+conangraph.log
+graph_info.json
+*.conaninfo.txt
+*.conanmanifest.txt
+
+# Generated binaries and artifacts
+*.o
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+bin/
+*.out
+
+# Package files
+*.pkg.tar.zst
+*.pkg.tar.zst.sig
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+
+# Backup and experimental files
+*_b
+*.bak
+*.orig
+
+# OS specific
 .DS_Store
+Thumbs.db

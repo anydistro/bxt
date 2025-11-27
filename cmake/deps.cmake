@@ -16,7 +16,7 @@ find_package(date REQUIRED)
 target_link_libraries(deps INTERFACE date::date)
 
 find_package(fmt REQUIRED)
-target_link_libraries(deps INTERFACE fmt::fmt)
+target_link_libraries(deps INTERFACE fmt::fmt-header-only)
 
 find_package(frozen REQUIRED)
 target_link_libraries(deps INTERFACE frozen::frozen)
@@ -39,6 +39,12 @@ target_link_libraries(deps INTERFACE phmap)
 find_package(LibArchive REQUIRED)
 target_link_libraries(deps INTERFACE LibArchive::LibArchive)
 
+find_package(spdlog REQUIRED)
+target_link_libraries(deps INTERFACE spdlog::spdlog_header_only)
+
+find_package(Trantor REQUIRED)
+target_link_libraries(deps INTERFACE Trantor::Trantor)
+
 find_package(Drogon REQUIRED)
 target_link_libraries(deps INTERFACE Drogon::Drogon)
 
@@ -51,9 +57,6 @@ target_link_libraries(deps INTERFACE lmdb::lmdb)
 find_package(nlohmann_json REQUIRED)
 target_link_libraries(deps INTERFACE nlohmann_json::nlohmann_json)
 
-find_package(scn REQUIRED)
-target_link_libraries(deps INTERFACE scn::scn)
-
 find_package(cereal REQUIRED)
 target_link_libraries(deps INTERFACE cereal::cereal)
 
@@ -62,3 +65,18 @@ target_link_libraries(deps INTERFACE libcoro::libcoro)
 
 find_package(scope-lite REQUIRED)
 target_link_libraries(deps INTERFACE nonstd::scope-lite)
+
+find_package(di REQUIRED CONFIG)
+target_link_libraries(deps INTERFACE di::di)
+
+find_package(reflectcpp REQUIRED)
+target_link_libraries(deps INTERFACE reflectcpp::reflectcpp)
+
+find_package(lmdbxx REQUIRED)
+target_link_libraries(deps INTERFACE lmdbxx::lmdbxx)
+
+find_package(SQLite3 REQUIRED)
+target_link_libraries(deps INTERFACE SQLite::SQLite3)
+
+find_package(sqlgen REQUIRED)
+target_link_libraries(deps INTERFACE sqlgen::sqlgen)
